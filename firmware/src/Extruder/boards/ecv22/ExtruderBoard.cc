@@ -107,6 +107,8 @@ void ExtruderBoard::reset(uint8_t resetFlags) {
 	TIMSK2 = 0x00; // turn off channel A PWM by default
 	// TIMER2 is used to PWM mosfet channel B on OC2A, and channel A on
 	// PC1 (using the OC2B register).
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	DEBUG_LED.setDirection(true);
 	CHANNEL_A.setValue(false);
 	CHANNEL_A.setDirection(true); // set channel A as output
@@ -114,6 +116,7 @@ void ExtruderBoard::reset(uint8_t resetFlags) {
 	CHANNEL_B.setDirection(true); // set channel B as output
 	CHANNEL_C.setValue(false);
 	CHANNEL_C.setDirection(true); // set channel C as output
+#pragma GCC diagnostic pop
 	TCCR2A = 0b10000011;
 	TCCR2B = 0b00000110; // prescaler 1/256
 	OCR2A = 0;
@@ -243,10 +246,16 @@ void setChannel(ChannelChoice c, uint8_t value, bool binary) {
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 			if (binary) {
 				pwmAOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				CHANNEL_A.setValue(value != 0);
+#pragma GCC diagnostic pop
 			} else if (value == 0 || value == 255) {
 				pwmAOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				CHANNEL_A.setValue(value == 255);
+#pragma GCC diagnostic pop
 			} else {
 				OCR2B = value;
 				pwmAOn(true);
@@ -256,10 +265,16 @@ void setChannel(ChannelChoice c, uint8_t value, bool binary) {
 		ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 			if (binary) {
 				pwmBOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				CHANNEL_B.setValue(value != 0);
+#pragma GCC diagnostic pop
 			} else if (value == 0 || value == 255) {
 				pwmBOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				CHANNEL_B.setValue(value == 255);
+#pragma GCC diagnostic pop
 			} else {
 				OCR2A = value;
 				pwmBOn(true);
@@ -267,7 +282,10 @@ void setChannel(ChannelChoice c, uint8_t value, bool binary) {
 		}
 	} else {
 		// channel C -- no pwm
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		CHANNEL_C.setValue(value == 0?false:true);
+#pragma GCC diagnostic pop
 	}
 }
 
@@ -288,7 +306,10 @@ void ExtruderBoard::setValve(bool on) {
 }
 
 void ExtruderBoard::indicateError(int errorCode) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	DEBUG_LED.setValue(errorCode != 0);
+#pragma GCC diagnostic pop
 }
 
 void ExtruderBoard::setUsingPlatform(bool is_using) {
@@ -322,12 +343,18 @@ void BuildPlatformHeatingElement::setHeatingElement(uint8_t value) {
 
 ISR(TIMER2_OVF_vect) {
 	if (OCR2B != 0) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		CHANNEL_A.setValue(true);
+#pragma GCC diagnostic pop
 	}
 }
 
 ISR(TIMER2_COMPB_vect) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	CHANNEL_A.setValue(false);
+#pragma GCC diagnostic pop
 }
 
 #ifdef DEFAULT_EXTERNAL_STEPPER

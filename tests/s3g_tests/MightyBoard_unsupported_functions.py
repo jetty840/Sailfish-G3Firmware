@@ -10,7 +10,6 @@ unsupported_functions = [
 
 # Host Query Commands
 
-    'get_position',                                                     # 004
     'get_communication_stats',                                          # 025
 
 # Host Action Commands (buffered)
@@ -21,13 +20,13 @@ unsupported_functions = [
 # Tool Query Commands
 
     'get_motor1_speed_PWM',                                             # 019
+    'get_motor1_speed',                                                 # 017
+    'read_from_toolhead_EEPROM',                                        # 026
 
 # Tool Action Commands
 
-    'set_motor1_speed_PWM',                                             # 004
-    'set_motor1_direction',                                             # 008
-    'set_servo2_position',                                              # 015
-    'toggle_abp',                                                       # 027
+    'toolhead_abort',                                                   # 024
+    'write_to_toolhead_EEPROM',                                         # 026
 
 ]
 

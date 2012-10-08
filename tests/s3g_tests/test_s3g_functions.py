@@ -73,8 +73,8 @@ s3g_function_calls = {
 
     'queue_point_absolute' : ([0, 0, 0,], 500),                                     # 129
     'set_position' : ([0, 0, 0],),                                                  # 130
-    'find_axes_maximums' : (['x', 'y'], 1, 0),                                      # 131
-    'find_axes_minimums' : (['z'], 1, 0),                                           # 132
+    'find_axes_maximums' : ([], 1, 0),                                              # 131
+    'find_axes_minimums' : ([], 1, 0),                                              # 132
     'delay' : (10),                                                                 # 133
     'change_tool' : (0),                                                            # 134
     'wait_for_tool_ready' : (0, 100, 50),                                           # 135
@@ -165,5 +165,10 @@ s3g_buffered_functions = [
     'queue_song',                                                                   # 151
     'reset_to_factory',                                                             # 152
     'build_start_notification',                                                     # 153
-    'build_end_notification'                                                        # 154
+    'build_end_notification',                                                       # 154
+
+# The following Tool Action commands are buffered by virtue of being issued as
+# payloads to a Host Action command
+
+    'toolhead_abort'                                                                # 024
 ]

@@ -72,6 +72,8 @@ void MotorController::update() {
 				board.setMotorSpeed(0);
 				backoff_state = BO_INACTIVE;
 				break;
+			default:
+				break;
 			}
 		}
 	} else if (!set_with_rpm) {
@@ -116,7 +118,6 @@ void MotorController::setDir(bool dir_in) {
 }
 
 void MotorController::setOn(bool on_in) {
-	ExtruderBoard& board = ExtruderBoard::getBoard();
 	if (!on_in && on && direction && backoff_enabled && forward_trigger_timeout.hasElapsed()) {
 		backoff_state = BO_HALT_1;
    // Commented out since this is handled in MotorController::update(),

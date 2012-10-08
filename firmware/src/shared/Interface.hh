@@ -15,13 +15,15 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+
+
 #ifndef INTERFACE_HH_
 #define INTERFACE_HH_
 
-#include "Configuration.hh"
 #include "Menu.hh"
 #include "InterfaceBoard.hh"
 #include "LiquidCrystal.hh"
+#include "MoodLightController.hh"
 #include "Types.hh"
 
 // TODO: This style interface is weird; find a way to replace it.
@@ -42,6 +44,9 @@ void pushScreen(Screen* newScreen);
 /// it will not be removed.
 void popScreen();
 
+/// This is called for a specific button and returns true if the button
+/// is currently depressed
+bool isButtonPressed(ButtonArray::ButtonName button);
 
 /// Screen update interrupt. This scans the keypad to look for any changes. To
 /// ensure a consistant user response, it should be called from a medium frequency
@@ -62,6 +67,7 @@ void doUpdate();
 /// much impact.
 micros_t getUpdateRate();
 
+MoodLightController moodLightController();
 }
 
-#endif // INTERFACE_HH_
+#endif

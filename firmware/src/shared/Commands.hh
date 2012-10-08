@@ -49,8 +49,6 @@
 #define HOST_CMD_GET_BUFFER_SIZE 2
 #define HOST_CMD_CLEAR_BUFFER    3
 #define HOST_CMD_GET_POSITION    4
-#define HOST_CMD_GET_RANGE       5
-#define HOST_CMD_SET_RANGE       6
 #define HOST_CMD_ABORT           7
 #define HOST_CMD_PAUSE           8
 #define HOST_CMD_PROBE           9
@@ -79,16 +77,12 @@
 
 #define HOST_CMD_GET_POSITION_EXT  21
 #define HOST_CMD_EXTENDED_STOP     22
-
-//#define HOST_CMD_BUILD_START_NOTIFICATION 24
-//#define HOST_CMD_BUILD_END_NOTIFICATION 25
-
-#define HOST_CMD_GET_COMMUNICATION_STATS 25
+#define HOST_CMD_BOARD_STATUS	   23
+#define HOST_CMD_GET_BUILD_STATS   24
+#define HOST_CMD_ADVANCED_VERSION  27
 
 // These are our bufferable commands from the host
-// #define HOST_CMD_QUEUE_POINT_INC   128  // deprecated
-#define HOST_CMD_QUEUE_POINT_ABS   129
-#define HOST_CMD_SET_POSITION      130
+
 #define HOST_CMD_FIND_AXES_MINIMUM 131
 #define HOST_CMD_FIND_AXES_MAXIMUM 132
 #define HOST_CMD_DELAY             133
@@ -105,7 +99,25 @@
 #define HOST_CMD_STORE_HOME_POSITION  143
 #define HOST_CMD_RECALL_HOME_POSITION 144
 
+#define HOST_CMD_SET_POT_VALUE     145
+#define HOST_CMD_SET_RGB_LED       146
+#define HOST_CMD_SET_BEEP          147
+// Pause the build until the user has pressed
+// a button on the interface board.
+#define HOST_CMD_PAUSE_FOR_BUTTON	148
+#define HOST_CMD_DISPLAY_MESSAGE	149
+#define HOST_CMD_SET_BUILD_PERCENT	150
+#define HOST_CMD_QUEUE_SONG		151 /* queue a song to sing, by song ID */
+#define HOST_CMD_RESET_TO_FACTORY 	152 /* Reset to factory defaults */
+
+#define HOST_CMD_BUILD_START_NOTIFICATION 153
+#define HOST_CMD_BUILD_END_NOTIFICATION 154
+#define HOST_CMD_QUEUE_POINT_NEW_EXT   155
+#define HOST_CMD_SET_ACCELERATION_TOGGLE	156
+
 #define HOST_CMD_DEBUG_ECHO        0x70
+
+
 
 // These are our query commands from the host
 #define SLAVE_CMD_VERSION                0
@@ -131,10 +143,12 @@
 #define SLAVE_CMD_GET_MOTOR_2_PWM       20
 #define SLAVE_CMD_SELECT_TOOL           21
 #define SLAVE_CMD_IS_TOOL_READY         22
+
 #define SLAVE_CMD_PAUSE_UNPAUSE         23
 #define SLAVE_CMD_ABORT                 24
 #define SLAVE_CMD_READ_FROM_EEPROM      25
 #define SLAVE_CMD_WRITE_TO_EEPROM       26
+
 #define SLAVE_CMD_TOGGLE_ABP			27
 
 #define SLAVE_CMD_GET_PLATFORM_TEMP     30

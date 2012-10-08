@@ -229,7 +229,7 @@ class s3gSendReceiveTests(unittest.TestCase):
       if inspect.ismethod( method ):
 
         # Proceed only if this method function is NOT in the ignore list, s3g_functions_to_ignore[]
-        if not ( name in s3g_functions_to_ignore ) and not ( name in buggy_functions ):
+        if ( not ( name in s3g_functions_to_ignore ) ) and ( not ( name in buggy_functions ) ):
 
           # See if this method function is a key in the s3g_function_calls{} dictionary
           if name in s3g_function_calls:
@@ -316,16 +316,24 @@ class s3gFunctionTests(unittest.TestCase):
     target = constants['target_temp']
     self.assertEqual(self.r.get_platform_target_temperature(0), 0)
     self.r.set_platform_temperature(0, target)
-    self.assertEqual(self.r.get_platform_target_temperature(0), target)
+    time.sleep(0.1)
+    temp = self.r.get_platform_target_temperature(0)
+    if (temp != target) and ( firmware.lower() in ['g3firmware', 'jetty'] ):
+      print "Note that test_SetGetPlatformTargetTemperature() will fail if temperature override is enabled!"
     self.r.set_platform_temperature(0, 0)
+    self.assertEqual(temp, target)
 
   def test_SetGetToolheadTargetTemperature(self):
     target = constants['target_temp']
     toolhead = constants['toolhead']
     self.assertEqual(self.r.get_toolhead_target_temperature(toolhead), 0)
     self.r.set_toolhead_temperature(toolhead, target)
-    self.assertEqual(self.r.get_toolhead_target_temperature(toolhead), target)
-    self.r.set_toolhead_target_temperature(constants['toolhead'], 0)
+    time.sleep(0.1)
+    temp = self.r.get_toolhead_target_temperature(toolhead)
+    if (temp != target) and ( firmware.lower() in ['g3firmware', 'jetty'] ):
+      print "Note that test_SetGetToolheadTargetTemperature() will fail if temperature override is enabled!"
+    self.r.set_toolhead_temperature(toolhead, 0)
+    self.assertEqual(temp, target)
 
   def test_ReadWordsFromEeprom(self):
     """
@@ -337,74 +345,87 @@ class s3gFunctionTests(unittest.TestCase):
     test = struct.unpack(format, test)
     self.assertTrue(all([test[i] == default[i] for i in range(0,len(test))]))
 
-  def test_WriteToEepromG3firmware(self):
+  def test_WriteToEeprom(self):
     """
     Write a new bot name to the EEPROM and verify that it reads back correctly
     """
     nameOffset, length, default = EEPROM_offsets['machine_name']
-    origName = self.r.read_from_EEPROM(nameOffset, length)
     name = 'ILOVETESTINGALOT'
     self.r.write_to_EEPROM(nameOffset, name)
     readName = self.r.read_from_EEPROM(nameOffset, len(name))
-    self.r.write_to_EEPROM(nameOffset, origName)
     self.assertEqual(name, readName)
 
   def test_IsPlatformReady(self):
     """
     Determine if the platform is ready by setting the temperature to its current reading and asking if its ready (should return true, then setting the temperature to +50 what it is now then querying it agian, expecting a false answer
+
+    WARNING: THIS TEST WILL FAIL WITH THE JETTY FIRMWARE IF TEMP OVERRIDE IS ENABLED
     """
     curTemp = self.r.get_platform_temperature(0)
-    self.r.set_platform_temperature(0, curTemp)
+    self.r.set_platform_temperature(0, curTemp - 1)  # Hysteresis allows for 2 degree swing
+    time.sleep(0.1)
     self.assertTrue(self.r.is_platform_ready(0))
     self.r.set_platform_temperature(0, curTemp+50)
+    time.sleep(0.1)
     self.assertEqual(self.r.is_platform_ready(0), False)
     self.r.set_platform_temperature(0, 0)
 
   def test_IsToolReady(self):
+    """
+    WARNING: THIS TEST WILL FAIL WITH THE JETTY FIRMWARE IF TEMP OVERRIDE IS ENABLED
+    """
     toolhead = constants['toolhead']
     curTemp = self.r.get_toolhead_temperature(toolhead)
-    self.r.set_toolhead_temperature(toolhead, curTemp)
+    self.r.set_toolhead_temperature(toolhead, curTemp - 1)  # Hysteresis allows for 2 degree swing
+    time.sleep(0.1)
     self.assertTrue(self.r.is_tool_ready(toolhead))
     self.r.set_toolhead_temperature(toolhead, curTemp + 50)
-    self.assertEqual(self.r.is_tool_ready(toolhead, False))
+    time.sleep(0.1)
+    self.assertEqual(self.r.is_tool_ready(toolhead), False)
     self.r.set_toolhead_temperature(toolhead, 0)
 
   def test_SetGetExtendedPosition(self):
-    position = [50, 51, 52, 53, 54]
+    position = [50, 51, 52, 53, 54 * constants['dual_extruder']]
     self.r.set_extended_position(position)
     self.assertEqual(position, self.r.get_extended_position()[0])
 
   def test_QueueExtendedPoint(self):
-    self.r.find_axes_maximums(['x', 'y'], 500, 100)
-    self.r.find_axes_minimums(['z'], 500, 100)
+    self.r.find_axes_maximums(constants['endstops_max'], 500, 100)
+    self.r.find_axes_minimums(constants['endstops_min'], 500, 100)
     self.r.recall_home_positions(['x', 'y', 'z', 'a', 'b'])
-
-    newPosition = [51, 52, 10, 0, 0]
+    self.r.set_extended_position([0, 0, 0, 0, 0])
+    newPosition = constants['new_ext_point']
     rate = 500
     self.r.queue_extended_point(newPosition, rate)
     time.sleep(5)
     self.assertEqual(newPosition, self.r.get_extended_position()[0])
 
   def test_FindAxesMaximums(self):
-    axes = ['x', 'y']
+    self.r.toggle_axes(['X', 'Y', 'Z', 'A', 'B'], False)
+    raw_input("\nPlease move the platform and extruder away from any endstops and then press enter to continue.")
+    axes = constants['endstops_max']
+    test_bits = constants['max_test_bits']
+    test_mask = constants['max_test_mask']
     rate = 500
     timeout = 10
-    xymax_endstops = 0x05
     self.r.find_axes_maximums(axes, rate, timeout)
     time.sleep(timeout)
-    self.assertEqual(self.r.get_extended_position()[1]&0x0F, xymax_endstops)
+    self.assertEqual(self.r.get_extended_position()[1]&test_mask, test_bits)
 
   def test_FindAxesMinimums(self):
-    axes = ['z']
+    self.r.toggle_axes(['X', 'Y', 'Z', 'A', 'B'], False)
+    raw_input("\nPlease move the platform and extruder away from any endstops and then press enter to continue.")
+    axes = constants['endstops_min']
+    test_bits = constants['min_test_bits']
+    test_mask = constants['min_test_mask']
     rate = 500
     timeout = 50
-    zmin_endstops = 0x20
     self.r.find_axes_minimums(axes, rate, timeout)
     time.sleep(timeout)
-    self.assertEqual(self.r.get_extended_position()[1]&0x30, zmin_endstops)
+    self.assertEqual(self.r.get_extended_position()[1]&test_mask, test_bits)
 
   def test_Init(self):
-    position = [10, 9, 8, 7, 6]
+    position = [10, 9, 8, 7, 6 * constants['dual_extruder']]
     self.r.set_extended_position(position)
     #this function doesn't do anything, so we are testing that position is NOT cleared after command recieved
     self.r.init()
@@ -417,13 +438,13 @@ class s3gFunctionTests(unittest.TestCase):
 
   def test_AbortImmediately(self):
     bufferSize = constants['buffer_size']
-    toolheads = constants['tool_heads']
+    toolheads = constants['toolheads']
     target = constants['target_temp']
     for toolhead in toolheads:
       self.r.set_toolhead_temperature(toolhead, target)
     self.r.set_platform_temperature(0, target)
-    self.r.find_axes_minimums(['z'], 500, 5)
-    self.r.find_axes_maximums(['x','y'], 500, 5)
+    self.r.find_axes_minimums(constants['endstops_min'], 500, 5)
+    self.r.find_axes_maximums(constants['endstops_max'], 500, 5)
     self.r.abort_immediately()
     time.sleep(5)
     self.assertEqual(bufferSize, self.r.get_available_buffer_size())
@@ -498,15 +519,17 @@ class s3gFunctionTests(unittest.TestCase):
   @skipIf('get_communication_stats' in unsupported_functions)
   def test_CommStats(self):
     info1 = self.r.get_communication_stats()
+    # Now generate some traffic over the tool network
+    self.r.get_platform_target_temperature(0)
     info2 = self.r.get_communication_stats()
-    self.assertNotEqual(info1['PacketsReceived'], info2['PacketsReceived'])
+    self.assertNotEqual(info1['PacketsSent'], info2['PacketsSent'])
 
   def test_ClearBuffer(self):
     bufferSize = constants['buffer_size']
     target = constants['target_temp']
     self.r.set_platform_temperature(0, target)
     self.r.wait_for_platform_ready(0, 0, 0xFFFF)
-    axes = ['z']
+    axes = constants['endstops_min']
     rate = 500
     timeout = 5
     for i in range(10):
@@ -538,12 +561,13 @@ class s3gFunctionTests(unittest.TestCase):
   def test_IsFinished(self):
     timeout = 30
     # home axes
-    self.r.find_axes_maximums(['x', 'y'], 500, timeout)
-    self.r.find_axes_minimums(['z'], 500, timeout)
+    self.r.find_axes_maximums(constants['endstops_max'], 500, timeout)
+    self.r.find_axes_minimums(constants['endstops_min'], 500, timeout)
     self.r.recall_home_positions(['x', 'y', 'z', 'a', 'b'])
+    self.r.set_extended_position([0, 0, 0, 0, 0])
     time.sleep(timeout)
     # go to a new point
-    newPoint = [50, 50, 10, 0, 0]
+    newPoint = constants['new_ext_point']
     duration = 5
     micros = 1000000
     self.r.queue_extended_point_new(newPoint, duration*micros, [])
@@ -564,40 +588,45 @@ class s3gFunctionTests(unittest.TestCase):
       self.r.toggle_axes(['x', 'y', 'z'], False)
     self.assertNotEqual(self.r.get_available_buffer_size(), bufferSize)
     self.r.reset()
+    time.sleep(5)
     self.assertEqual(self.r.get_available_buffer_size(), bufferSize)
     self.assertTrue(self.r.is_finished())
-    self.assertEqual(self.r.get_toolhead_target_temperature(toolhead, 0))
+    self.assertEqual(self.r.get_toolhead_target_temperature(toolhead), 0)
     self.assertEqual(self.r.get_platform_target_temperature(0), 0)
  
   def test_Delay(self):
-    self.r.find_axes_maximums(['x', 'y'], 500, 50)
-    self.r.find_axes_minimums(['z'], 500, 50)
+    self.r.find_axes_maximums(constants['endstops_max'], 500, 50)
+    self.r.find_axes_minimums(constants['endstops_min'], 500, 50)
     self.r.recall_home_positions(['x', 'y', 'z', 'a', 'b'])
+    self.r.set_extended_position([0, 0, 0, 0, 0])
     delay = 5
     duration = 5
     millis = 1000
-    newPoint = [50, 50, 10, 0, 0]
+    micros = 1000 * millis
+    newPoint = constants['new_ext_point']
     self.r.delay(delay*millis)
-    self.r.queue_extended_point_new(newPoint, duration*millis, [])
+    self.r.queue_extended_point_new(newPoint, duration*micros, [])
     self.assertFalse(self.r.is_finished())
-    for i in range(0, duration+delay-1):
+    for i in range(0, duration+delay):
       print i
       self.assertFalse(self.r.is_finished())
       time.sleep(1)
-    time.sleep(1)
-    self.assertTrue(self.r.isFinished())
+    time.sleep(1.5)
+    self.assertTrue(self.r.is_finished())
 
   def test_ExtendedStop(self):
     bufferSize = constants['buffer_size']
-    self.r.find_axes_maximums(['x', 'y'], 200, 50)
-    self.r.find_axes_minimums(['z'], 500, 50)
+    self.r.find_axes_maximums(constants['endstops_max'], 200, 50)
+    self.r.find_axes_minimums(constants['endstops_min'], 500, 50)
     self.r.recall_home_positions(['x', 'y', 'z', 'a', 'b'])
+    self.r.set_extended_position([0, 0, 0, 0, 0])
     delay = 5
     duration = 5
     millis = 1000
-    newPoint = [50, 50, 10, 0, 0]
+    micros = millis * 1000
+    newPoint = constants['new_ext_point']
     self.r.delay(delay*millis)
-    self.r.queue_extended_point_new(newPoint, duration*millis, [])
+    self.r.queue_extended_point_new(newPoint, duration*micros, [])
     for i in range(5):
       self.r.toggle_axes(['x', 'y', 'z'], False)
     self.r.extended_stop(True, True)
@@ -606,25 +635,26 @@ class s3gFunctionTests(unittest.TestCase):
     self.assertEqual(bufferSize, self.r.get_available_buffer_size())
 
   def test_QueueExtendedPointNew(self):
-    self.r.find_axes_maximums(['x', 'y'], 200, 50)
-    self.r.find_axes_minimums(['z'], 500, 50)
+    self.r.find_axes_maximums(constants['endstops_max'], 200, 50)
+    self.r.find_axes_minimums(constants['endstops_min'], 500, 50)
     self.r.recall_home_positions(['x', 'y', 'z', 'a', 'b'])
+    self.r.set_extended_position([0, 0, 0, 0, 0])
     while(self.r.is_finished is False):
       time.sleep(1)
-    newPoint = [1, 2, 3, 0, 0]
-    millis = 1000
+    newPoint = constants['new_ext_point']
+    micros = 1000 * 1000
     duration = 5
-    self.r.queue_extended_point_new(newPoint, duration*millis, [])
+    self.r.queue_extended_point_new(newPoint, duration*micros, [])
     time.sleep(duration)
     self.assertEqual(newPoint, self.r.get_extended_position()[0])
-    anotherPoint = [5, 6, 7, 8, 9]
-    self.r.queue_extended_point_new(anotherPoint, duration*millis, [])
+    anotherPoint = [ 2*p for p in newPoint]
+    self.r.queue_extended_point_new(anotherPoint, duration*micros, [])
     time.sleep(duration)
     self.assertEqual(anotherPoint, self.r.get_extended_position()[0])
  
   def test_StoreHomePositions(self):
-    old_home = self.read_from_EEPROM(EEPROM_offsets['home_positions'][0], EEPROM_offsets['home_positions'][1])
-    position = [20,20,30,40,50]
+    old_home = self.r.read_from_EEPROM(EEPROM_offsets['home_positions'][0], EEPROM_offsets['home_positions'][1])
+    position = [20,20,30,40,50*constants['dual_extruder']]
     self.r.set_extended_position(position)
     self.r.store_home_positions(['X', 'Y', 'Z', 'A', 'B'])
     x = self.r.read_from_EEPROM(EEPROM_offsets['x_home'][0], EEPROM_offsets['x_home'][1])
@@ -639,11 +669,11 @@ class s3gFunctionTests(unittest.TestCase):
     self.assertEqual(readHome, position)
 
   def test_RecallHomePositions(self):
-    old_home = self.read_from_EEPROM(EEPROM_offsets['home_positions'][0], EEPROM_offsets['home_positions'][1])
-    pointToSet = [1, 2, 3, 4, 5]
+    old_home = self.r.read_from_EEPROM(EEPROM_offsets['home_positions'][0], EEPROM_offsets['home_positions'][1])
+    pointToSet = [1, 2, 3, 4, 5 * constants['dual_extruder']]
     self.r.set_extended_position(pointToSet)
     self.r.store_home_positions(['X', 'Y', 'Z', 'A', 'B'])
-    newPoint = [50, 51, 52, 53, 54]
+    newPoint = [50, 51, 52, 53, 54 * constants['dual_extruder']]
     self.r.set_extended_position(newPoint)
     self.r.recall_home_positions([])
     time.sleep(5)
@@ -653,6 +683,7 @@ class s3gFunctionTests(unittest.TestCase):
     self.r.write_to_EEPROM(EEPROM_offsets['home_positions'][0], old_home)
     self.assertEqual(pointToSet, self.r.get_extended_position()[0])
  
+  @skipIf('get_PID_state' in buggy_functions)
   def test_GetPIDState(self):
     toolhead = constants['toolhead']
     pidDict = self.r.get_PID_state(toolhead)
@@ -684,7 +715,7 @@ class s3gUserFunctionTests(unittest.TestCase):
     obs = raw_input("\nPlease try to move all (x,y,z) the axes!  Can you move them without using too much force? (y/n) ")
     self.assertEqual('y', obs)
 
-  @skipUnless(hasInterface and not('display_message' in unsupported))
+  @skipUnless(hasInterface and not('display_message' in unsupported_functions))
   def test_DisplayMessage(self):
     message = str(time.clock())
     self.r.display_message(0, 0, message, 10, False, False, False)
@@ -719,6 +750,8 @@ class s3gUserFunctionTests(unittest.TestCase):
     self.assertFalse(returnDic['PlatformError'])
     self.assertFalse(returnDic['ExtruderError'])
     self.r.set_toolhead_temperature(toolhead, target)
+    # G3Firmware has a little latency owing to the Extruder Controller being 
+    # a separate microprocessor.  Sleep for 0.1 s before querying
     time.sleep(0.1)
     returnDic = self.r.get_tool_status(toolhead)
     self.assertEqual(returnDic['ExtruderReady'], self.r.is_tool_ready(toolhead))
@@ -829,7 +862,8 @@ class s3gSDCardTests(unittest.TestCase):
     totalBytes = findAxesMaximums*numCmd/8 + numCmd
     #Add some commands to the file
     for i in range(numCmd):
-      self.r.find_axes_maximums(['x', 'y'], 500, 10)
+      self.r.find_axes_maximums(constants['endstops_max'], 500, 10)
+    time.sleep(0.1)
     self.assertEqual(totalBytes, self.r.end_capture_to_file())
 
   @skipIf(any(x in unsupported_functions for x in ['capture_to_file', 'get_next_filename']))
@@ -859,10 +893,11 @@ class s3gSDCardTests(unittest.TestCase):
     Copy the contents of the testFiles directory onto an sd card to do this test
     """
     raw_input("\nPlease make sure the only files on the SD card plugged into the bot are the files inside the testFiles directory!! Press enter to continue")
+    if not firmware.lower() in ['g3firmware', 'jetty']:
+      volumeName = raw_input("\nPlease type the VOLUME NAME of the replicator's SD card exactly! Press enter to continue")
+      readVolumeName = self.r.get_next_filename(True)
+      self.assertEqual(volumeName, ConvertFromNUL(readVolumeName))
     filename = 'box_1.s3g'
-    volumeName = raw_input("\nPlease type the VOLUME NAME of the replicator's SD card exactly! Press enter to continue")
-    readVolumeName = self.r.get_next_filename(True)
-    self.assertEqual(volumeName, ConvertFromNUL(readVolumeName))
     readFilename = self.r.get_next_filename(False)
     self.assertEqual(filename, ConvertFromNUL(readFilename))
   
@@ -883,10 +918,10 @@ if __name__ == '__main__':
   sendReceiveTests = unittest.TestLoader().loadTestsFromTestCase(s3gSendReceiveTests)
   functionTests = unittest.TestLoader().loadTestsFromTestCase(s3gFunctionTests)
   userFunctionTests = unittest.TestLoader().loadTestsFromTestCase(s3gUserFunctionTests)
-  #sdTests = unittest.TestLoader().loadTestsFromTestCase(s3gSDCardTests)
-  #suites = [sendReceiveTests] #packetTests] #, sendReceiveTests, functionTests, sdTests]
+  sdTests = unittest.TestLoader().loadTestsFromTestCase(s3gSDCardTests)
 
-  suites = [commonTests, sendReceiveTests] # userFunctionTests]
+  suites = [commonTests, packetTests, sendReceiveTests, functionTests] # userFunctionTests]
+  suites = [userFunctionTests]
 
   for suite in suites:
     unittest.TextTestRunner(verbosity=2).run(suite)

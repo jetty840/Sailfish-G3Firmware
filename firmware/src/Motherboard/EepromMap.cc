@@ -17,19 +17,156 @@
 
 #include "EepromMap.hh"
 #include "Eeprom.hh"
+#include "EepromDefaults.hh"
 #include <avr/eeprom.h>
 
 namespace eeprom {
 
+void setJettyFirmwareDefaults() {
+#ifdef ERASE_EEPROM_ON_EVERY_BOOT
+	return;
+#endif
+
+#ifdef EEPROM_DEFAULT_TOOL0_TEMP
+    eeprom_write_byte((uint8_t*)eeprom::TOOL0_TEMP,			EEPROM_DEFAULT_TOOL0_TEMP);
+#endif
+
+#ifdef EEPROM_DEFAULT_TOOL1_TEMP
+    eeprom_write_byte((uint8_t*)eeprom::TOOL1_TEMP,			EEPROM_DEFAULT_TOOL1_TEMP);
+#endif
+
+#ifdef EEPROM_DEFAULT_PLATFORM_TEMP
+    eeprom_write_byte((uint8_t*)eeprom::PLATFORM_TEMP,			EEPROM_DEFAULT_PLATFORM_TEMP);
+#endif
+
+#ifdef EEPROM_DEFAULT_EXTRUDE_DURATION
+    eeprom_write_byte((uint8_t*)eeprom::EXTRUDE_DURATION,		EEPROM_DEFAULT_EXTRUDE_DURATION);
+#endif
+
+#ifdef EEPROM_DEFAULT_EXTRUDE_MMS
+    eeprom_write_byte((uint8_t*)eeprom::EXTRUDE_MMS,			EEPROM_DEFAULT_EXTRUDE_MMS);
+#endif
+
+#ifdef EEPROM_DEFAULT_MOOD_LIGHT_SCRIPT
+    eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_SCRIPT,		EEPROM_DEFAULT_MOOD_LIGHT_SCRIPT);
+#endif
+
+#ifdef EEPROM_DEFAULT_MOOD_LIGHT_CUSTOM_RED
+    eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_CUSTOM_RED,		EEPROM_DEFAULT_MOOD_LIGHT_CUSTOM_RED);
+#endif
+
+#ifdef EEPROM_DEFAULT_MOOD_LIGHT_CUSTOM_GREEN
+    eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_CUSTOM_GREEN,	EEPROM_DEFAULT_MOOD_LIGHT_CUSTOM_GREEN);
+#endif
+
+#ifdef EEPROM_DEFAULT_MOOD_LIGHT_CUSTOM_BLUE
+    eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_CUSTOM_BLUE,		EEPROM_DEFAULT_MOOD_LIGHT_CUSTOM_BLUE);
+#endif
+
+    eeprom_write_byte((uint8_t*)eeprom::JOG_MODE_SETTINGS,		EEPROM_DEFAULT_JOG_MODE_SETTINGS);
+
+#ifdef EEPROM_DEFAULT_BUZZER_REPEATS
+    eeprom_write_byte((uint8_t*)eeprom::BUZZER_REPEATS,			EEPROM_DEFAULT_BUZZER_REPEATS);
+#endif
+
+    putEepromInt64(eeprom::STEPS_PER_MM_X,				EEPROM_DEFAULT_STEPS_PER_MM_X);
+    putEepromInt64(eeprom::STEPS_PER_MM_Y,				EEPROM_DEFAULT_STEPS_PER_MM_Y);
+    putEepromInt64(eeprom::STEPS_PER_MM_Z,				EEPROM_DEFAULT_STEPS_PER_MM_Z);
+    putEepromInt64(eeprom::STEPS_PER_MM_A,				EEPROM_DEFAULT_STEPS_PER_MM_A);
+    putEepromInt64(eeprom::STEPS_PER_MM_B,				EEPROM_DEFAULT_STEPS_PER_MM_B);
+
+#ifdef EEPROM_DEFAULT_ABP_COPIES
+    eeprom_write_byte((uint8_t*)eeprom::ABP_COPIES,			EEPROM_DEFAULT_ABP_COPIES);
+#endif
+
+#ifdef EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP
+    eeprom_write_byte((uint8_t*)eeprom::OVERRIDE_GCODE_TEMP,		EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP);
+#endif
+
+    eeprom_write_byte((uint8_t*)eeprom::ACCELERATION_ON,		EEPROM_DEFAULT_ACCELERATION_ON);
+    putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_X,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_X);
+    putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_Y,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_Y);
+    putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_Z,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_Z);
+    putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_A,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_A);
+    putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_B,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_B);
+    putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_X,			EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_X);
+    putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_Y,			EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_Y);
+    putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_Z,			EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_Z);
+    putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_A,			EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_A);
+    putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_B,			EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_B);
+    putEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_NORM,			EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_NORM);
+    putEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_RETRACT,			EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_RETRACT);
+    putEepromUInt32(eeprom::ACCEL_ADVANCE_K2,				EEPROM_DEFAULT_ACCEL_ADVANCE_K2);
+    putEepromUInt32(eeprom::ACCEL_ADVANCE_K,				EEPROM_DEFAULT_ACCEL_ADVANCE_K);
+
+#ifdef EEPROM_DEFAULT_LCD_TYPE
+    eeprom_write_byte((uint8_t*)eeprom::LCD_TYPE,			EEPROM_DEFAULT_LCD_TYPE);
+#endif
+
+#ifdef EEPROM_DEFAULT_ENDSTOPS_USED
+    eeprom_write_byte((uint8_t*)eeprom::ENDSTOPS_USED,			EEPROM_DEFAULT_ENDSTOPS_USED);
+#endif
+
+#ifdef EEPROM_DEFAULT_HOMING_FEED_RATE_X
+    putEepromUInt32(eeprom::HOMING_FEED_RATE_X,				EEPROM_DEFAULT_HOMING_FEED_RATE_X);
+#endif
+
+#ifdef EEPROM_DEFAULT_HOMING_FEED_RATE_Y
+    putEepromUInt32(eeprom::HOMING_FEED_RATE_Y,				EEPROM_DEFAULT_HOMING_FEED_RATE_Y);
+#endif
+
+#ifdef EEPROM_DEFAULT_HOMING_FEED_RATE_Z
+    putEepromUInt32(eeprom::HOMING_FEED_RATE_Z,				EEPROM_DEFAULT_HOMING_FEED_RATE_Z);
+#endif
+
+    putEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_A,			EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_A);
+    putEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_B,			EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_B);
+    eeprom_write_byte((uint8_t *)eeprom::ACCEL_SLOWDOWN_FLAG,		EEPROM_DEFAULT_ACCEL_SLOWDOWN_FLAG);
+
+    putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_X,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_X);
+    putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Y,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Y);
+    putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Z,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Z);
+    putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_A,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_A);
+    putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_B);
+
+    eeprom_write_byte((uint8_t*)eeprom::DITTO_PRINT_ENABLED,		EEPROM_DEFAULT_DITTO_PRINT_ENABLED);
+}
+
 // TODO: Shouldn't this just reset everything to an uninitialized state?
-void setDefaults() {
+void setDefaults(bool retainCounters) {
+#ifdef ERASE_EEPROM_ON_EVERY_BOOT
+	return;
+#endif
+
     // Initialize eeprom map
-    // Default: enstops inverted, Y axis inverted
-    uint8_t axis_invert = 1<<1; // Y axis = 1
-    uint8_t endstop_invert = 0b00011111; // all endstops inverted
-    eeprom_write_byte((uint8_t*)eeprom::AXIS_INVERSION,axis_invert);
-    eeprom_write_byte((uint8_t*)eeprom::ENDSTOP_INVERSION,endstop_invert);
-    eeprom_write_byte((uint8_t*)eeprom::MACHINE_NAME,0); // name is null
+    eeprom_write_byte((uint8_t*)eeprom::AXIS_INVERSION,		EEPROM_DEFAULT_AXIS_INVERSION);
+    eeprom_write_byte((uint8_t*)eeprom::ENDSTOP_INVERSION,	EEPROM_DEFAULT_ENDSTOP_INVERSION);
+    eeprom_write_byte((uint8_t*)eeprom::MACHINE_NAME,		EEPROM_DEFAULT_MACHINE_NAME);
+
+#if defined(EEPROM_DEFAULT_ESTOP_CONFIGURATION) && defined(HAS_ESTOP)
+    eeprom_write_byte((uint8_t*)eeprom::ESTOP_CONFIGURATION,	EEPROM_DEFAULT_ESTOP_CONFIGURATION);
+#endif
+
+    eeprom_write_byte((uint8_t*)eeprom::TOOL_COUNT,		EEPROM_DEFAULT_TOOL_COUNT);
+
+    setJettyFirmwareDefaults();
+
+    if (retainCounters)
+	    return;
+
+    //These settings aren't set in Jetty Firmware defaults, as we never want them to be accidently overwritten
+    putEepromInt64(eeprom::FILAMENT_LIFETIME_A,			EEPROM_DEFAULT_FILAMENT_LIFETIME);
+    putEepromInt64(eeprom::FILAMENT_LIFETIME_B,			EEPROM_DEFAULT_FILAMENT_LIFETIME);
+    putEepromInt64(eeprom::FILAMENT_TRIP_A,			EEPROM_DEFAULT_FILAMENT_TRIP);
+    putEepromInt64(eeprom::FILAMENT_TRIP_B,			EEPROM_DEFAULT_FILAMENT_TRIP);
+}
+
+void storeToolheadToleranceDefaults(){
+
+        // assume t0 to t1 distance is in specifications (0 steps tolerance error)
+        uint32_t offsets[3] = {0,0,0};
+        eeprom_write_block((uint8_t*)&(offsets[0]),(uint8_t*)(eeprom::TOOLHEAD_OFFSET_SETTINGS), 12 );
+
 }
 
 }

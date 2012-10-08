@@ -20,6 +20,7 @@
 
 #include "Packet.hh"
 #include "SDCard.hh"
+#include "CircularBuffer.hh"
 
 // TODO: Make this a class.
 /// Functions in the host namespace deal with communications to the host
@@ -27,15 +28,25 @@
 /// also responsible for handling prints from SD card.
 namespace host {
 
-const int MAX_MACHINE_NAME_LEN = 32;
+const int MAX_MACHINE_NAME_LEN = 16;
 const int MAX_FILE_LEN = MAX_PACKET_PAYLOAD-1;
 
 /// The host can be in any of these four states.
 enum HostState {
-        HOST_STATE_READY            = 0,
-        HOST_STATE_BUILDING         = 1,
-        HOST_STATE_BUILDING_FROM_SD = 2,
-        HOST_STATE_ERROR            = 3
+        HOST_STATE_READY		= 0,
+        HOST_STATE_BUILDING		= 1,
+        HOST_STATE_BUILDING_FROM_SD	= 2,
+        HOST_STATE_ERROR		= 3,
+        HOST_STATE_CANCEL_BUILD		= 4,
+};
+
+enum BuildState {
+	BUILD_NONE = 0,
+	BUILD_RUNNING = 1,
+	BUILD_FINISHED_NORMALLY = 2,
+	BUILD_PAUSED = 3,
+	BUILD_CANCELED = 4,
+	BUILD_CANCELLING = 5,
 };
 
 /// Run the host slice. This function handles incoming packets and host resets.
@@ -55,13 +66,46 @@ char* getBuildName();
 /// \return Current host state.
 HostState getHostState();
 
+/// Returns the current build state
+BuildState getBuildState();
+
 /// Start a build from SD card. The build name should be set by overwriting
 /// the value of buildName, provided by #getBuildName().
 /// \return True if build started successfully.
 sdcard::SdErrorCode startBuildFromSD();
 
-/// Stop the current build
+/// Stop the current build immediately
+void stopBuildNow();
+
+/// Stop the current build, does a pause then stops the print
 void stopBuild();
+
+/// set build state and build name
+void handleBuildStartNotification(CircularBuffer& buf);
+
+/// set build state
+void handleBuildStopNotification(uint8_t stopFlags);
+
+/// return time since start of build in microseconds
+void getPrintTime(uint8_t &hours, uint8_t &minutes);
+
+/// alert host that build is paused / un paused
+void pauseBuild(bool pause);
+
+/// check if print time has elapsed and update hour counter
+void managePrintTime();
+
+/// start print timer and update local variables
+void startPrintTime();
+
+/// stop print timer and  update local variables
+void stopPrintTime();
+
+/// Reset the current build (used for ATX Power reset)
+void resetBuild();
+
+/// Returns true if the build is completed
+bool isBuildComplete();
 
 }
 

@@ -2,7 +2,6 @@
 #define PIN_HH
 
 #include "AvrPort.hh"
-#include "Pin.hh"
 
 /// \ingroup HardwareLibraries
 class Pin {

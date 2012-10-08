@@ -31,6 +31,7 @@ unsupported_functions = [
 
 # Tool Action Commands
 
+    'toolhead_abort'                                                       # 024
 ]
 
 

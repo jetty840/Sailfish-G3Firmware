@@ -40,3 +40,24 @@ if platform != 'rrmbv12':
     constants['buffer_size'] = 512
 else:
     constants['buffer_size'] = 256
+
+
+"""
+Endstop max/min info
+"""
+constants['endstops_max']  = ['z']
+constants['max_test_bits'] = 0x20  # bits lit when at max end stops (zmax)
+constants['max_test_mask'] = 0x30  # bits to check when at max end stops (zmax | zmin)
+
+constants['endstops_min']  = ['x', 'y']
+constants['min_test_bits'] = 0x05  # bits lit when at min end stops (ymin | zmin)
+constants['min_test_mask'] = 0x0F  # bits to check when at min end stops (ymax|ymin|xmax|xmin)
+
+"""
+New point to move to.  Need a decent distance, otherwise the accelerated planner's
+minimum speeds will cut in
+"""
+constants['new_ext_point'] = [500, 500, -10, 0, 0]
+
+# 1 for dual extruder, 0 for single extruder
+constants['dual_extruder'] = 0

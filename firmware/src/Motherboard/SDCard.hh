@@ -68,6 +68,10 @@ namespace sdcard {
     /// \param[in] packet Packet to write to file.
     void capturePacket(const Packet& packet);
 
+#ifdef EEPROM_MENU_ENABLE
+    /// Writes b to the open file
+    void writeByte(uint8_t b);
+#endif
 
     /// Complete the capture, and flush buffers.  Return the number of bytes
     /// written to the card.
@@ -87,6 +91,9 @@ namespace sdcard {
     SdErrorCode startPlayback(char* filename);
 
 
+    /// Return the percentage of the file printed.
+    float getPercentPlayed();
+
     /// See if there is more data available in the playback file.
     /// \return True if there is more data in the file
     bool playbackHasNext();
@@ -95,6 +102,9 @@ namespace sdcard {
     /// Return the next byte from the currently open file.
     /// \return The next byre in the file.
     uint8_t playbackNext();
+
+    /// Rewinds a play back to the beginning
+    void playbackRestart();
 
 
     /// Rewind the given number of bytes in the input stream.
@@ -109,6 +119,12 @@ namespace sdcard {
     /// Check whether a job is being played back from the SD card
     /// \return True if we're playing back buffered commands from a file, false otherwise
     bool isPlaying();
+
+    /// Check if there was an error with the last read and we should retry
+    uint32_t getFileSize();
+
+    /// Return true if file name exists on the SDCard
+    bool fileExists(const char* name);
 
 } // namespace sdcard
 

@@ -49,15 +49,21 @@ void Thermocouple::init() {
 
 Thermocouple::SensorState Thermocouple::update() {
 	// TODO: Check timing against datasheet.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	cs_pin.setValue(false);
 	nop();
 	sck_pin.setValue(false);
 	nop();
+#pragma GCC diagnostic pop
 
 	int raw = 0;
 	for (int i = 0; i < 16; i++) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		sck_pin.setValue(true);
 		nop();
+#pragma GCC diagnostic pop
 		if (i >= 1 && i < 11) { // data bit... skip LSBs
 			raw = raw << 1;
 			if (so_pin.getValue()) { raw = raw | 0x01; }
@@ -68,13 +74,19 @@ Thermocouple::SensorState Thermocouple::update() {
 				return SS_ERROR_UNPLUGGED;
 			}
 		}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		sck_pin.setValue(false);
 		nop();
+#pragma GCC diagnostic pop
 	}
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	cs_pin.setValue(true);
 	nop();
 	sck_pin.setValue(false);
+#pragma GCC diagnostic pop
 
 	current_temp = raw;
 	return SS_OK;

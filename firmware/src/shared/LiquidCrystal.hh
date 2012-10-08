@@ -45,6 +45,15 @@
 #define LCD_5x10DOTS 0x04
 #define LCD_5x8DOTS 0x00
 
+// Custom chars
+#define LCD_CUSTOM_CHAR_DEGREE			1
+#define LCD_CUSTOM_CHAR_EXTRUDER_NORMAL		2
+#define LCD_CUSTOM_CHAR_EXTRUDER_HEATING	3
+#define LCD_CUSTOM_CHAR_PLATFORM_NORMAL		4
+#define LCD_CUSTOM_CHAR_PLATFORM_HEATING	5
+#define LCD_CUSTOM_CHAR_ARROW			6
+
+
 class LiquidCrystal {
 public:
   LiquidCrystal(Pin rs, Pin enable,
@@ -61,7 +70,9 @@ public:
   void init(uint8_t fourbitmode, Pin rs, Pin rw, Pin enable,
 	    Pin d0, Pin d1, Pin d2, Pin d3,
 	    Pin d4, Pin d5, Pin d6, Pin d7);
-    
+
+  void reloadDisplayType(void);
+
   void begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
 
   void clear();
@@ -87,11 +98,21 @@ public:
   /** Added by MakerBot Industries to support storing strings in flash **/
   void writeInt(uint16_t value, uint8_t digits);
 
+  void writeFloat(float value, uint8_t decimalPlaces);
+
+  void writeFixedPoint(int64_t value, uint8_t padding, uint8_t precision);
+
+  char *writeLine(char* message);
+
   void writeString(char message[]);
 
   void writeFromPgmspace(const prog_uchar message[]);
 
   void command(uint8_t);
+
+  uint8_t getDisplayWidth();
+  uint8_t getDisplayHeight();
+  void	  nextLcdType();
 
 private:
   void send(uint8_t, bool);
@@ -111,6 +132,9 @@ private:
   uint8_t _initialized;
 
   uint8_t _numlines,_currline;
+
+  uint8_t _displayWidth;
+  uint16_t _clearDelay;
 };
 
 #endif // LIQUID_CRYSTAL_HH

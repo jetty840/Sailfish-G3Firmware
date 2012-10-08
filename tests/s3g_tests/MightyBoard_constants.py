@@ -33,3 +33,23 @@ constants['target_temp'] = 100
 
 # Size of the command buffer for reading s3g packets
 constants['buffer_size'] = 512
+
+
+"""
+Endstop max/min info
+"""
+constants['endstops_max']  = ['x', 'y']
+constants['max_test_bits'] = 0x0A  # bits lit when at max end stops (ymax | xmax)
+constants['max_test_mask'] = 0x0F  # bits to check when at max end stops (ymax|ymin|xmax|xmin)
+
+constants['endstops_min']  = ['z']
+constants['min_test_bits'] = 0x10  # bits lit when at min end stops (zmin)
+constants['min_test_mask'] = 0x30  # bits to check when at min end stops (zmax | zmin)
+
+"""
+New point to move to
+"""
+constants['new_ext_point'] = [-50, -50, 100, 0, 0]
+
+# 1 for dual extruder, 0 for single extruder
+constants['dual_extruder'] = 1

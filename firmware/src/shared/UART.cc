@@ -37,7 +37,7 @@ volatile uint8_t loopback_bytes = 0;
 
 // We support three platforms: Atmega168 (1 UART), Atmega644, and Atmega1280/2560
 #if defined (__AVR_ATmega168__)     \
-    || defined (__AVR_ATmega328P__)  \
+    || defined (__AVR_ATmega328__)  \
     || defined (__AVR_ATmega644P__) \
     || defined (__AVR_ATmega1280__) \
     || defined (__AVR_ATmega2560__)
@@ -45,7 +45,7 @@ volatile uint8_t loopback_bytes = 0;
     #error UART not implemented on this processor type!
 #endif
 
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328P__)
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328__)
 
     #define UBRR_VALUE 25
     #define UCSR0A_VALUE 0
@@ -61,7 +61,7 @@ volatile uint8_t loopback_bytes = 0;
         UCSR0C = _BV(UCSZ01)|_BV(UCSZ00); \
     }
 
-#elif defined (__AVR_ATmega644P__)
+#elif defined (__AVR_ATmega644P__) || defined (OVERRIDE_UART_TO_38400_BAUD)
 
     #define UBRR_VALUE 25
     #define UBRRA_VALUE 0
@@ -110,7 +110,7 @@ UCSR##uart_##B &= ~(_BV(RXCIE##uart_) | _BV(TXCIE##uart_)); \
 
 // TODO: Move these definitions to the board files, where they belong.
 #if defined (__AVR_ATmega168__) \
-    || defined (__AVR_ATmega328P__)
+    || defined (__AVR_ATmega328__)
 
     UART UART::hostUART(0, RS485);
 
@@ -150,7 +150,7 @@ void UART::send_byte(char data) {
 }
 
 // Transition to a non-transmitting state. This is only used for RS485 mode.
-inline void listen() {
+void listen() {
 //        TX_ENABLE_PIN.setValue(false);
     TX_ENABLE_PIN.setValue(false);
 }
@@ -174,7 +174,10 @@ void UART::beginSend() {
         if (!enabled_) { return; }
 
         if (mode_ == RS485) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
                 speak();
+#pragma GCC diagnostic pop
                 _delay_us(10);
                 loopback_bytes = 1;
         }
@@ -215,7 +218,7 @@ void UART::reset() {
         }
 }
 
-#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328P__)
+#if defined (__AVR_ATmega168__) || defined (__AVR_ATmega328__)
 
     // Send and receive interrupts
     ISR(USART_RX_vect)
@@ -233,7 +236,10 @@ void UART::reset() {
                     if (UART::getHostUART().in.isFinished()
                             && (UART::getHostUART().in.read8(0)
                             == ExtruderBoard::getBoard().getSlaveID())) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
                         speak();
+#pragma GCC diagnostic pop
                     }
     #endif
             }

@@ -87,12 +87,15 @@ void ExtruderBoard::reset(uint8_t resetFlags) {
 
 	// Set the output mode for the mosfets.  All three should default
 	// off.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	CHANNEL_A.setValue(false);
 	CHANNEL_A.setDirection(true);
 	CHANNEL_B.setValue(false);
 	CHANNEL_B.setDirection(true);
 	CHANNEL_C.setValue(false);
 	CHANNEL_C.setDirection(true);
+#pragma GCC diagnostic pop
 
 	// Timer 0:
 	//  Mode: Phase-correct PWM (WGM2:0 = 001), cycle freq= 976 Hz
@@ -226,41 +229,62 @@ void ExtruderBoard::doInterrupt() {
 		servo_counter = 0;
 
 		if (servoA.isEnabled()) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			servoA.pin.setValue(true);
+#pragma GCC diagnostic pop
 		}
 		if (servoB.isEnabled()) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			servoB.pin.setValue(true);
+#pragma GCC diagnostic pop
 		}
 	}
 
 	if ((servoA.isEnabled()) && (servo_counter > servoA.getCounts())) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		servoA.pin.setValue(false);
+#pragma GCC diagnostic pop
 	}
 	if ((servoB.isEnabled()) && (servo_counter > servoB.getCounts())) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		servoB.pin.setValue(false);
+#pragma GCC diagnostic pop
 	}
 }
 
 //runs the AutoBuildPlatform (connected to 'Extra' screw terms on ECv3.x )
 void ExtruderBoard::setAutomatedBuildPlatformRunning(bool state)
 {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	CHANNEL_A.setValue(state);
+#pragma GCC diagnostic pop
 }
 
 //runs the Extruder Cooling Fan (connected to 'A1/B1' screw term on ECv3.x)
 void ExtruderBoard::setFanRunning(bool state) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	//CHANNEL_A.setValue(on);
 	MOTOR_DIR_PIN.setDirection(true);
 	MOTOR_DIR_PIN.setValue(true);
 	MOTOR_ENABLE_PIN.setDirection(true);
 	MOTOR_ENABLE_PIN.setValue(state);
+#pragma GCC diagnostic pop
 }
 
 void ExtruderBoard::setValve(bool on) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		setUsingPlatform(false);
 		pwmBOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		CHANNEL_B.setValue(on);
+#pragma GCC diagnostic pop
 	}
 }
 
@@ -270,7 +294,10 @@ void ExtruderBoard::indicateError(int errorCode) {
 }
 
 void ExtruderBoard::lightIndicatorLED() {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
     MOTOR_DIR_PIN.setValue(true);
+#pragma GCC diagnostic pop
 }
 
 void ExtruderBoard::setUsingPlatform(bool is_using) {
@@ -288,7 +315,10 @@ void ExtruderHeatingElement::setHeatingElement(uint8_t value) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		if (value == 0 || value == 255) {
 			pwmCOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			CHANNEL_C.setValue(value == 255);
+#pragma GCC diagnostic pop
 		} else {
 			OCR0A = value;
 			pwmCOn(true);
@@ -302,6 +332,9 @@ void BuildPlatformHeatingElement::setHeatingElement(uint8_t value) {
 	// It works relatively well.
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		pwmBOn(false);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		CHANNEL_B.setValue(value != 0);
+#pragma GCC diagnostic pop
 	}
 }

@@ -31,7 +31,10 @@ int16_t last_extruder_speed;
 void initExtruderMotor() {
 	last_extruder_speed = 0;
 	MOTOR_ENABLE_PIN.setDirection(true);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	MOTOR_ENABLE_PIN.setValue(false);
+#pragma GCC diagnostic pop
 	MOTOR_DIR_PIN.setDirection(true);
 }
 
@@ -48,12 +51,21 @@ void setExtruderMotor(int16_t speed) {
 	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
 		if (speed == 0 || speed == 255) {
 			TCCR0A &= 0b11001111;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			MOTOR_ENABLE_PIN.setValue(speed==255);
+#pragma GCC diagnostic pop
 		} else {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			MOTOR_ENABLE_PIN.setValue(true);
+#pragma GCC diagnostic pop
 			TCCR0A |= 0b00100000;
 		}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		MOTOR_DIR_PIN.setValue(!backwards);
+#pragma GCC diagnostic pop
 		OCR0B = speed;
 	}
 }

@@ -1,6 +1,10 @@
+
 #include "Interface.hh"
 #include "InterfaceBoard.hh"
 
+
+// TODO: Make this a proper module.
+#if defined HAS_INTERFACE_BOARD
 
 namespace interface {
 
@@ -48,6 +52,10 @@ void popScreen() {
         board->popScreen();
 }
 
+bool isButtonPressed(ButtonArray::ButtonName button) {
+	return board->isButtonPressed(button);
+}
+
 void doInterrupt() {
         board->doInterrupt();
 }
@@ -60,5 +68,11 @@ void doUpdate() {
         board->doUpdate();
 }
 
+MoodLightController moodLightController() {
+	return board->moodLight;
+}
+
 
 }
+
+#endif

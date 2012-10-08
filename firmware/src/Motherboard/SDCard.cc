@@ -23,6 +23,7 @@
 #include "lib_sd/fat.h"
 #include "lib_sd/sd_raw.h"
 #include "lib_sd/partition.h"
+#include "Motherboard.hh"
 
 #ifndef USE_DYNAMIC_MEMORY
 #error Dynamic memory should be explicitly disabled in the G3 mobo.
@@ -69,6 +70,10 @@ bool openFilesys()
   /* open file system */
   fs = fat_open(partition);
   return fs != 0;
+}
+
+uint32_t getFileSize(){
+        return fat_get_file_size(file);
 }
 
 bool openRoot()
@@ -127,6 +132,9 @@ SdErrorCode directoryNextEntry(char* buffer, uint8_t bufsize) {
 	uint8_t tries = 5;
 	while (tries) {
 		if (fat_read_dir(dd, &entry)) {
+			//Ignore non-file, system or hidden files
+			if ( entry.attributes & (FAT_ATTRIB_HIDDEN | FAT_ATTRIB_SYSTEM | FAT_ATTRIB_VOLUME | FAT_ATTRIB_DIR ))
+				continue;
 			int i;
 			for (i = 0; (i < bufsize-1) && entry.long_name[i] != 0; i++) {
 				buffer[i] = entry.long_name[i];
@@ -189,6 +197,8 @@ bool createFile(char *name)
 
 bool capturing = false;
 bool playing = false;
+int32_t	 fileSizeBytes = 0L;
+int32_t  playedBytes = 0L;
 uint32_t capturedBytes = 0L;
 
 bool isPlaying() {
@@ -207,6 +217,7 @@ SdErrorCode startCapture(char* filename)
     return result;
   }
   capturedBytes = 0L;
+  playedBytes = 0L;
   file = 0;
   // Always operate in truncation mode.
   deleteFile(filename);
@@ -234,6 +245,14 @@ void capturePacket(const Packet& packet)
 	capturedBytes += packet.getLength();
 }
 
+#ifdef EEPROM_MENU_ENABLE
+
+/// Writes b to the open file
+void writeByte(uint8_t b) {
+	fat_write_file(file, (uint8_t *)&b, (uintptr_t)1);
+}
+
+#endif
 
 uint32_t finishCapture()
 {
@@ -255,6 +274,7 @@ bool has_more;
 void fetchNextByte() {
   int16_t read = fat_read_file(file, &next_byte, 1);
   has_more = read > 0;
+  playedBytes++;
 }
 
 bool playbackHasNext() {
@@ -275,13 +295,44 @@ SdErrorCode startPlayback(char* filename) {
     return result;
   }
   capturedBytes = 0L;
+
+  playedBytes = 0L;
+
   file = 0;
   if (!openFile(filename, &file) || file == 0) {
     return SD_ERR_FILE_NOT_FOUND;
   }
   playing = true;
+
+  int32_t off = 0L;
+  fat_seek_file(file, &off, FAT_SEEK_END);
+  fileSizeBytes = off;
+  off = 0L;
+  fat_seek_file(file, &off, FAT_SEEK_SET);
+
+  Motherboard::getBoard().resetCurrentSeconds();
+
   fetchNextByte();
   return SD_SUCCESS;
+}
+
+float getPercentPlayed() {
+  float percentPlayed = (float)(playedBytes * 100) / (float)fileSizeBytes;
+
+  if      ( percentPlayed > 100.0 )	return 100.0;
+  else if ( percentPlayed < 0.0 )	return 0.0;
+  else					return percentPlayed;
+}
+
+void playbackRestart() {
+  capturedBytes = 0L;
+  playedBytes = 0L;
+  playing = true;
+
+  int32_t offset = 0;	
+  fat_seek_file(file, &offset, FAT_SEEK_SET);
+
+  fetchNextByte();
 }
 
 void playbackRewind(uint8_t bytes) {
@@ -316,6 +367,16 @@ void reset() {
 		partition_close(partition);
 		partition = 0;
 	}
+}
+
+/// Return true if file name exists on the SDCard
+bool fileExists(const char* name)
+{
+  struct fat_dir_entry_struct fileEntry;
+	
+  directoryReset();
+
+  return findFileInDir(name, &fileEntry);
 }
 
 } // namespace sdcard

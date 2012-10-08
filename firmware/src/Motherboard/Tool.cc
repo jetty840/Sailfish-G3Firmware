@@ -135,7 +135,7 @@ void setToolIndicatorLED() {
             }
     }
     OutPacket& out = getOutPacket();
-    InPacket& in = getInPacket();
+    getInPacket();	//InPacket& in = getInPacket();
     out.reset();
     out.append8(0);
     out.append8(SLAVE_CMD_LIGHT_INDICATOR_LED);
@@ -163,7 +163,7 @@ bool reset() {
 		}
 	}
 	OutPacket& out = getOutPacket();
-	InPacket& in = getInPacket();
+	getInPacket();	//InPacket& in = getInPacket();
 	out.reset();
 	out.append8(SLAVE_ID_BROADCAST); // Reset all tools
 	out.append8(SLAVE_CMD_INIT);

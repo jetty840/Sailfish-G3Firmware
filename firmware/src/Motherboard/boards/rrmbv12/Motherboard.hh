@@ -20,7 +20,6 @@
 
 
 #include "UART.hh"
-#include "StepperInterface.hh"
 #include "Types.hh"
 #include "PSU.hh"
 #include "Configuration.hh"
@@ -30,10 +29,6 @@
 /// \ingroup MBv12
 class Motherboard {
 private:
-	const static int STEPPERS = STEPPER_COUNT;
-
-	StepperInterface stepper[STEPPERS];
-
 	PSU psu;
 
 	/// Microseconds since board initialization
@@ -42,28 +37,29 @@ private:
         /// Private constructor; use the singleton
         Motherboard(const Pin& psu_pin);
 
+        void initClocks();
+
 	static Motherboard motherboard;
 public:
+        //2 types of stepper timers depending on if we're using accelerated or not
+        void setupFixedStepperTimer();
+        void setupAccelStepperTimer();
+
+	//Enable / Disable Timer Interrupts
+	void enableTimerInterrupts(bool enable);
+
 	/// Reset the motherboard to its initial state.
 	/// This only resets the board, and does not send a reset
 	/// to any attached toolheads.
-	void reset();
+	void reset(bool hard_reset);
 
 	void runMotherboardSlice();
-
-	/// Count the number of steppers available on this board.
-	const int getStepperCount() const { return STEPPERS; }
-
-        /// Get the stepper interface for the nth stepper.
-	StepperInterface& getStepperInterface(int n)
-	{
-		return stepper[n];
-	}
 
 	/// Get the number of microseconds that have passed since
 	/// the board was initialized.  This value will wrap after
 	/// 2**16 microseconds; callers should compensate for this.
 	micros_t getCurrentMicros();
+	void resetCurrentSeconds();
 
 	/// Write an error code to the debug pin.
 	void indicateError(int errorCode);
@@ -74,8 +70,12 @@ public:
 	/// Get the motherboard instance.
 	static Motherboard& getBoard() { return motherboard; }
 
-	/// Perform the timer interrupt routine.
-	void doInterrupt();
+        /// Perform the stepper timer interrupt routine.
+        void doStepperInterrupt();
+
+        void doAdvanceInterrupt();
+	
+	void UpdateMicros();
 };
 
 #endif // BOARDS_RRMBV12_MOTHERBOARD_HH_

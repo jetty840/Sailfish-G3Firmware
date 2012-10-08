@@ -58,6 +58,8 @@ public:
 
 private:
         MotorController motor_controller;
+        /// Microseconds since board initialization
+        volatile micros_t micros;
         Thermocouple extruder_thermocouple;
         Thermistor platform_thermistor;
         ExtruderHeatingElement extruder_element;
@@ -66,8 +68,6 @@ private:
         Heater platform_heater;
         bool using_platform;
 
-        /// Microseconds since board initialization
-        volatile micros_t micros;
         ExtruderBoard();
 
         uint8_t resetFlags;

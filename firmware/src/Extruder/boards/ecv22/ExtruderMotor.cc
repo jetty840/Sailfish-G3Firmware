@@ -54,12 +54,15 @@ volatile int32_t ext_stepper_counter = 0;
 // TIMER0 is used to PWM motor driver A enable on OC0B.
 void initExtruderMotor() {
 	last_extruder_speed = 0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	HB1_ENABLE_PIN.setDirection(true);
 	HB1_ENABLE_PIN.setValue(false);
 	HB1_DIR_PIN.setDirection(true);
 	HB2_ENABLE_PIN.setDirection(true);
 	HB2_ENABLE_PIN.setValue(false);
 	HB2_DIR_PIN.setDirection(true);
+#pragma GCC diagnostic pop
 	stepper_motor_mode = false;
 	stepper_accumulator = 0;
 	stepper_phase = 1;
@@ -82,6 +85,8 @@ void setStepperMode(bool mode, bool external/* = false*/) {
 		TIMSK0 = _BV(TOIE0);
 	} else if (external_stepper_motor_mode) {
 		// Setup pins
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		external_enable_pin.setDirection(true);
 		external_enable_pin.setValue(true); // true = disabled
 
@@ -90,6 +95,7 @@ void setStepperMode(bool mode, bool external/* = false*/) {
 
 		external_step_pin.setDirection(true);
 		external_step_pin.setValue(false);
+#pragma GCC diagnostic pop
 
 		// CTC Mode
 		TCCR0A = _BV(WGM01);
@@ -116,12 +122,21 @@ void setExtruderMotor(int16_t speed) {
 			TIMSK0 = 0;
 			if (speed == 0) {
 				TCCR0A = _BV(WGM01) | _BV(WGM00);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				motor_enable_pin.setValue(false);
+#pragma GCC diagnostic pop
 			} else if (speed == 255) {
 				TCCR0A = _BV(WGM01) | _BV(WGM00);
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				motor_enable_pin.setValue(true);
+#pragma GCC diagnostic pop
 			} else {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				motor_enable_pin.setValue(true);
+#pragma GCC diagnostic pop
 				if (swap_motor) {
 					TCCR0A = _BV(COM0A1) | _BV(WGM01) | _BV(WGM00);
 				} else {
@@ -131,7 +146,10 @@ void setExtruderMotor(int16_t speed) {
 			bool backwards = speed < 0;
 			if (backwards) { speed = -speed; }
 			if (speed > 255) { speed = 255; }
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			motor_dir_pin.setValue(!backwards);
+#pragma GCC diagnostic pop
 			if (swap_motor) {
 				OCR0A = speed;
 			} else {
@@ -157,14 +175,20 @@ void setExtruderMotorRPM(uint32_t micros, bool direction) {
       // This is now done in setExtruderMotorOn()
       // TIMSK0  = _BV(OCIE1A);
 
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			external_dir_pin.setValue(direction); // true = forward
 			external_enable_pin.setValue(false); // true = disabled
 			external_step_pin.setValue(false);
+#pragma GCC diagnostic pop
 			// DEBUG_LED.setValue(true);
 		} else {
 			// Timer/Counter 0 Output Compare A Match Interrupt Off
 			TIMSK0  = 0;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			external_enable_pin.setValue(true); // true = disabled
+#pragma GCC diagnostic pop
 			ext_stepper_ticks_per_step = 0;
 			// DEBUG_LED.setValue(false);
 		}
@@ -200,10 +224,13 @@ volatile uint8_t stepper_pwm = 0;
 inline void setStep() {
 	const bool enable = (last_extruder_speed != 0) && (((stepper_pwm++) & 0x01) == 0);
 	const uint8_t mask = 1 << stepper_phase;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	HB1_DIR_PIN.setValue((hb1_dir_pattern & mask) != 0);
 	HB1_ENABLE_PIN.setValue( enable && ((hb1_en_pattern & mask) != 0) );
 	HB2_DIR_PIN.setValue((hb2_dir_pattern & mask) != 0);
 	HB2_ENABLE_PIN.setValue( enable && ((hb2_en_pattern & mask) != 0) );
+#pragma GCC diagnostic pop
 }
 
 ISR(TIMER0_OVF_vect) {
@@ -215,7 +242,10 @@ ISR(TIMER0_OVF_vect) {
 		stepper_accumulator += acc_rollover;
 		stepper_phase = (stepper_phase - 2) & 0x07;
 	}
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	setStep();
+#pragma GCC diagnostic pop
 }
 
 // ## External Stepper Driving using Timer 0 Compare A ##
@@ -223,10 +253,13 @@ ISR(TIMER0_OVF_vect) {
 ISR(TIMER0_COMPA_vect) {
 	if (ext_stepper_ticks_per_step > 0) {
 		++ext_stepper_counter;
-		if (ext_stepper_counter >= ext_stepper_ticks_per_step) {
+		if (ext_stepper_counter >= (int32_t)ext_stepper_ticks_per_step) {
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			external_step_pin.setValue(true);
 			ext_stepper_counter -= ext_stepper_ticks_per_step;
 			external_step_pin.setValue(false);
+#pragma GCC diagnostic pop
 		}
 	}
 }

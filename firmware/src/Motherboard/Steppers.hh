@@ -18,34 +18,71 @@
 #ifndef STEPPERS_HH_
 #define STEPPERS_HH_
 
+#ifndef SIMULATOR
 #include "Configuration.hh"
-#include <stdint.h>
+#include "Types.hh"
+#include <stdlib.h>
 #include "Pin.hh"
 #include "Command.hh"
 #include "Point.hh"
-
-#include "Types.hh"
+#include "StepperAccel.hh"
 #include "Motherboard.hh"
+#else
+#include "Configuration.hh"
+#include "Types.hh"
+#include <stdlib.h>
+#include "Command.hh"
+#include "Point.hh"
+#include "StepperAccel.hh"
+#endif
+
+#ifdef DEBUG_ONSCREEN
+	extern volatile float debug_onscreen1, debug_onscreen2;
+#endif
 
 namespace steppers {
 
-    /// Initialize the stepper subsystem.
-    /// \param[in] motherboard Motherboard to attach the steppers to.
-    void init(Motherboard& motherboard);
+    extern bool acceleration;
+    extern FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
 
     /// Check if the stepper subsystem is running
     /// \return True if the stepper subsystem is running or paused. False
     ///         otherwise.
     bool isRunning();
 
+    /// Returns true if the stepper subsystem is homing
+    bool isHoming();
+
+    /// re-initialize stepper pins - disable all axes
+    void reset();
+
     /// Abort the current motion and set the stepper subsystem to
+    /// Initialize the stepper subsystem.
+    /// \param[in] motherboard Motherboard to attach the steppers to.
+    void init();
+
     /// the not-running state.
     void abort();
 
-    /// Enable/disable the given axis.
-    /// \param[in] index Index of the axis to enable or disable
-    /// \param[in] enable If true, enable the axis. If false, disable.
-    void enableAxis(uint8_t index, bool enable);
+    /// Reset the current system position to the given point
+    /// \param[in] position New system position
+    void definePosition(const Point& position);
+
+    /// Get the current system position
+    /// \return The current machine position.
+    const Point getPlannerPosition();
+
+    /// Get current position
+    /// When accelerated, this is the position right now
+    const Point getStepperPosition();
+
+    /// Control whether the Z axis should stay enabled during the entire
+    /// build (defaults to off). This is useful for machines that have
+    /// a z-axis that might slip if the motor does not stay enagaged.
+    /// \param[in] holdZ If true, the Z axis stepper will stay enabled
+    ///                  through the entire build. If false, it will be
+    ///                  disabled when not moving.
+    void setHoldZ(bool holdZ);
 
     /// Instruct the stepper subsystem to move the machine to the
     /// given position.
@@ -56,13 +93,22 @@ namespace steppers {
     /// Instruct the stepper subsystem to move the machine to the
     /// given position.
     /// \param[in] target Position to move to
-    /// \param[in] ms Duration of the move, in milliseconds
+    /// \param[in] us Duration of the move, in microseconds
     /// \param[in] relative Bitfield specifying whether each axis should
     ///                     interpret the new position as absolute or
     ///                     relative.
-    void setTargetNew(const Point& target,
-                      int32_t ms,
-                      uint8_t relative =0);
+    void setTargetNew(const Point& target, int32_t us, uint8_t relative);
+
+    /// Instruct the stepper subsystem to move the machine to the
+    /// given position.
+    /// \param[in] target Position to move to
+    /// \param[in] dda_rate dda steps per second for the master axis
+    /// \param[in] relative Bitfield specifying whether each axis should
+    ///                     interpret the new position as absolute or
+    ///                     relative.
+    /// \param[in] distance of the move in mm's
+    /// \param[in] feedrate of the move in mm's per second multiplied by 64
+    void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, float distance, int16_t feedrateMult64);
 
     /// Home one or more axes
     /// \param[in] maximums If true, home in the positive direction
@@ -73,25 +119,41 @@ namespace steppers {
                      const uint8_t axes_enabled,
                      const uint32_t us_per_step);
 
-    /// Reset the current system position to the given point
-    /// \param[in] position New system position
-    void definePosition(const Point& position);
 
-    /// Handle interrupt.
-    /// \return True if the stepper subsystem is currently in motion.
-    bool doInterrupt();
+    /// Enable/disable the given axis.
+    /// \param[in] index Index of the axis to enable or disable
+    /// \param[in] enable If true, enable the axis. If false, disable.
+    void enableAxis(uint8_t index, bool enable);
 
-    /// Get the current system position
-    /// \return The current machine position.
-    const Point getPosition();
+    /// Returns a bit mask for all axes enabled
+    uint8_t allAxesEnabled(void);
+    
+    /// Toggle segment acceleration on or off
+    /// Note this is also off if acceleration variable is not set
+    void setSegmentAccelState(bool state);
 
-    /// Control whether the Z axis should stay enabled during the entire
-    /// build (defaults to off). This is useful for machines that have
-    /// a z-axis that might slip if the motor does not stay enagaged.
-    /// \param[in] holdZ If true, the Z axis stepper will stay enabled
-    ///                  through the entire build. If false, it will be
-    ///                  disabled when not moving.
-    void setHoldZ(bool holdZ);
+    /// Change the extruder (tool) currently being used.
+    /// Extruders have an offset from the center of the platform, and this is used to switch 
+    /// offsets when the tool changes.
+    /// \param[in] index of the tool
+    void changeToolIndex(uint8_t tool);
+
+    /// return a bit field that contains the state of the endstops
+    uint8_t getEndstopStatus();
+
+    /// Enables and disables prime / deprime'ing.  Typically used
+    /// when loading / unload filament of if deprime / prime is being handled in
+    /// Skeinforge
+    void deprimeEnable(bool enable);
+
+    /// Run the stepper slice
+    void runSteppersSlice();
+
+    /// Handle the interrupt for the steppers (X/Y/Z/A/B axis)
+    void doStepperInterrupt();
+
+    /// Handle the interrupt to extrude material
+    void doExtruderInterrupt();
 };
 
 #endif // STEPPERS_HH_

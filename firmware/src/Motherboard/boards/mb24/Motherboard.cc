@@ -28,6 +28,47 @@
 #include "Commands.hh"
 #include "Eeprom.hh"
 #include "EepromMap.hh"
+#include "EepromDefaults.hh"
+#include <avr/eeprom.h>
+#include "StepperAccelPlanner.hh"
+
+//Warnings to remind us that certain things should be switched off for release
+
+#ifdef ERASE_EEPROM_ON_EVERY_BOOT
+	#warning "Release: ERASE_EEPROM_ON_EVERY_BOOT enabled in Configuration.hh"
+#endif
+
+#ifdef EEPROM_MENU_ENABLE
+	#warning "Release: EEPROM_MENU_ENABLE enabled in Configuration.hh"
+#endif
+
+#ifdef DEBUG_VALUE
+	#warning "Release: DEBUG_VALUE enabled in Configuration.hh"
+#endif
+
+#if defined(HONOR_DEBUG_PACKETS) && (HONOR_DEBUG_PACKETS == 1)
+	#warning "Release: HONOR_DEBUG_PACKETS enabled in Configuration.hh"
+#endif
+
+#ifdef DEBUG_ONSCREEN
+	#warning "Release: DEBUG_ONSCREEN enabled in Configuration.hh"
+#endif
+
+#ifndef JKN_ADVANCE
+	#warning "Release: JKN_ADVANCE disabled in Configuration.hh"
+#endif
+
+#ifdef DEBUG_SLOW_MOTION
+	#warning "Release: DEBUG_SLOW_MOTION enabled in Configuration.hh"
+#endif
+
+#ifdef DEBUG_NO_HEAT_NO_WAIT
+	#warning "Release: DEBUG_NO_HEAT_NO_WAIT enabled in Configuration.hh"
+#endif
+
+#ifdef DEBUG_SRAM_MONITOR
+	#warning "Release: DEBUG_SRAM_MONITOR enabled in Configuration.hh"
+#endif
 
 
 /// Instantiate static motherboard instance
@@ -41,65 +82,80 @@ Motherboard::Motherboard() :
             LCD_D1_PIN,
             LCD_D2_PIN,
             LCD_D3_PIN),
+	messageScreen(),
+	moodLightController(SOFTWARE_I2C_SDA_PIN,
+		  	    SOFTWARE_I2C_SCL_PIN),
         interfaceBoard(buttonArray,
             lcd,
             INTERFACE_FOO_PIN,
             INTERFACE_BAR_PIN,
             &mainMenu,
-            &monitorMode)
-
+            &monitorMode,
+	    moodLightController,
+	    &messageScreen)
 {
-	/// Set up the stepper pins on board creation
-#if STEPPER_COUNT > 0
-        stepper[0] = StepperInterface(X_DIR_PIN,
-                                      X_STEP_PIN,
-                                      X_ENABLE_PIN,
-                                      X_MAX_PIN,
-                                      X_MIN_PIN,
-                                      eeprom::AXIS_INVERSION);
-#endif
-#if STEPPER_COUNT > 1
-        stepper[1] = StepperInterface(Y_DIR_PIN,
-                                      Y_STEP_PIN,
-                                      Y_ENABLE_PIN,
-                                      Y_MAX_PIN,
-                                      Y_MIN_PIN,
-                                      eeprom::AXIS_INVERSION);
-#endif
-#if STEPPER_COUNT > 2
-        stepper[2] = StepperInterface(Z_DIR_PIN,
-                                      Z_STEP_PIN,
-                                      Z_ENABLE_PIN,
-                                      Z_MAX_PIN,
-                                      Z_MIN_PIN,
-                                      eeprom::AXIS_INVERSION);
-#endif
-#if STEPPER_COUNT > 3
-        stepper[3] = StepperInterface(A_DIR_PIN,
-                                      A_STEP_PIN,
-                                      A_ENABLE_PIN,
-                                      Pin(),
-                                      Pin(),
-                                      eeprom::AXIS_INVERSION);
-#endif
-#if STEPPER_COUNT > 4
-        stepper[4] = StepperInterface(B_DIR_PIN,
-                                      B_STEP_PIN,
-                                      B_ENABLE_PIN,
-                                      Pin(),
-                                      Pin(),
-                                      eeprom::AXIS_INVERSION);
-#endif
 }
+
+void Motherboard::setupAccelStepperTimer() {
+	STEPPER_TCCRnA = 0x00;
+	STEPPER_TCCRnB = 0x0A; //CTC1 + / 8 = 2Mhz.
+	STEPPER_TCCRnC = 0x00;
+	STEPPER_OCRnA  = 0x2000; //1KHz
+	STEPPER_TIMSKn = 0x02; // turn on OCR3A match interrupt
+}
+
+#define ENABLE_TIMER_INTERRUPTS		TIMSK2		|= (1<<OCIE2A); \
+					STEPPER_TIMSKn	|= (1<<STEPPER_OCIEnA)
+
+#define DISABLE_TIMER_INTERRUPTS	TIMSK2		&= ~(1<<OCIE2A); \
+					STEPPER_TIMSKn	&= ~(1<<STEPPER_OCIEnA)
+
+// Initialize Timers
+//      0 = UNUSED
+//      1 = UNUSED
+//      2 = Debug LED flasher timer and Advance timer
+//      3 = Stepper
+//      4 = Microsecond timer
+//      5 = Debug Timer (unused unless DEBUG_TIMER is defined in StepperAccel.hh)
+//
+//      Timer 0 = 8 bit with PWM
+//      Timers 1,3,4,5 = 16 bit with PWM
+//      Timer 2 = 8 bit with PWM
+
+void Motherboard::initClocks(){
+        // Reset and configure timer 2, the microsecond timer, debug LED flasher timer and Advance timer.
+        // Timer 2 is 8 bit
+        TCCR2A = 0x02;  // CTC
+        TCCR2B = 0x04;  // prescaler at 1/64
+        OCR2A = 25;     //Generate interrupts 16MHz / 64 / 25 = 10KHz
+        TIMSK2 = 0x02; // turn on OCR2A match interrupt
+
+        // Reset and configure timer 3, the stepper interrupt timer.
+        // ISR(TIMER3_COMPA_vect)
+        setupAccelStepperTimer();
+
+	//Setup Timer 4, the microsecond timer.  We put the microsecond timer on a individual
+	//timer so that it's more accurate for calculating time left on a print
+	TCCR4A = 0x00;
+	TCCR4B = 0x0B; //CTC1 + / 64 = 250KHz.
+	TCCR4C = 0x00;
+	OCR4A  = 0x25; //Generate interrupts 16MHz / 64 / 25 = 10KHz
+	TIMSK4 = 0x02; // turn on OCR4A match interrupt
+
+        // Timer 5 (unused unless DEBUG_TIMER is defined in StepperAccel.hh)
+}
+
 
 /// Reset the motherboard to its initial state.
 /// This only resets the board, and does not send a reset
 /// to any attached toolheads.
-void Motherboard::reset() {
+void Motherboard::reset(bool hard_reset) {
 	indicateError(0); // turn off blinker
 
+	if ( hard_reset )	moodLightController.start();
+
 	// Init steppers
-	uint8_t axis_invert = eeprom::getEeprom8(eeprom::AXIS_INVERSION, 0);
+	uint8_t axis_invert = eeprom::getEeprom8(eeprom::AXIS_INVERSION, EEPROM_DEFAULT_AXIS_INVERSION);
 	// Z holding indicates that when the Z axis is not in
 	// motion, the machine should continue to power the stepper
 	// coil to ensure that the Z stage does not shift.
@@ -110,31 +166,38 @@ void Motherboard::reset() {
 	bool hold_z = (axis_invert & (1<<7)) == 0;
 	steppers::setHoldZ(hold_z);
 
-	for (int i = 0; i < STEPPER_COUNT; i++) {
-		stepper[i].init(i);
-	}
 	// Initialize the host and slave UARTs
         UART::getHostUART().enable(true);
         UART::getHostUART().in.reset();
         UART::getSlaveUART().enable(true);
         UART::getSlaveUART().in.reset();
-	// Reset and configure timer 1, the microsecond and stepper
-	// interrupt timer.
-	TCCR1A = 0x00;
-	TCCR1B = 0x09;
-	TCCR1C = 0x00;
-	OCR1A = INTERVAL_IN_MICROSECONDS * 16;
-	TIMSK1 = 0x02; // turn on OCR1A match interrupt
-	// Reset and configure timer 2, the debug LED flasher timer.
-	TCCR2A = 0x00;
-	TCCR2B = 0x07; // prescaler at 1/1024
-	TIMSK2 = 0x01; // OVF flag on
+
+	initClocks();
+
+        buzzerRepeats  = 0;
+        buzzerDuration = 0.0;
+        buzzerState    = BUZZ_STATE_NONE;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+	BUZZER_PIN.setDirection(false);
+#pragma GCC diagnostic pop
+
 	// Configure the debug pin.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 	DEBUG_PIN.setDirection(true);
+#pragma GCC diagnostic pop
+
+#if HAS_ESTOP
+	// Configure the estop pin direction.
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+	ESTOP_PIN.setDirection(false);
+#pragma GCC diagnostic pop
+#endif
 
 	// Check if the interface board is attached
-        //hasInterfaceBoard = interface::isConnected();
-		hasInterfaceBoard = true;
+        hasInterfaceBoard = interface::isConnected();
 
 	if (hasInterfaceBoard) {
 		// Make sure our interface board is initialized
@@ -164,44 +227,99 @@ micros_t Motherboard::getCurrentMicros() {
 }
 
 
-/// Run the motherboard interrupt
-void Motherboard::doInterrupt() {
+/// Get the number of seconds that have passed since
+/// the board was booted or the timer reset.
+float Motherboard::getCurrentSeconds() {
+  micros_t seconds_snapshot;
+  micros_t countupMicros_snapshot;
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    countupMicros_snapshot  = countupMicros;
+    seconds_snapshot	    = seconds;
+  }
+  return (float)seconds_snapshot + ((float)countupMicros_snapshot / (float)1000000);
+}
 
-	if (hasInterfaceBoard) {
-                interfaceBoard.doInterrupt();
+
+/// Reset the seconds counter to 0.
+void Motherboard::resetCurrentSeconds() {
+  ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+    seconds = 0L;
+  }
+}
+
+/// Run the stepper interrupt
+
+void Motherboard::doStepperInterrupt() {
+        //We never ignore interrupts on pause, because when paused, we might
+        //extrude filament to change it or fix jams
+
+        DISABLE_TIMER_INTERRUPTS;
+        sei();
+
+        steppers::doStepperInterrupt();
+
+        cli();
+        ENABLE_TIMER_INTERRUPTS;
+
+#ifdef ANTI_CLUNK_PROTECTION
+        //Because it's possible another stepper interrupt became due whilst
+        //we were processing the last interrupt, and had stepper interrupts
+        //disabled, we compare the counter to the requested interrupt time
+        //to see if it overflowed.  If it did, then we reset the counter, and
+        //schedule another interrupt for very shortly into the future.
+        if ( STEPPER_TCNTn >= STEPPER_OCRnA ) {
+                STEPPER_OCRnA = 0x01;   //We set the next interrupt to 1 interval, because this will cause the
+					//interrupt to  fire again on the next chance it has after exiting this
+					//interrupt, i.e. it gets queued.
+
+                STEPPER_TCNTn = 0;      //Reset the timer counter
+
+                //debug_onscreen1 ++;
+        }
+#endif
+}
+
+
+//Frequency of Timer 4
+//100 = (1.0 / ( 16MHz / 64 / 25 = 10KHz)) * 1000000
+#define MICROS_INTERVAL 100
+
+void Motherboard::UpdateMicros() {
+	micros += MICROS_INTERVAL;	//_IN_MICROSECONDS;
+	countupMicros += MICROS_INTERVAL;
+	while (countupMicros > 1000000L) {
+		seconds += 1;
+		countupMicros -= 1000000L;
 	}
-	micros += INTERVAL_IN_MICROSECONDS;
-	// Do not move steppers if the board is in a paused state
-	if (command::isPaused()) return;
-	steppers::doInterrupt();
 }
 
 void Motherboard::runMotherboardSlice() {
 	if (hasInterfaceBoard) {
+		interfaceBoard.doInterrupt();
 		if (interface_update_timeout.hasElapsed()) {
                         interfaceBoard.doUpdate();
                         interface_update_timeout.start(interfaceBoard.getUpdateRate());
 		}
 	}
+
+	serviceBuzzer();
 }
 
-/// Timer one comparator match interrupt
-ISR(TIMER1_COMPA_vect) {
-#ifdef OVERRIDE_DEBUG_LED
-	DEBUG_PIN.setValue(true);
-#endif
-	Motherboard::getBoard().doInterrupt();
-#ifdef OVERRIDE_DEBUG_LED
-	DEBUG_PIN.setValue(false);
-#endif
+MoodLightController Motherboard::getMoodLightController() {
+	return moodLightController;
+}
 
+
+/// Timer one comparator match interrupt
+ISR(STEPPER_TIMERn_COMPA_vect) {
+	Motherboard::getBoard().doStepperInterrupt();
 }
 
 /// Number of times to blink the debug LED on each cycle
 volatile uint8_t blink_count = 0;
 
 /// The current state of the debug LED
-enum {
+enum blinkState {
 	BLINK_NONE,
 	BLINK_ON,
 	BLINK_OFF,
@@ -212,7 +330,10 @@ enum {
 void Motherboard::indicateError(int error_code) {
 	if (error_code == 0) {
 		blink_state = BLINK_NONE;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 		DEBUG_PIN.setValue(false);
+#pragma GCC diagnostic pop
 	}
 	else if (blink_count != error_code) {
 		blink_state = BLINK_OFF;
@@ -224,6 +345,125 @@ void Motherboard::indicateError(int error_code) {
 uint8_t Motherboard::getCurrentError() {
 	return blink_count;
 }
+
+void Motherboard::MoodLightSetRGBColor(uint8_t r, uint8_t g, uint8_t b, uint8_t fadeSpeed, uint8_t writeToEeprom) {
+	if ( writeToEeprom ) {
+		eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_CUSTOM_RED,  r);
+		eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_CUSTOM_GREEN,g);
+		eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_CUSTOM_BLUE, b);
+	} else {
+		moodLightController.blinkM.setFadeSpeed(fadeSpeed);
+		moodLightController.blinkM.fadeToRGB(r,g,b);
+	}
+}
+
+void Motherboard::MoodLightSetHSBColor(uint8_t r, uint8_t g, uint8_t b, uint8_t fadeSpeed) {
+	moodLightController.blinkM.setFadeSpeed(fadeSpeed);
+	moodLightController.blinkM.fadeToHSB(r,g,b);
+}
+
+void Motherboard::MoodLightPlayScript(uint8_t scriptId, uint8_t writeToEeprom) {
+	if ( writeToEeprom ) eeprom_write_byte((uint8_t*)eeprom::MOOD_LIGHT_SCRIPT,scriptId);
+	moodLightController.playScript(scriptId);
+}
+
+//Duration is the length of each buzz in 1/10secs
+//Issue "repeats = 0" to kill a current buzzing
+
+void Motherboard::buzz(uint8_t buzzes, uint8_t duration, uint8_t repeats) {
+	if ( repeats == 0 ) {
+		buzzerState = BUZZ_STATE_NONE;
+		return;
+	}
+
+	buzzerBuzzes	  = buzzes;
+	buzzerBuzzesReset = buzzes;
+	buzzerDuration	  = (float)duration / 10.0;	
+	buzzerRepeats	  = repeats;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+	BUZZER_PIN.setDirection(true);
+#pragma GCC diagnostic pop
+	buzzerState = BUZZ_STATE_MOVE_TO_ON;
+}
+
+void Motherboard::stopBuzzer() {
+	buzzerState = BUZZ_STATE_NONE;
+
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+	BUZZER_PIN.setValue(false);
+	BUZZER_PIN.setDirection(false);
+#pragma GCC diagnostic pop
+}
+
+void Motherboard::serviceBuzzer() {
+	if ( buzzerState == BUZZ_STATE_NONE )	return;
+
+	float currentSeconds = getCurrentSeconds();
+
+	switch (buzzerState)
+	{
+		case BUZZ_STATE_BUZZ_ON:
+			if ( currentSeconds >= buzzerSecondsTarget )
+				buzzerState = BUZZ_STATE_MOVE_TO_OFF;
+			break;
+		case BUZZ_STATE_MOVE_TO_OFF:
+			buzzerBuzzes --;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+			BUZZER_PIN.setValue(false);
+#pragma GCC diagnostic pop
+			buzzerSecondsTarget = currentSeconds + buzzerDuration;
+			buzzerState = BUZZ_STATE_BUZZ_OFF;
+			break;
+		case BUZZ_STATE_BUZZ_OFF:
+			if ( currentSeconds >= buzzerSecondsTarget ) {
+				if ( buzzerBuzzes == 0 ) {
+					buzzerRepeats --;
+					if ( buzzerRepeats == 0 )	stopBuzzer();
+					else				buzzerState = BUZZ_STATE_MOVE_TO_DELAY;
+				} else	buzzerState = BUZZ_STATE_MOVE_TO_ON;
+			}
+			break;
+		case BUZZ_STATE_MOVE_TO_ON:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+			BUZZER_PIN.setValue(true);
+#pragma GCC diagnostic pop
+			buzzerSecondsTarget = currentSeconds + buzzerDuration;
+			buzzerState = BUZZ_STATE_BUZZ_ON;
+			break;
+		case BUZZ_STATE_MOVE_TO_DELAY:
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+			BUZZER_PIN.setValue(false);
+#pragma GCC diagnostic pop
+			buzzerSecondsTarget = currentSeconds + buzzerDuration * 3;
+			buzzerState = BUZZ_STATE_BUZZ_DELAY;
+			break;
+		case BUZZ_STATE_BUZZ_DELAY:
+			if ( currentSeconds >= buzzerSecondsTarget ) {
+				buzzerBuzzes = buzzerBuzzesReset;
+				buzzerSecondsTarget = currentSeconds + buzzerDuration;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
+				BUZZER_PIN.setValue(true);
+#pragma GCC diagnostic pop
+				buzzerState = BUZZ_STATE_BUZZ_ON;
+			}
+			break;
+		default:
+			break;
+	}
+}
+
+
+ISR(TIMER4_COMPA_vect) {
+	Motherboard::getBoard().UpdateMicros();
+}
+
 
 /// Timer2 overflow cycles that the LED remains on while blinking
 #define OVFS_ON 18
@@ -237,9 +477,21 @@ int blink_ovfs_remaining = 0;
 /// Number of blinks performed in the current cycle
 int blinked_so_far = 0;
 
-/// Timer 2 overflow interrupt
-ISR(TIMER2_OVF_vect) {
-#ifdef OVERRIDE_DEBUG_LED
+int debug_light_interrupt_divisor = 0;
+#define MAX_DEBUG_LIGHT_INTERRUPT_DIVISOR	164	//Timer interrupt frequency / (16MHz / 1026 / 256)
+
+/// Timer 2 comparator match interrupt
+ISR(TIMER2_COMPA_vect) {
+#ifdef JKN_ADVANCE
+	steppers::doExtruderInterrupt();
+#endif
+
+	debug_light_interrupt_divisor ++;
+	if ( debug_light_interrupt_divisor < MAX_DEBUG_LIGHT_INTERRUPT_DIVISOR )
+		return;
+
+	debug_light_interrupt_divisor = 0;
+
 	if (blink_ovfs_remaining > 0) {
 		blink_ovfs_remaining--;
 	} else {
@@ -247,7 +499,12 @@ ISR(TIMER2_OVF_vect) {
 			blinked_so_far++;
 			blink_state = BLINK_OFF;
 			blink_ovfs_remaining = OVFS_OFF;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			DEBUG_PIN.setValue(false);
+#pragma GCC diagnostic pop
+			if ( blink_count == ERR_ESTOP )
+				Motherboard::getBoard().getMoodLightController().debugLightSetValue(false);
 		} else if (blink_state == BLINK_OFF) {
 			if (blinked_so_far >= blink_count) {
 				blink_state = BLINK_PAUSE;
@@ -255,14 +512,23 @@ ISR(TIMER2_OVF_vect) {
 			} else {
 				blink_state = BLINK_ON;
 				blink_ovfs_remaining = OVFS_ON;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 				DEBUG_PIN.setValue(true);
+#pragma GCC diagnostic pop
+				if ( blink_count == ERR_ESTOP )
+					Motherboard::getBoard().getMoodLightController().debugLightSetValue(true);
 			}
 		} else if (blink_state == BLINK_PAUSE) {
 			blinked_so_far = 0;
 			blink_state = BLINK_ON;
 			blink_ovfs_remaining = OVFS_ON;
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Winline"
 			DEBUG_PIN.setValue(true);
+#pragma GCC diagnostic pop
+			if ( blink_count == ERR_ESTOP )
+				Motherboard::getBoard().getMoodLightController().debugLightSetValue(true);
 		}
 	}
-#endif OVERRIDE_DEBUG_LED
 }
