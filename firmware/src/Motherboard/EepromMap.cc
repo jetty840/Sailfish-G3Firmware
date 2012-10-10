@@ -130,6 +130,8 @@ void setJettyFirmwareDefaults() {
     putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_B);
 
     eeprom_write_byte((uint8_t*)eeprom::DITTO_PRINT_ENABLED,		EEPROM_DEFAULT_DITTO_PRINT_ENABLED);
+
+    verifyAndFixVidPid();
 }
 
 // TODO: Shouldn't this just reset everything to an uninitialized state?
@@ -167,6 +169,17 @@ void storeToolheadToleranceDefaults(){
         uint32_t offsets[3] = {0,0,0};
         eeprom_write_block((uint8_t*)&(offsets[0]),(uint8_t*)(eeprom::TOOLHEAD_OFFSET_SETTINGS), 12 );
 
+}
+
+void verifyAndFixVidPid() {
+    /// write Sailfish VID/PID.
+    uint16_t vidPid[] = {0x23C1, 0xACDC};           /// PID/VID for the Sailfish!
+    uint16_t currentVidPid[2];
+
+    eeprom_read_block(&(currentVidPid[0]), (uint8_t*)eeprom::VID_PID_INFO, 4);
+    
+    if (( currentVidPid[0] != vidPid[0] ) || ( currentVidPid[1] != vidPid[1] ))
+	eeprom_write_block(&(vidPid[0]),(uint8_t*)eeprom::VID_PID_INFO,4);
 }
 
 }

@@ -355,6 +355,10 @@ const static uint16_t DITTO_PRINT_ENABLED	= 0x01DC;
 //$BEGIN_ENTRY
 //$type:q
 const static uint16_t FILAMENT_TRIP_B		= 0x01DD;
+//Hardware vendor id (in this case, Sailfish vendor id) - (4 bytes)
+//$BEGIN_ENTRY
+//$type:BBBB
+const static uint16_t VID_PID_INFO		 = 0x1E5;
 
 
 /// Reset Jetty Firmware defaults only
@@ -364,6 +368,8 @@ void setJettyFirmwareDefaults();
 void setDefaults(bool retainCounters);
 
 void storeToolheadToleranceDefaults();
+
+void verifyAndFixVidPid();
 
 } // namespace eeprom
 

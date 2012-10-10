@@ -15,6 +15,7 @@ namespace eeprom {
 void init() {
         uint8_t version[2];
         eeprom_read_block(version,(const uint8_t*)eeprom::VERSION_LOW,2);
+	verifyAndFixVidPid();
         if ((version[1]*100+version[0]) == firmware_version) return;
         if (version[1] == 0xff || version[1] < 2) {
 #if defined IS_EXTRUDER_BOARD
