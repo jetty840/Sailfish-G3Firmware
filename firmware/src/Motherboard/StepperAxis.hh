@@ -197,7 +197,18 @@ FORCE_INLINE bool stepperAxisIsAtMinimum(uint8_t axis) {
 /// Makes a step, but checks if an endstop is triggered first, if it is, the
 /// step is abandoned and "true" is returned.
 FORCE_INLINE void stepperAxisStepWithEndstopCheck(uint8_t axis, bool direction) {
+	//Cupcakes with a 3G5D Shield or Ugly Cable repurpose the Zmax, Xmax an Ymax endstop
+	//pins to drive the extruder, there's there's no "max" endstops
+	//Users can either use only min endstops, or there's an option to tie the min and max
+	//endstops together via the AND chip to the Ymin endstop signal.
+	//Either way, the result is the same, i.e. there's no max endstop signal so 
+	//we shouldn't be checking it when direction is positive otherwise we can't move
+	//away from the homing endstop after triggering it
+#ifdef CUPCAKE_3G5D_COMBINED_ENDSTOPS
+	if ( (direction) ||
+#else
 	if (( (direction)   && (! stepperAxisIsAtMaximum(axis))) ||
+#endif
 	    ( (! direction) && (! stepperAxisIsAtMinimum(axis))))
 		stepperAxisStep(axis, true);
 	else	axis_homing[axis] = false;

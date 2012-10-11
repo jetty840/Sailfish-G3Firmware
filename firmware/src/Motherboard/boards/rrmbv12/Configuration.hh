@@ -271,4 +271,13 @@
 //in the various .xml's out there
 //#define CLIP_Z_AXIS
 
+//Cupcakes with a 3G5D Shield or Ugly Cable repurpose the Zmax, Xmax an Ymax endstop
+//pins to drive the extruder, there's there's no "max" endstops
+//Users can either use only min endstops, or there's an option to tie the min and max
+//endstops together via the AND chip to the Ymin endstop signal.
+//Either way, the result is the same, i.e. there's no max endstop signal so
+//we shouldn't be checking it when direction is positive otherwise we can't move
+//away from the homing endstop after triggering it
+#define CUPCAKE_3G5D_COMBINED_ENDSTOPS
+
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
