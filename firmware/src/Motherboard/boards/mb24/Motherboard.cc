@@ -38,10 +38,6 @@
 	#warning "Release: ERASE_EEPROM_ON_EVERY_BOOT enabled in Configuration.hh"
 #endif
 
-#ifdef EEPROM_MENU_ENABLE
-	#warning "Release: EEPROM_MENU_ENABLE enabled in Configuration.hh"
-#endif
-
 #ifdef DEBUG_VALUE
 	#warning "Release: DEBUG_VALUE enabled in Configuration.hh"
 #endif
