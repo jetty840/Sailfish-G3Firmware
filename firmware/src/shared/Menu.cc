@@ -30,7 +30,7 @@
 #include <avr/eeprom.h>
 #include "ExtruderControl.hh"
 #include "Main.hh"
-
+#include "locale.h"
 
 #define HOST_PACKET_TIMEOUT_MS 20
 #define HOST_PACKET_TIMEOUT_MICROS (1000L*HOST_PACKET_TIMEOUT_MS)
@@ -216,16 +216,16 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	if (forceRedraw) {
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(splash1);
+		lcd.writeFromPgmspace(LOCALIZE(splash1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(splash2);
+		lcd.writeFromPgmspace(LOCALIZE(splash2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(splash3);
+		lcd.writeFromPgmspace(LOCALIZE(splash3));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(splash4);
+		lcd.writeFromPgmspace(LOCALIZE(splash4));
 		lcd.setCursor(11,3);
                 lcd.writeString((char *)STR(SVN_VERSION));
 	}
@@ -257,21 +257,21 @@ void UserViewMenu::resetState() {
 }
 
 void UserViewMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar msg[]  = "X/Y Direction:";
-	const static PROGMEM prog_uchar model[]= "Model View";
-	const static PROGMEM prog_uchar user[] = "User View";
+	const static PROGMEM prog_uchar uv_msg[]  = "X/Y Direction:";
+	const static PROGMEM prog_uchar uv_model[]= "Model View";
+	const static PROGMEM prog_uchar uv_user[] = "User View";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(msg);
+	        lcd.writeFromPgmspace(LOCALIZE(uv_msg));
 		break;
 	case 1:
 		break;
 	case 2:
-		lcd.writeFromPgmspace(model);
+		lcd.writeFromPgmspace(LOCALIZE(uv_model));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(user);
+		lcd.writeFromPgmspace(LOCALIZE(uv_user));
 		break;
 	}
 }
@@ -503,50 +503,50 @@ void JogMode::reset() {
 }
 
 void JogMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar jog1[]      = "Jog mode: ";
-	const static PROGMEM prog_uchar jog2[] 	    = "   Y+         Z+";
-	const static PROGMEM prog_uchar jog3[]      = "X- V  X+  (mode)";
-	const static PROGMEM prog_uchar jog4[]      = "   Y-         Z-";
-	const static PROGMEM prog_uchar jog2_user[] = "  Y           Z+";
-	const static PROGMEM prog_uchar jog3_user[] = "X V X     (mode)";
-	const static PROGMEM prog_uchar jog4_user[] = "  Y           Z-";
+	const static PROGMEM prog_uchar j_jog1[]      = "Jog mode: ";
+	const static PROGMEM prog_uchar j_jog2[]      = "   Y+         Z+";
+	const static PROGMEM prog_uchar j_jog3[]      = "X- V  X+  (mode)";
+	const static PROGMEM prog_uchar j_jog4[]      = "   Y-         Z-";
+	const static PROGMEM prog_uchar j_jog2_user[] = "  Y           Z+";
+	const static PROGMEM prog_uchar j_jog3_user[] = "X V X     (mode)";
+	const static PROGMEM prog_uchar j_jog4_user[] = "  Y           Z-";
 
-	const static PROGMEM prog_uchar distance0_1mm[] = ".1mm";
-	const static PROGMEM prog_uchar distance1mm[] = "1mm";
-	const static PROGMEM prog_uchar distanceCont[] = "Cont..";
+	const static PROGMEM prog_uchar j_distance0_1mm[] = ".1mm";
+	const static PROGMEM prog_uchar j_distance1mm[] = "1mm";
+	const static PROGMEM prog_uchar j_distanceCont[] = "Cont..";
 
 	if ( userViewModeChanged ) userViewMode = eeprom::getEeprom8(eeprom::JOG_MODE_SETTINGS, EEPROM_DEFAULT_JOG_MODE_SETTINGS) & 0x01;
 
 	if (forceRedraw || distanceChanged || userViewModeChanged) {
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(jog1);
+		lcd.writeFromPgmspace(LOCALIZE(j_jog1));
 
 		switch (jogDistance) {
 		case DISTANCE_0_1MM:
 			lcd.write(0xF3);	//Write tilde
-			lcd.writeFromPgmspace(distance0_1mm);
+			lcd.writeFromPgmspace(LOCALIZE(j_distance0_1mm));
 			break;
 		case DISTANCE_1MM:
 			lcd.write(0xF3);	//Write tilde
-			lcd.writeFromPgmspace(distance1mm);
+			lcd.writeFromPgmspace(LOCALIZE(j_distance1mm));
 			break;
 		case DISTANCE_CONT:
-			lcd.writeFromPgmspace(distanceCont);
+			lcd.writeFromPgmspace(LOCALIZE(j_distanceCont));
 			break;
 		}
 
 		lcd.setCursor(0,1);
-		if ( userViewMode )	lcd.writeFromPgmspace(jog2_user);
-		else			lcd.writeFromPgmspace(jog2);
+		if ( userViewMode )	lcd.writeFromPgmspace(LOCALIZE(j_jog2_user));
+		else			lcd.writeFromPgmspace(LOCALIZE(j_jog2));
 
 		lcd.setCursor(0,2);
-		if ( userViewMode )	lcd.writeFromPgmspace(jog3_user);
-		else			lcd.writeFromPgmspace(jog3);
+		if ( userViewMode )	lcd.writeFromPgmspace(LOCALIZE(j_jog3_user));
+		else			lcd.writeFromPgmspace(LOCALIZE(j_jog3));
 
 		lcd.setCursor(0,3);
-		if ( userViewMode )	lcd.writeFromPgmspace(jog4_user);
-		else			lcd.writeFromPgmspace(jog4);
+		if ( userViewMode )	lcd.writeFromPgmspace(LOCALIZE(j_jog4_user));
+		else			lcd.writeFromPgmspace(LOCALIZE(j_jog4));
 
 		distanceChanged = false;
 		userViewModeChanged    = false;
@@ -615,36 +615,36 @@ void ExtruderMode::reset() {
 }
 
 void ExtruderMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar extrude1[] = "Extrude: ";
-	const static PROGMEM prog_uchar extrude2[] = "(set mm/s)   Fwd";
-	const static PROGMEM prog_uchar extrude3[] = " (stop)    (dur)";
-	const static PROGMEM prog_uchar extrude4[] = "---/---C     Rev";
-	const static PROGMEM prog_uchar secs[]     = "SECS";
-	const static PROGMEM prog_uchar blank[]    = "       ";
+	const static PROGMEM prog_uchar e_extrude1[] = "Extrude: ";
+	const static PROGMEM prog_uchar e_extrude2[] = "(set mm/s)   Fwd";
+	const static PROGMEM prog_uchar e_extrude3[] = " (stop)    (dur)";
+	const static PROGMEM prog_uchar e_extrude4[] = "---/---C     Rev";
+	const static PROGMEM prog_uchar e_secs[]     = "SECS";
+	const static PROGMEM prog_uchar e_blank[]    = "       ";
 
 	if (overrideExtrudeSeconds)	extrude((int32_t)overrideExtrudeSeconds, true);
 
 	if (forceRedraw) {
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(extrude1);
+		lcd.writeFromPgmspace(LOCALIZE(e_extrude1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(extrude2);
+		lcd.writeFromPgmspace(LOCALIZE(e_extrude2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(extrude3);
+		lcd.writeFromPgmspace(LOCALIZE(e_extrude3));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(extrude4);
+		lcd.writeFromPgmspace(LOCALIZE(e_extrude4));
 	}
 
 	if ((forceRedraw) || (timeChanged)) {
 		lcd.setCursor(9,0);
-		lcd.writeFromPgmspace(blank);
+		lcd.writeFromPgmspace(LOCALIZE(e_blank));
 		lcd.setCursor(9,0);
 		lcd.writeFloat((float)extrudeSeconds, 0);
-		lcd.writeFromPgmspace(secs);
+		lcd.writeFromPgmspace(LOCALIZE(e_secs));
 		timeChanged = false;
 	}
 
@@ -804,21 +804,21 @@ void ExtruderTooColdMenu::resetState() {
 }
 
 void ExtruderTooColdMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar warning[]  = "Tool0 too cold!";
-	const static PROGMEM prog_uchar cancel[]   =  "Cancel";
-	const static PROGMEM prog_uchar override[] =  "Override";
+	const static PROGMEM prog_uchar etc_warning[]  = "Tool0 too cold!";
+	const static PROGMEM prog_uchar etc_cancel[]   = "Cancel";
+	const static PROGMEM prog_uchar etc_override[] = "Override";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(warning);
+		lcd.writeFromPgmspace(LOCALIZE(etc_warning));
 		break;
 	case 1:
 		break;
 	case 2:
-		lcd.writeFromPgmspace(cancel);
+		lcd.writeFromPgmspace(LOCALIZE(etc_cancel));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(override);
+		lcd.writeFromPgmspace(LOCALIZE(etc_override));
 		break;
 	}
 }
@@ -848,14 +848,14 @@ void MoodLightMode::reset() {
 }
 
 void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar mood1[] = "Mood: ";
-	const static PROGMEM prog_uchar mood3_1[] = "(set RGB)";
-	const static PROGMEM prog_uchar msg4[] = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar blank[]   = "          ";
-	const static PROGMEM prog_uchar moodNotPresent1[] = "Mood Light not";
-	const static PROGMEM prog_uchar moodNotPresent2[] = "present!!";
-	const static PROGMEM prog_uchar moodNotPresent3[] = "See Thingiverse";
-	const static PROGMEM prog_uchar moodNotPresent4[] = "   thing:15347";
+	const static PROGMEM prog_uchar ml_mood1[]   = "Mood: ";
+	const static PROGMEM prog_uchar ml_mood3_1[] = "(set RGB)";
+	const static PROGMEM prog_uchar ml_msg4[]    = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar ml_blank[]   = "          ";
+	const static PROGMEM prog_uchar ml_moodNotPresent1[] = "Mood Light not";
+	const static PROGMEM prog_uchar ml_moodNotPresent2[] = "present!!";
+	const static PROGMEM prog_uchar ml_moodNotPresent3[] = "See Thingiverse";
+	const static PROGMEM prog_uchar ml_moodNotPresent4[] = "   thing:15347";
 
 	//If we have no mood light, point to thingiverse to make one
 	if ( ! interface::moodLightController().blinkM.blinkMIsPresent ) {
@@ -864,13 +864,13 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			if ( forceRedraw ) {
 				lcd.clear();
 				lcd.setCursor(0,0);
-				lcd.writeFromPgmspace(moodNotPresent1);
+				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent1));
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(moodNotPresent2);
+				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent2));
 				lcd.setCursor(0,2);
-				lcd.writeFromPgmspace(moodNotPresent3);
+				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent3));
 				lcd.setCursor(0,3);
-				lcd.writeFromPgmspace(moodNotPresent4);
+				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent4));
 			}
 		
 			return;
@@ -880,10 +880,10 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if (forceRedraw) {
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(mood1);
+		lcd.writeFromPgmspace(LOCALIZE(ml_mood1));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(msg4);
+		lcd.writeFromPgmspace(LOCALIZE(ml_msg4));
 	}
 
  	//Redraw tool info
@@ -891,15 +891,15 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	switch (updatePhase) {
 	case 0:
 		lcd.setCursor(6, 0);
-		lcd.writeFromPgmspace(blank);	
+		lcd.writeFromPgmspace(LOCALIZE(ml_blank));	
 		lcd.setCursor(6, 0);
 		lcd.writeFromPgmspace(interface::moodLightController().scriptIdToStr(scriptId));	
 		break;
 
 	case 1:
 		lcd.setCursor(0, 2);
-		if ( scriptId == 1 )	lcd.writeFromPgmspace(mood3_1);
-		else			lcd.writeFromPgmspace(blank);	
+		if ( scriptId == 1 )	lcd.writeFromPgmspace(LOCALIZE(ml_mood3_1));
+		else			lcd.writeFromPgmspace(LOCALIZE(ml_blank));	
 		break;
 	}
 
@@ -979,21 +979,21 @@ void MoodLightSetRGBScreen::reset() {
 }
 
 void MoodLightSetRGBScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1_red[]   = "Red:";
-	const static PROGMEM prog_uchar message1_green[] = "Green:";
-	const static PROGMEM prog_uchar message1_blue[]  = "Blue:";
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar mlsrgb_message1_red[]   = "Red:";
+	const static PROGMEM prog_uchar mlsrgb_message1_green[] = "Green:";
+	const static PROGMEM prog_uchar mlsrgb_message1_blue[]  = "Blue:";
+	const static PROGMEM prog_uchar mlsrgb_message4[] = "Up/Dn/Ent to Set";
 
 	if ((forceRedraw) || (redrawScreen)) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		if      ( inputMode == 0 ) lcd.writeFromPgmspace(message1_red);
-		else if ( inputMode == 1 ) lcd.writeFromPgmspace(message1_green);
-		else if ( inputMode == 2 ) lcd.writeFromPgmspace(message1_blue);
+		if      ( inputMode == 0 ) lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message1_red));
+		else if ( inputMode == 1 ) lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message1_green));
+		else if ( inputMode == 2 ) lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message1_blue));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message4));
 
 		redrawScreen = false;
 	}
@@ -1072,19 +1072,20 @@ void MonitorMode::reset() {
 
 
 void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar extruder_temp[]      =   "Tool   ---/---\001";
-	const static PROGMEM prog_uchar platform_temp[]      =   "Bed    ---/---\001";
-	const static PROGMEM prog_uchar elapsed_time[]       =   "Elapsed:   0h00m";
-	const static PROGMEM prog_uchar completed_percent[]  =   "Completed:   0% ";
-	const static PROGMEM prog_uchar time_left[]          =   "TimeLeft:  0h00m";
-	const static PROGMEM prog_uchar time_left_secs[]     =   "secs";
-	const static PROGMEM prog_uchar time_left_none[]     =   "   none";
-	const static PROGMEM prog_uchar zpos[] 		     =   "ZPos:           ";
-	const static PROGMEM prog_uchar speed[] 	     =   "Acc:            ";
-	const static PROGMEM prog_uchar zpos_mm[] 	     =   "mm";
-	const static PROGMEM prog_uchar filament[]           =   "Filament:0.00m  ";
-	const static PROGMEM prog_uchar copies[]	     =   "Copy:           ";
-	const static PROGMEM prog_uchar of[]		     =   " of ";
+	const static PROGMEM prog_uchar mon_extruder_temp[]      =   "Tool   ---/---\001";
+	const static PROGMEM prog_uchar mon_platform_temp[]      =   "Bed    ---/---\001";
+	const static PROGMEM prog_uchar mon_elapsed_time[]       =   "Elapsed:   0h00m";
+	const static PROGMEM prog_uchar mon_completed_percent[]  =   "Completed:   0% ";
+	const static PROGMEM prog_uchar mon_time_left[]          =   "TimeLeft:  0h00m";
+	const static PROGMEM prog_uchar mon_time_left_secs[]     =   "secs";
+	const static PROGMEM prog_uchar mon_time_left_none[]     =   "   none";
+	const static PROGMEM prog_uchar mon_zpos[] 		 =   "ZPos:           ";
+	const static PROGMEM prog_uchar mon_speed[] 		 =   "Acc:            ";
+	const static PROGMEM prog_uchar mon_zpos_mm[]	 	 =   "mm";
+	const static PROGMEM prog_uchar mon_filament[]           =   "Filament:0.00m  ";
+	const static PROGMEM prog_uchar mon_copies[]		 =   "Copy:           ";
+	const static PROGMEM prog_uchar mon_of[]		 =   " of ";
+	const static PROGMEM prog_uchar mon_error[]		 =   "error!";
 	char buf[17];
 
 	if ( command::isPaused() ) {
@@ -1120,20 +1121,20 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		case host::HOST_STATE_BUILDING_FROM_SD:
 			lcd.writeString(host::getBuildName());
 			lcd.setCursor(0,1);
-			lcd.writeFromPgmspace(completed_percent);
+			lcd.writeFromPgmspace(LOCALIZE(mon_completed_percent));
 			break;
 		case host::HOST_STATE_ERROR:
-			lcd.writeString((char *)"error!");
+			lcd.writeFromPgmspace(LOCALIZE(mon_error));
 			break;
 		case host::HOST_STATE_CANCEL_BUILD :
 			break;
 		}
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(extruder_temp);
+		lcd.writeFromPgmspace(LOCALIZE(mon_extruder_temp));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(platform_temp);
+		lcd.writeFromPgmspace(LOCALIZE(mon_platform_temp));
 
 		lcd.setCursor(15,3);
 		if ( command::getPauseAtZPos() == 0 )	lcd.write(' ');
@@ -1254,7 +1255,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		switch (buildTimePhase) {
 			case BUILD_TIME_PHASE_COMPLETED_PERCENT:
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(completed_percent);
+				lcd.writeFromPgmspace(LOCALIZE(mon_completed_percent));
 				lcd.setCursor(11,1);
 				buf[0] = '\0';
 
@@ -1266,7 +1267,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				break;
 			case BUILD_TIME_PHASE_ELAPSED_TIME:
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(elapsed_time);
+				lcd.writeFromPgmspace(LOCALIZE(mon_elapsed_time));
 				lcd.setCursor(9,1);
 				buf[0] = '\0';
 
@@ -1283,19 +1284,19 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 				if ( tsecs > 0 ) {
 					lcd.setCursor(0,1);
-					lcd.writeFromPgmspace(time_left);
+					lcd.writeFromPgmspace(LOCALIZE(mon_time_left));
 					lcd.setCursor(9,1);
 
 					buf[0] = '\0';
 					if 	  ((tsecs > 0 ) && (tsecs < 60) && ( host::isBuildComplete() ) ) {
 						appendUint8(buf, sizeof(buf), (uint8_t)tsecs);
 						lcd.writeString(buf);
-						lcd.writeFromPgmspace(time_left_secs);	
+						lcd.writeFromPgmspace(LOCALIZE(mon_time_left_secs));	
 					} else if (( tsecs <= 0) || ( host::isBuildComplete()) ) {
 #ifdef HAS_FILAMENT_COUNTER
 						command::addFilamentUsed();
 #endif
-						lcd.writeFromPgmspace(time_left_none);
+						lcd.writeFromPgmspace(LOCALIZE(mon_time_left_none));
 					} else {
 						appendTime(buf, sizeof(buf), (uint32_t)tsecs);
 						lcd.writeString(buf);
@@ -1307,7 +1308,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 			case BUILD_TIME_PHASE_ZPOS:
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(zpos);
+				lcd.writeFromPgmspace(LOCALIZE(mon_zpos));
 				lcd.setCursor(6,1);
 
 				position = steppers::getStepperPosition();
@@ -1315,11 +1316,11 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				//Divide by the axis steps to mm's
 				lcd.writeFloat(stepperAxisStepsToMM(position[2], Z_AXIS), 3);
 
-				lcd.writeFromPgmspace(zpos_mm);
+				lcd.writeFromPgmspace(LOCALIZE(mon_zpos_mm));
 				break;
 			case BUILD_TIME_PHASE_FILAMENT:
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(filament);
+				lcd.writeFromPgmspace(LOCALIZE(mon_filament));
 				lcd.setCursor(9,1);
 				lastFilamentUsed = stepperAxisStepsToMM(command::getLastFilamentLength(0) + command::getLastFilamentLength(1), A_AXIS);
 				if ( lastFilamentUsed != 0.0 )	filamentUsed = lastFilamentUsed;
@@ -1340,10 +1341,10 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				{
 				uint8_t totalCopies = eeprom::getEeprom8(eeprom::ABP_COPIES, EEPROM_DEFAULT_ABP_COPIES);
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(copies);
+				lcd.writeFromPgmspace(LOCALIZE(mon_copies));
 				lcd.setCursor(7,1);
 				lcd.writeFloat((float)(copiesPrinted + 1), 0);
-				lcd.writeFromPgmspace(of);
+				lcd.writeFromPgmspace(LOCALIZE(mon_of));
 				lcd.writeFloat((float)totalCopies, 0);
 				}
 				break;
@@ -1353,7 +1354,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				float minSpeed, avgSpeed, maxSpeed;
 				accelStatsGet(&minSpeed, &avgSpeed, &maxSpeed);
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(speed);
+				lcd.writeFromPgmspace(LOCALIZE(mon_speed));
 				lcd.setCursor(4,1);
 				if ( minSpeed < 100.0 )	lcd.write(' ');	//If we have space, pad out a bit
 				lcd.writeFloat(minSpeed,0);
@@ -1426,22 +1427,22 @@ void MonitorMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 
 
 void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar version1[] = "Motherboard: _._";
-	const static PROGMEM prog_uchar version2[] = "   Extruder: _._";
-	const static PROGMEM prog_uchar version3[] = "   Revision:___";
-	const static PROGMEM prog_uchar version4[] = "FreeSram: ";
+	const static PROGMEM prog_uchar v_version1[] = "Motherboard: _._";
+	const static PROGMEM prog_uchar v_version2[] = "   Extruder: _._";
+	const static PROGMEM prog_uchar v_version3[] = "   Revision:___";
+	const static PROGMEM prog_uchar v_version4[] = "FreeSram: ";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(version1);
+		lcd.writeFromPgmspace(LOCALIZE(v_version1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(version2);
+		lcd.writeFromPgmspace(LOCALIZE(v_version2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(version3);
+		lcd.writeFromPgmspace(LOCALIZE(v_version3));
 
 		//Display the motherboard version
 		lcd.setCursor(13, 0);
@@ -1470,7 +1471,7 @@ void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.writeString((char *)STR(SVN_VERSION));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(version4);
+		lcd.writeFromPgmspace(LOCALIZE(v_version4));
 		lcd.writeFloat((float)StackCount(),0);
 	} else {
 	}
@@ -1615,48 +1616,48 @@ void CancelBuildMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 
 void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar choose[]	= "Please Choose:";
-	const static PROGMEM prog_uchar abort[]		= "Abort Print   ";
-	const static PROGMEM prog_uchar printAnother[]	= "Print Another";
-	const static PROGMEM prog_uchar pauseZ[]	= "Pause at ZPos ";
-	const static PROGMEM prog_uchar pause[]		= "Pause         ";
-	const static PROGMEM prog_uchar pauseNoHeat[]	= "Pause No Heat ";
-	const static PROGMEM prog_uchar back[]		= "Continue Build";
+	const static PROGMEM prog_uchar cb_choose[]		= "Please Choose:";
+	const static PROGMEM prog_uchar cb_abort[]		= "Abort Print   ";
+	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another";
+	const static PROGMEM prog_uchar cb_pauseZ[]		= "Pause at ZPos ";
+	const static PROGMEM prog_uchar cb_pause[]		= "Pause         ";
+	const static PROGMEM prog_uchar cb_pauseNoHeat[]	= "Pause No Heat ";
+	const static PROGMEM prog_uchar cb_back[]		= "Continue Build";
 
 	if (( steppers::isHoming() ) || (sdcard::getPercentPlayed() >= 100.0))	pauseDisabled = true;
 
 	//Implement variable length menu
 	uint8_t lind = 0;
 
-	if ( index == lind )	lcd.writeFromPgmspace(choose);
+	if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_choose));
 	lind ++;
 
 	if (( pauseDisabled ) && ( ! printAnotherEnabled )) lind ++;
 
-	if ( index == lind)	lcd.writeFromPgmspace(abort);
+	if ( index == lind)	lcd.writeFromPgmspace(LOCALIZE(cb_abort));
 	lind ++;
 
 	if ( printAnotherEnabled ) {
-		if ( index == lind ) lcd.writeFromPgmspace(printAnother);
+		if ( index == lind ) lcd.writeFromPgmspace(LOCALIZE(cb_printAnother));
 		lind ++;
 	}
 
 	if ( ! pauseDisabled ) {
-		if ( index == lind )	lcd.writeFromPgmspace(pauseZ);
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseZ));
 		lind ++;
 	}
 
 	if ( ! pauseDisabled ) {
-		if ( index == lind )	lcd.writeFromPgmspace(pause);
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pause));
 		lind ++;
 	}
 
 	if ( ! pauseDisabled ) {
-		if ( index == lind )	lcd.writeFromPgmspace(pauseNoHeat);
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseNoHeat));
 		lind ++;
 	}
 
-	if ( index == lind )	lcd.writeFromPgmspace(back);
+	if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_back));
 	lind ++;
 }
 
@@ -1728,94 +1729,94 @@ MainMenu::MainMenu() {
 }
 
 void MainMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar monitor[]	= "Monitor";
-	const static PROGMEM prog_uchar build[]		= "Build from SD";
-	const static PROGMEM prog_uchar jog[]		= "Jog";
-	const static PROGMEM prog_uchar preheat[]	= "Preheat";
-	const static PROGMEM prog_uchar extruder[]	= "Extrude";
-	const static PROGMEM prog_uchar homeAxis[]	= "Home Axis";
-	const static PROGMEM prog_uchar advanceABP[]	= "Advance ABP";
-	const static PROGMEM prog_uchar steppersS[]	= "Steppers";
-	const static PROGMEM prog_uchar moodlight[]	= "Mood Light";
-	const static PROGMEM prog_uchar buzzer[]	= "Buzzer";
-	const static PROGMEM prog_uchar buildSettings[]	= "Build Settings";
-	const static PROGMEM prog_uchar profiles[]	= "Profiles";
-	const static PROGMEM prog_uchar extruderFan[]	= "Extruder Fan";
-	const static PROGMEM prog_uchar calibrate[]	= "Calibrate";
-	const static PROGMEM prog_uchar homeOffsets[]	= "Home Offsets";
-	const static PROGMEM prog_uchar filamentUsed[]	= "Filament Used";
-	const static PROGMEM prog_uchar currentPosition[]= "Position";
-	const static PROGMEM prog_uchar endStops[]	= "Test End Stops";
-	const static PROGMEM prog_uchar homingRates[]	= "Homing Rates";
-	const static PROGMEM prog_uchar versions[]	= "Version";
+	const static PROGMEM prog_uchar main_monitor[]		= "Monitor";
+	const static PROGMEM prog_uchar main_build[]		= "Build from SD";
+	const static PROGMEM prog_uchar main_jog[]		= "Jog";
+	const static PROGMEM prog_uchar main_preheat[]		= "Preheat";
+	const static PROGMEM prog_uchar main_extruder[]		= "Extrude";
+	const static PROGMEM prog_uchar main_homeAxis[]		= "Home Axis";
+	const static PROGMEM prog_uchar main_advanceABP[]	= "Advance ABP";
+	const static PROGMEM prog_uchar main_steppersS[]	= "Steppers";
+	const static PROGMEM prog_uchar main_moodlight[]	= "Mood Light";
+	const static PROGMEM prog_uchar main_buzzer[]		= "Buzzer";
+	const static PROGMEM prog_uchar main_buildSettings[]	= "Build Settings";
+	const static PROGMEM prog_uchar main_profiles[]		= "Profiles";
+	const static PROGMEM prog_uchar main_extruderFan[]	= "Extruder Fan";
+	const static PROGMEM prog_uchar main_calibrate[]	= "Calibrate";
+	const static PROGMEM prog_uchar main_homeOffsets[]	= "Home Offsets";
+	const static PROGMEM prog_uchar main_filamentUsed[]	= "Filament Used";
+	const static PROGMEM prog_uchar main_currentPosition[]	= "Position";
+	const static PROGMEM prog_uchar main_endStops[]		= "Test End Stops";
+	const static PROGMEM prog_uchar main_homingRates[]	= "Homing Rates";
+	const static PROGMEM prog_uchar main_versions[]		= "Version";
 #ifdef EEPROM_MENU_ENABLE
-	const static PROGMEM prog_uchar eeprom[]	= "Eeprom";
+	const static PROGMEM prog_uchar main_eeprom[]		= "Eeprom";
 #endif
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(monitor);
+		lcd.writeFromPgmspace(LOCALIZE(main_monitor));
 		break;
 	case 1:
-		lcd.writeFromPgmspace(build);
+		lcd.writeFromPgmspace(LOCALIZE(main_build));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(jog);
+		lcd.writeFromPgmspace(LOCALIZE(main_jog));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(preheat);
+		lcd.writeFromPgmspace(LOCALIZE(main_preheat));
 		break;
 	case 4:
-		lcd.writeFromPgmspace(extruder);
+		lcd.writeFromPgmspace(LOCALIZE(main_extruder));
 		break;
 	case 5:
-		lcd.writeFromPgmspace(homeAxis);
+		lcd.writeFromPgmspace(LOCALIZE(main_homeAxis));
 		break;
 	case 6:
-		lcd.writeFromPgmspace(advanceABP);
+		lcd.writeFromPgmspace(LOCALIZE(main_advanceABP));
 		break;
 	case 7:
-		lcd.writeFromPgmspace(steppersS);
+		lcd.writeFromPgmspace(LOCALIZE(main_steppersS));
 		break;
 	case 8:
-		lcd.writeFromPgmspace(moodlight);
+		lcd.writeFromPgmspace(LOCALIZE(main_moodlight));
 		break;
 	case 9:
-		lcd.writeFromPgmspace(buzzer);
+		lcd.writeFromPgmspace(LOCALIZE(main_buzzer));
 		break;
 	case 10:
-		lcd.writeFromPgmspace(buildSettings);
+		lcd.writeFromPgmspace(LOCALIZE(main_buildSettings));
 		break;
 	case 11:
-		lcd.writeFromPgmspace(profiles);
+		lcd.writeFromPgmspace(LOCALIZE(main_profiles));
 		break;
 	case 12:
-		lcd.writeFromPgmspace(extruderFan);
+		lcd.writeFromPgmspace(LOCALIZE(main_extruderFan));
 		break;
 	case 13:
-		lcd.writeFromPgmspace(calibrate);
+		lcd.writeFromPgmspace(LOCALIZE(main_calibrate));
 		break;
 	case 14:
-		lcd.writeFromPgmspace(homeOffsets);
+		lcd.writeFromPgmspace(LOCALIZE(main_homeOffsets));
 		break;
 	case 15:
-		lcd.writeFromPgmspace(filamentUsed);
+		lcd.writeFromPgmspace(LOCALIZE(main_filamentUsed));
 		break;
 	case 16:
-		lcd.writeFromPgmspace(currentPosition);
+		lcd.writeFromPgmspace(LOCALIZE(main_currentPosition));
 		break;
 	case 17:
-		lcd.writeFromPgmspace(endStops);
+		lcd.writeFromPgmspace(LOCALIZE(main_endStops));
 		break;
 	case 18:
-		lcd.writeFromPgmspace(homingRates);
+		lcd.writeFromPgmspace(LOCALIZE(main_homingRates));
 		break;
 	case 19:
-		lcd.writeFromPgmspace(versions);
+		lcd.writeFromPgmspace(LOCALIZE(main_versions));
 		break;
 #ifdef EEPROM_MENU_ENABLE
 	case 20:
-		lcd.writeFromPgmspace(eeprom);
+		lcd.writeFromPgmspace(LOCALIZE(main_eeprom));
 		break;
 #endif
 	}
@@ -2095,7 +2096,7 @@ void ValueSetScreen::reset() {
 }
 
 void ValueSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar vs_message4[] = "Up/Dn/Ent to Set";
 
 	if (forceRedraw) {
 		lcd.clear();
@@ -2104,7 +2105,7 @@ void ValueSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.writeString(message1);
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(vs_message4));
 	}
 
 
@@ -2172,36 +2173,36 @@ void PreheatMenu::fetchTargetTemps() {
 }
 
 void PreheatMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar heat[]     = "Heat ";
-	const static PROGMEM prog_uchar cool[]     = "Cool ";
-	const static PROGMEM prog_uchar tool0[]    = "Tool0";
-	const static PROGMEM prog_uchar platform[] = "Bed";
-	const static PROGMEM prog_uchar tool0set[] = "Set Tool0 Temp";
-	const static PROGMEM prog_uchar platset[]  = "Set Bed Temp";
+	const static PROGMEM prog_uchar ph_heat[]     = "Heat ";
+	const static PROGMEM prog_uchar ph_cool[]     = "Cool ";
+	const static PROGMEM prog_uchar ph_tool0[]    = "Tool0";
+	const static PROGMEM prog_uchar ph_platform[] = "Bed";
+	const static PROGMEM prog_uchar ph_tool0set[] = "Set Tool0 Temp";
+	const static PROGMEM prog_uchar ph_platset[]  = "Set Bed Temp";
 
 	switch (index) {
 	case 0:
 		fetchTargetTemps();
 		if (tool0Temp > 0) {
-			lcd.writeFromPgmspace(cool);
+			lcd.writeFromPgmspace(LOCALIZE(ph_cool));
 		} else {
-			lcd.writeFromPgmspace(heat);
+			lcd.writeFromPgmspace(LOCALIZE(ph_heat));
 		}
-		lcd.writeFromPgmspace(tool0);
+		lcd.writeFromPgmspace(LOCALIZE(ph_tool0));
 		break;
 	case 1:
 		if (platformTemp > 0) {
-			lcd.writeFromPgmspace(cool);
+			lcd.writeFromPgmspace(LOCALIZE(ph_cool));
 		} else {
-			lcd.writeFromPgmspace(heat);
+			lcd.writeFromPgmspace(LOCALIZE(ph_heat));
 		}
-		lcd.writeFromPgmspace(platform);
+		lcd.writeFromPgmspace(LOCALIZE(ph_platform));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(tool0set);
+		lcd.writeFromPgmspace(LOCALIZE(ph_tool0set));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(platset);
+		lcd.writeFromPgmspace(LOCALIZE(ph_platset));
 		break;
 	}
 }
@@ -2254,24 +2255,24 @@ void HomeAxisMode::reset() {
 }
 
 void HomeAxisMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar home1[] = "Home Axis: ";
-	const static PROGMEM prog_uchar home2[] = "  Y            Z";
-	const static PROGMEM prog_uchar home3[] = "X   X (endstops)";
-	const static PROGMEM prog_uchar home4[] = "  Y            Z";
+	const static PROGMEM prog_uchar ha_home1[] = "Home Axis: ";
+	const static PROGMEM prog_uchar ha_home2[] = "  Y            Z";
+	const static PROGMEM prog_uchar ha_home3[] = "X   X (endstops)";
+	const static PROGMEM prog_uchar ha_home4[] = "  Y            Z";
 
 	if (forceRedraw) {
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(home1);
+		lcd.writeFromPgmspace(LOCALIZE(ha_home1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(home2);
+		lcd.writeFromPgmspace(LOCALIZE(ha_home2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(home3);
+		lcd.writeFromPgmspace(LOCALIZE(ha_home3));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(home4);
+		lcd.writeFromPgmspace(LOCALIZE(ha_home4));
 	}
 }
 
@@ -2353,8 +2354,8 @@ void EnabledDisabledMenu::resetState() {
 }
 
 void EnabledDisabledMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar disable[]   =  "Disable";
-	const static PROGMEM prog_uchar enable[] =  "Enable";
+	const static PROGMEM prog_uchar ed_disable[] =  "Disable";
+	const static PROGMEM prog_uchar ed_enable[]  =  "Enable";
 
 	switch (index) {
 	case 0:
@@ -2364,10 +2365,10 @@ void EnabledDisabledMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 		if ( msg2 ) lcd.writeString(msg2);
 		break;
 	case 2:
-		lcd.writeFromPgmspace(disable);
+		lcd.writeFromPgmspace(LOCALIZE(ed_disable));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(enable);
+		lcd.writeFromPgmspace(LOCALIZE(ed_enable));
 		break;
 	}
 }
@@ -2402,48 +2403,48 @@ void TestEndStopsMode::reset() {
 }
 
 void TestEndStopsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar test1[] = "Test End Stops: ";
-	const static PROGMEM prog_uchar test2[] = "XMin:N    XMax:N";
-	const static PROGMEM prog_uchar test3[] = "YMin:N    YMax:N";
-	const static PROGMEM prog_uchar test4[] = "ZMin:N    ZMax:N";
-	const static PROGMEM prog_uchar strY[]  = "Y";
-	const static PROGMEM prog_uchar strN[]  = "N";
+	const static PROGMEM prog_uchar tes_test1[] = "Test End Stops: ";
+	const static PROGMEM prog_uchar tes_test2[] = "XMin:N    XMax:N";
+	const static PROGMEM prog_uchar tes_test3[] = "YMin:N    YMax:N";
+	const static PROGMEM prog_uchar tes_test4[] = "ZMin:N    ZMax:N";
+	const static PROGMEM prog_uchar tes_strY[]  = "Y";
+	const static PROGMEM prog_uchar tes_strN[]  = "N";
 
 	if (forceRedraw) {
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(test1);
+		lcd.writeFromPgmspace(LOCALIZE(tes_test1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(test2);
+		lcd.writeFromPgmspace(LOCALIZE(tes_test2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(test3);
+		lcd.writeFromPgmspace(LOCALIZE(tes_test3));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(test4);
+		lcd.writeFromPgmspace(LOCALIZE(tes_test4));
 	}
 
 	lcd.setCursor(5, 1);
-	if ( stepperAxisIsAtMinimum(0) ) lcd.writeFromPgmspace(strY);
-	else				 lcd.writeFromPgmspace(strN);
+	if ( stepperAxisIsAtMinimum(0) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 	lcd.setCursor(15, 1);
-	if ( stepperAxisIsAtMaximum(0) ) lcd.writeFromPgmspace(strY);
-	else				 lcd.writeFromPgmspace(strN);
+	if ( stepperAxisIsAtMaximum(0) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 
 	lcd.setCursor(5, 2);
-	if ( stepperAxisIsAtMinimum(1) ) lcd.writeFromPgmspace(strY);
-	else				 lcd.writeFromPgmspace(strN);
+	if ( stepperAxisIsAtMinimum(1) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 	lcd.setCursor(15, 2);
-	if ( stepperAxisIsAtMaximum(1) ) lcd.writeFromPgmspace(strY);
-	else				 lcd.writeFromPgmspace(strN);
+	if ( stepperAxisIsAtMaximum(1) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 
 	lcd.setCursor(5, 3);
-	if ( stepperAxisIsAtMinimum(2) ) lcd.writeFromPgmspace(strY);
-	else				 lcd.writeFromPgmspace(strN);
+	if ( stepperAxisIsAtMinimum(2) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 	lcd.setCursor(15, 3);
-	if ( stepperAxisIsAtMaximum(2) ) lcd.writeFromPgmspace(strY);
-	else				 lcd.writeFromPgmspace(strN);
+	if ( stepperAxisIsAtMaximum(2) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 }
 
 void TestEndStopsMode::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -2469,15 +2470,15 @@ void PauseMode::reset() {
 }
 
 void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar waitForCurrentCommand[] = "Entering pause..";
-	const static PROGMEM prog_uchar retractFilament[]	= "Retract filament";
-	const static PROGMEM prog_uchar clearingBuild[]		= "Clearing build..";
-	const static PROGMEM prog_uchar heating[]		= "Heating...      ";
-	const static PROGMEM prog_uchar leavingPaused[]		= "Leaving pause.. ";
-	const static PROGMEM prog_uchar paused1[] 		= "Paused(";
-	const static PROGMEM prog_uchar paused2[] 		= "   Y+         Z+";
-	const static PROGMEM prog_uchar paused3[] 		= "X- Rev X+  (Fwd)";
-	const static PROGMEM prog_uchar paused4[] 		= "   Y-         Z-";
+	const static PROGMEM prog_uchar p_waitForCurrentCommand[] = "Entering pause..";
+	const static PROGMEM prog_uchar p_retractFilament[]	  = "Retract filament";
+	const static PROGMEM prog_uchar p_clearingBuild[]	  = "Clearing build..";
+	const static PROGMEM prog_uchar p_heating[]		  = "Heating...      ";
+	const static PROGMEM prog_uchar p_leavingPaused[]	  = "Leaving pause.. ";
+	const static PROGMEM prog_uchar p_paused1[] 		  = "Paused(";
+	const static PROGMEM prog_uchar p_paused2[] 		  = "   Y+         Z+";
+	const static PROGMEM prog_uchar p_paused3[] 		  = "X- Rev X+  (Fwd)";
+	const static PROGMEM prog_uchar p_paused4[] 		  = "   Y-         Z-";
 
 	enum PauseState pauseState = command::pauseState();
 
@@ -2490,37 +2491,37 @@ void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	switch ( pauseState ) {
 		case PAUSE_STATE_ENTER_START_PIPELINE_DRAIN:
 		case PAUSE_STATE_ENTER_WAIT_PIPELINE_DRAIN:
-			lcd.writeFromPgmspace(waitForCurrentCommand);
+			lcd.writeFromPgmspace(LOCALIZE(p_waitForCurrentCommand));
 			break;
 		case PAUSE_STATE_ENTER_START_RETRACT_FILAMENT:
 		case PAUSE_STATE_ENTER_WAIT_RETRACT_FILAMENT:
-			lcd.writeFromPgmspace(retractFilament);
+			lcd.writeFromPgmspace(LOCALIZE(p_retractFilament));
 			break;
 		case PAUSE_STATE_ENTER_START_CLEARING_PLATFORM:
 		case PAUSE_STATE_ENTER_WAIT_CLEARING_PLATFORM:
-			lcd.writeFromPgmspace(clearingBuild);
+			lcd.writeFromPgmspace(LOCALIZE(p_clearingBuild));
 			break;
 		case PAUSE_STATE_PAUSED:
-			lcd.writeFromPgmspace(paused1);
+			lcd.writeFromPgmspace(LOCALIZE(p_paused1));
 			lcd.writeFloat(stepperAxisStepsToMM(command::getPausedPosition()[Z_AXIS], Z_AXIS), 3);
 			lcd.writeString((char *)"):");
 
 			lcd.setCursor(0,1);
-			lcd.writeFromPgmspace(paused2);
+			lcd.writeFromPgmspace(LOCALIZE(p_paused2));
 			lcd.setCursor(0,2);
-			lcd.writeFromPgmspace(paused3);
+			lcd.writeFromPgmspace(LOCALIZE(p_paused3));
 			lcd.setCursor(0,3);
-			lcd.writeFromPgmspace(paused4);
+			lcd.writeFromPgmspace(LOCALIZE(p_paused4));
 			break;
 		case PAUSE_STATE_EXIT_START_HEATERS:
 		case PAUSE_STATE_EXIT_WAIT_FOR_HEATERS:
-			lcd.writeFromPgmspace(heating);
+			lcd.writeFromPgmspace(LOCALIZE(p_heating));
 			break;
 		case PAUSE_STATE_EXIT_START_RETURNING_PLATFORM:
 		case PAUSE_STATE_EXIT_WAIT_RETURNING_PLATFORM:
 		case PAUSE_STATE_EXIT_START_UNRETRACT_FILAMENT:
 		case PAUSE_STATE_EXIT_WAIT_UNRETRACT_FILAMENT:
-			lcd.writeFromPgmspace(leavingPaused);
+			lcd.writeFromPgmspace(LOCALIZE(p_leavingPaused));
 			break;
 		case PAUSE_STATE_NONE:
 			//Pop off the pause screen and the menu underneath to return to the monitor screen
@@ -2557,24 +2558,24 @@ void PauseAtZPosScreen::reset() {
 }
 
 void PauseAtZPosScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1[] = "Pause at ZPos:";
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar mm[]    = "mm   ";
+	const static PROGMEM prog_uchar pz_message1[] = "Pause at ZPos:";
+	const static PROGMEM prog_uchar pz_message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar pz_mm[]       = "mm   ";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(message1);
+		lcd.writeFromPgmspace(LOCALIZE(pz_message1));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(pz_message4));
 	}
 
 	// Redraw tool info
 	lcd.setCursor(0,1);
 	lcd.writeFloat((float)pauseAtZPos, 3);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(pz_mm));
 }
 
 void PauseAtZPosScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -2619,20 +2620,20 @@ void AdvanceABPMode::reset() {
 }
 
 void AdvanceABPMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar abp1[] = "Advance ABP:";
-	const static PROGMEM prog_uchar abp2[] = "hold key...";
-	const static PROGMEM prog_uchar abp3[] = "           (fwd)";
+	const static PROGMEM prog_uchar abp_msg1[] = "Advance ABP:";
+	const static PROGMEM prog_uchar abp_msg2[] = "hold key...";
+	const static PROGMEM prog_uchar abp_msg3[] = "           (fwd)";
 
 	if (forceRedraw) {
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(abp1);
+		lcd.writeFromPgmspace(LOCALIZE(abp_msg1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(abp2);
+		lcd.writeFromPgmspace(LOCALIZE(abp_msg2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(abp3);
+		lcd.writeFromPgmspace(LOCALIZE(abp_msg3));
 	}
 
 	if (( abpForwarding ) && ( ! interface::isButtonPressed(ButtonArray::OK) )) {
@@ -2677,69 +2678,69 @@ void CalibrateMode::reset() {
 }
 
 void CalibrateMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar calib1[] = "Calibrate: Move ";
-	const static PROGMEM prog_uchar calib2[] = "build platform";
-	const static PROGMEM prog_uchar calib3[] = "until nozzle...";
-	const static PROGMEM prog_uchar calib4[] = "          (cont)";
-	const static PROGMEM prog_uchar calib5[] = "lies in center,";
-	const static PROGMEM prog_uchar calib6[] = "turn threaded";
-	const static PROGMEM prog_uchar calib7[] = "rod until...";
-	const static PROGMEM prog_uchar calib8[] = "nozzle just";
-	const static PROGMEM prog_uchar calib9[] = "touches.";
-	const static PROGMEM prog_uchar homeZ[]  = "Homing Z...";
-	const static PROGMEM prog_uchar homeY[]  = "Homing Y...";
-	const static PROGMEM prog_uchar homeX[]  = "Homing X...";
-	const static PROGMEM prog_uchar done[]   = "! Calibrated !";
-	const static PROGMEM prog_uchar regen[]  = "Regenerate gcode";
-	const static PROGMEM prog_uchar reset[]  = "         (reset)";
+	const static PROGMEM prog_uchar c_calib1[] = "Calibrate: Move ";
+	const static PROGMEM prog_uchar c_calib2[] = "build platform";
+	const static PROGMEM prog_uchar c_calib3[] = "until nozzle...";
+	const static PROGMEM prog_uchar c_calib4[] = "          (cont)";
+	const static PROGMEM prog_uchar c_calib5[] = "lies in center,";
+	const static PROGMEM prog_uchar c_calib6[] = "turn threaded";
+	const static PROGMEM prog_uchar c_calib7[] = "rod until...";
+	const static PROGMEM prog_uchar c_calib8[] = "nozzle just";
+	const static PROGMEM prog_uchar c_calib9[] = "touches.";
+	const static PROGMEM prog_uchar c_homeZ[]  = "Homing Z...";
+	const static PROGMEM prog_uchar c_homeY[]  = "Homing Y...";
+	const static PROGMEM prog_uchar c_homeX[]  = "Homing X...";
+	const static PROGMEM prog_uchar c_done[]   = "! Calibrated !";
+	const static PROGMEM prog_uchar c_regen[]  = "Regenerate gcode";
+	const static PROGMEM prog_uchar c_reset[]  = "         (reset)";
 
 	if ((forceRedraw) || (calibrationState != lastCalibrationState)) {
 		lcd.clear();
 		lcd.setCursor(0,0);
 		switch(calibrationState) {
 			case CS_START1:
-				lcd.writeFromPgmspace(calib1);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib1));
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(calib2);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib2));
 				lcd.setCursor(0,2);
-				lcd.writeFromPgmspace(calib3);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib3));
 				lcd.setCursor(0,3);
-				lcd.writeFromPgmspace(calib4);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib4));
 				break;
 			case CS_START2:
-				lcd.writeFromPgmspace(calib5);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib5));
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(calib6);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib6));
 				lcd.setCursor(0,2);
-				lcd.writeFromPgmspace(calib7);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib7));
 				lcd.setCursor(0,3);
-				lcd.writeFromPgmspace(calib4);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib4));
 				break;
 			case CS_PROMPT_MOVE:
-				lcd.writeFromPgmspace(calib8);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib8));
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(calib9);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib9));
 				lcd.setCursor(0,3);
-				lcd.writeFromPgmspace(calib4);
+				lcd.writeFromPgmspace(LOCALIZE(c_calib4));
 				break;
 			case CS_HOME_Z:
 			case CS_HOME_Z_WAIT:
-				lcd.writeFromPgmspace(homeZ);
+				lcd.writeFromPgmspace(LOCALIZE(c_homeZ));
 				break;
 			case CS_HOME_Y:
 			case CS_HOME_Y_WAIT:
-				lcd.writeFromPgmspace(homeY);
+				lcd.writeFromPgmspace(LOCALIZE(c_homeY));
 				break;
 			case CS_HOME_X:
 			case CS_HOME_X_WAIT:
-				lcd.writeFromPgmspace(homeX);
+				lcd.writeFromPgmspace(LOCALIZE(c_homeX));
 				break;
 			case CS_PROMPT_CALIBRATED:
-				lcd.writeFromPgmspace(done);
+				lcd.writeFromPgmspace(LOCALIZE(c_done));
 				lcd.setCursor(0,1);
-				lcd.writeFromPgmspace(regen);
+				lcd.writeFromPgmspace(LOCALIZE(c_regen));
 				lcd.setCursor(0,3);
-				lcd.writeFromPgmspace(reset);
+				lcd.writeFromPgmspace(LOCALIZE(c_reset));
 				break;
 			default:
 				break;
@@ -2864,11 +2865,11 @@ void HomeOffsetsMode::reset() {
 }
 
 void HomeOffsetsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1x[] = "X Offset:";
-	const static PROGMEM prog_uchar message1y[] = "Y Offset:";
-	const static PROGMEM prog_uchar message1z[] = "Z Offset:";
-	const static PROGMEM prog_uchar message4[]  = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar mm[]        = "mm";
+	const static PROGMEM prog_uchar ho_message1x[] = "X Offset:";
+	const static PROGMEM prog_uchar ho_message1y[] = "Y Offset:";
+	const static PROGMEM prog_uchar ho_message1z[] = "Z Offset:";
+	const static PROGMEM prog_uchar ho_message4[]  = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar ho_mm[]        = "mm";
 
 	if ( homeOffsetState != lastHomeOffsetState )	forceRedraw = true;
 
@@ -2878,20 +2879,20 @@ void HomeOffsetsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(0,0);
 		switch(homeOffsetState) {
 			case HOS_OFFSET_X:
-				lcd.writeFromPgmspace(message1x);
+				lcd.writeFromPgmspace(LOCALIZE(ho_message1x));
 				break;
                 	case HOS_OFFSET_Y:
-				lcd.writeFromPgmspace(message1y);
+				lcd.writeFromPgmspace(LOCALIZE(ho_message1y));
 				break;
                 	case HOS_OFFSET_Z:
-				lcd.writeFromPgmspace(message1z);
+				lcd.writeFromPgmspace(LOCALIZE(ho_message1z));
 				break;
 			default:
 				break;
 		}
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(ho_message4));
 	}
 
 	float position = 0.0;
@@ -2912,7 +2913,7 @@ void HomeOffsetsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	lcd.setCursor(0,1);
 	lcd.writeFloat((float)position, 3);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(ho_mm));
 
 	lastHomeOffsetState = homeOffsetState;
 }
@@ -2971,28 +2972,28 @@ void BuzzerSetRepeatsMode::reset() {
 }
 
 void BuzzerSetRepeatsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1[] = "Repeat Buzzer:";
-	const static PROGMEM prog_uchar message2[] = "(0=Buzzer Off)";
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar times[]    = " times ";
+	const static PROGMEM prog_uchar bsr_message1[] = "Repeat Buzzer:";
+	const static PROGMEM prog_uchar bsr_message2[] = "(0=Buzzer Off)";
+	const static PROGMEM prog_uchar bsr_message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar bsr_times[]    = " times ";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(message1);
+		lcd.writeFromPgmspace(LOCALIZE(bsr_message1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(message2);
+		lcd.writeFromPgmspace(LOCALIZE(bsr_message2));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(bsr_message4));
 	}
 
 	// Redraw tool info
 	lcd.setCursor(0,2);
 	lcd.writeInt(repeats, 3);
-	lcd.writeFromPgmspace(times);
+	lcd.writeFromPgmspace(LOCALIZE(bsr_times));
 }
 
 void BuzzerSetRepeatsMode::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -3055,21 +3056,21 @@ void FilamentUsedResetMenu::resetState() {
 }
 
 void FilamentUsedResetMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar msg[]  = "Reset To Zero?";
-	const static PROGMEM prog_uchar no[] = "No";
-	const static PROGMEM prog_uchar yes[]= "Yes";
+	const static PROGMEM prog_uchar fur_msg[] = "Reset To Zero?";
+	const static PROGMEM prog_uchar fur_no[]  = "No";
+	const static PROGMEM prog_uchar fur_yes[] = "Yes";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(msg);
+		lcd.writeFromPgmspace(LOCALIZE(fur_msg));
 		break;
 	case 1:
 		break;
 	case 2:
-		lcd.writeFromPgmspace(no);
+		lcd.writeFromPgmspace(LOCALIZE(fur_no));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(yes);
+		lcd.writeFromPgmspace(LOCALIZE(fur_yes));
 		break;
 	}
 }
@@ -3095,17 +3096,17 @@ void FilamentUsedMode::reset() {
 }
 
 void FilamentUsedMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar lifetime[] = "Lifetime Odo.:";
-	const static PROGMEM prog_uchar trip[]	   = "Trip Odometer:";
-	const static PROGMEM prog_uchar but_life[] = "(trip)   (reset)";
-	const static PROGMEM prog_uchar but_trip[] = "(life)   (reset)";
+	const static PROGMEM prog_uchar fu_lifetime[] = "Lifetime Odo.:";
+	const static PROGMEM prog_uchar fu_trip[]     = "Trip Odometer:";
+	const static PROGMEM prog_uchar fu_but_life[] = "(trip)   (reset)";
+	const static PROGMEM prog_uchar fu_but_trip[] = "(life)   (reset)";
 
 	if ((forceRedraw) || (overrideForceRedraw)) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		if ( lifetimeDisplay )	lcd.writeFromPgmspace(lifetime);
-		else			lcd.writeFromPgmspace(trip);
+		if ( lifetimeDisplay )	lcd.writeFromPgmspace(LOCALIZE(fu_lifetime));
+		else			lcd.writeFromPgmspace(LOCALIZE(fu_trip));
 
 	        int64_t filamentUsedA = eeprom::getEepromInt64(eeprom::FILAMENT_LIFETIME_A, EEPROM_DEFAULT_FILAMENT_LIFETIME);
 	        int64_t filamentUsedB = eeprom::getEepromInt64(eeprom::FILAMENT_LIFETIME_B, EEPROM_DEFAULT_FILAMENT_LIFETIME);
@@ -3127,8 +3128,8 @@ void FilamentUsedMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.write('m');
 
 		lcd.setCursor(0,2);
-		if ( lifetimeDisplay )	lcd.writeFromPgmspace(but_life);
-		else			lcd.writeFromPgmspace(but_trip);
+		if ( lifetimeDisplay )	lcd.writeFromPgmspace(LOCALIZE(fu_but_life));
+		else			lcd.writeFromPgmspace(LOCALIZE(fu_but_trip));
 
 		lcd.setCursor(0,3);
 		lcd.writeFloat(((filamentUsedMM / 25.4) / 12.0), 4);
@@ -3183,28 +3184,28 @@ void BuildSettingsMenu::resetState() {
 }
 
 void BuildSettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar item1[] = "Override Temp";
-	const static PROGMEM prog_uchar item2[] = "ABP Copies (SD)";
-	const static PROGMEM prog_uchar item3[] = "Ditto Print";
-	const static PROGMEM prog_uchar item4[] = "Accel. On/Off";
-	const static PROGMEM prog_uchar item5[] = "Accel. Settings";
+	const static PROGMEM prog_uchar bs_item1[] = "Override Temp";
+	const static PROGMEM prog_uchar bs_item2[] = "ABP Copies (SD)";
+	const static PROGMEM prog_uchar bs_item3[] = "Ditto Print";
+	const static PROGMEM prog_uchar bs_item4[] = "Accel. On/Off";
+	const static PROGMEM prog_uchar bs_item5[] = "Accel. Settings";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(item1);
+		lcd.writeFromPgmspace(LOCALIZE(bs_item1));
 		break;
 	case 1:
-		lcd.writeFromPgmspace(item2);
+		lcd.writeFromPgmspace(LOCALIZE(bs_item2));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(item3);
+		lcd.writeFromPgmspace(LOCALIZE(bs_item3));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(item4);
+		lcd.writeFromPgmspace(LOCALIZE(bs_item4));
 		break;
 	case 4:
 		if ( ! acceleration ) return;
-		lcd.writeFromPgmspace(item5);
+		lcd.writeFromPgmspace(LOCALIZE(bs_item5));
 		break;
 	}
 }
@@ -3244,17 +3245,17 @@ void ABPCopiesSetScreen::reset() {
 }
 
 void ABPCopiesSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1[] = "ABP Copies (SD):";
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar abp_message1[] = "ABP Copies (SD):";
+	const static PROGMEM prog_uchar abp_message4[] = "Up/Dn/Ent to Set";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(message1);
+		lcd.writeFromPgmspace(LOCALIZE(abp_message1));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(abp_message4));
 	}
 
 	// Redraw tool info
@@ -3332,23 +3333,23 @@ void AccelerationOnOffMenu::resetState() {
 }
 
 void AccelerationOnOffMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar msg1[]    = "Accelerated";
-	const static PROGMEM prog_uchar msg2[]    = "Printing:";
-	const static PROGMEM prog_uchar off[]     =  "Off";
-	const static PROGMEM prog_uchar on[]	  =  "On";
+	const static PROGMEM prog_uchar aof_msg1[] = "Accelerated";
+	const static PROGMEM prog_uchar aof_msg2[] = "Printing:";
+	const static PROGMEM prog_uchar aof_off[]  = "Off";
+	const static PROGMEM prog_uchar aof_on[]   = "On";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(msg1);
+		lcd.writeFromPgmspace(LOCALIZE(aof_msg1));
 		break;
 	case 1:
-		lcd.writeFromPgmspace(msg2);
+		lcd.writeFromPgmspace(LOCALIZE(aof_msg2));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(off);
+		lcd.writeFromPgmspace(LOCALIZE(aof_off));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(on);
+		lcd.writeFromPgmspace(LOCALIZE(aof_on));
 		break;
 	}
 }
@@ -3479,7 +3480,8 @@ ProfilesMenu::ProfilesMenu() {
 	//If the value is 0xff, write the profile number
 	uint8_t buf[PROFILE_NAME_LENGTH+1];
 
-        const static PROGMEM prog_uchar defaultProfile[] =  "Profile?";
+	// ??????
+        const static PROGMEM prog_uchar pro_defaultProfile[] = "Profile?";
 
 	//Get the home axis positions, we may need this to write the defaults
 	homePosition = steppers::getStepperPosition();
@@ -3495,7 +3497,7 @@ ProfilesMenu::ProfilesMenu() {
 		if ( ! isValidProfileName(p)) {
 			//Create the default profile name
 			for( uint8_t i = 0; i < PROFILE_NAME_LENGTH; i ++ )
-				buf[i] = pgm_read_byte_near(defaultProfile+i);
+				buf[i] = pgm_read_byte_near(pro_defaultProfile+i);
 			buf[PROFILE_NAME_LENGTH - 1] = '1' + p;
 
 			//Write the defaults
@@ -3534,23 +3536,23 @@ void ProfileSubMenu::resetState() {
 }
 
 void ProfileSubMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar msg1[]  = "Restore";
-	const static PROGMEM prog_uchar msg2[]  = "Display Config";
-	const static PROGMEM prog_uchar msg3[]  = "Change Name";
-	const static PROGMEM prog_uchar msg4[]  = "Save To Profile";
+	const static PROGMEM prog_uchar ps_msg1[]  = "Restore";
+	const static PROGMEM prog_uchar ps_msg2[]  = "Display Config";
+	const static PROGMEM prog_uchar ps_msg3[]  = "Change Name";
+	const static PROGMEM prog_uchar ps_msg4[]  = "Save To Profile";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(msg1);
+		lcd.writeFromPgmspace(LOCALIZE(ps_msg1));
 		break;
 	case 1:
-		lcd.writeFromPgmspace(msg2);
+		lcd.writeFromPgmspace(LOCALIZE(ps_msg2));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(msg3);
+		lcd.writeFromPgmspace(LOCALIZE(ps_msg3));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(msg4);
+		lcd.writeFromPgmspace(LOCALIZE(ps_msg4));
 		break;
 	}
 }
@@ -3625,18 +3627,18 @@ void ProfileChangeNameMode::reset() {
 }
 
 void ProfileChangeNameMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1[] = "Profile Name:";
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar blank[]	   = " ";
+	const static PROGMEM prog_uchar pcn_message1[] = "Profile Name:";
+	const static PROGMEM prog_uchar pcn_message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar pcn_blank[]    = " ";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(message1);
+		lcd.writeFromPgmspace(LOCALIZE(pcn_message1));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(pcn_message4));
 	}
 
 	lcd.setCursor(0,1);
@@ -3649,11 +3651,11 @@ void ProfileChangeNameMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	//Write a blank before and after the cursor if we're not at the ends
 	if ( cursorLocation >= 1 ) {
 		lcd.setCursor(cursorLocation-1, 2);
-		lcd.writeFromPgmspace(blank);
+		lcd.writeFromPgmspace(LOCALIZE(pcn_blank));
 	}
 	if ( cursorLocation < PROFILE_NAME_LENGTH ) {
 		lcd.setCursor(cursorLocation+1, 2);
-		lcd.writeFromPgmspace(blank);
+		lcd.writeFromPgmspace(LOCALIZE(pcn_blank));
 	}
 }
 
@@ -3714,39 +3716,39 @@ void ProfileDisplaySettingsMenu::resetState() {
 }
 
 void ProfileDisplaySettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar xOffset[]     = "XOff: ";
-	const static PROGMEM prog_uchar yOffset[]     = "YOff: ";
-	const static PROGMEM prog_uchar zOffset[]     = "ZOff: ";
-	const static PROGMEM prog_uchar hbp[]         = "HBP Temp:   ";
-	const static PROGMEM prog_uchar tool0[]       = "Tool0 Temp: ";
-	const static PROGMEM prog_uchar extruder[]    = "ExtrdrMM/s: ";
+	const static PROGMEM prog_uchar pds_xOffset[]     = "XOff: ";
+	const static PROGMEM prog_uchar pds_yOffset[]     = "YOff: ";
+	const static PROGMEM prog_uchar pds_zOffset[]     = "ZOff: ";
+	const static PROGMEM prog_uchar pds_hbp[]         = "HBP Temp:   ";
+	const static PROGMEM prog_uchar pds_tool0[]       = "Tool0 Temp: ";
+	const static PROGMEM prog_uchar pds_extruder[]    = "ExtrdrMM/s: ";
 
 	switch (index) {
 	case 0:
 		lcd.writeString((char *)profileName);
 		break;
 	case 2:
-		lcd.writeFromPgmspace(xOffset);
+		lcd.writeFromPgmspace(LOCALIZE(pds_xOffset));
 		lcd.writeFloat(stepperAxisStepsToMM(homeX, X_AXIS), 3);
 		break;
 	case 3:
-		lcd.writeFromPgmspace(yOffset);
+		lcd.writeFromPgmspace(LOCALIZE(pds_yOffset));
 		lcd.writeFloat(stepperAxisStepsToMM(homeY, Y_AXIS), 3);
 		break;
 	case 4:
-		lcd.writeFromPgmspace(zOffset);
+		lcd.writeFromPgmspace(LOCALIZE(pds_zOffset));
 		lcd.writeFloat(stepperAxisStepsToMM(homeZ, Z_AXIS), 3);
 		break;
 	case 5:
-		lcd.writeFromPgmspace(hbp);
+		lcd.writeFromPgmspace(LOCALIZE(pds_hbp));
 		lcd.writeFloat((float)hbpTemp, 0);
 		break;
 	case 6:
-		lcd.writeFromPgmspace(tool0);
+		lcd.writeFromPgmspace(LOCALIZE(pds_tool0));
 		lcd.writeFloat((float)tool0Temp, 0);
 		break;
 	case 7:
-		lcd.writeFromPgmspace(extruder);
+		lcd.writeFromPgmspace(LOCALIZE(pds_extruder));
 		lcd.writeFloat((float)extruderMMS, 0);
 		break;
 	}
@@ -3759,45 +3761,45 @@ void CurrentPositionMode::reset() {
 }
 
 void CurrentPositionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar msg1[] = "X:";
-	const static PROGMEM prog_uchar msg2[] = "Y:";
-	const static PROGMEM prog_uchar msg3[] = "Z:";
-	const static PROGMEM prog_uchar msg4[] = "A:";
-	const static PROGMEM prog_uchar mm[] = "mm";
+	const static PROGMEM prog_uchar cp_msg1[] = "X:";
+	const static PROGMEM prog_uchar cp_msg2[] = "Y:";
+	const static PROGMEM prog_uchar cp_msg3[] = "Z:";
+	const static PROGMEM prog_uchar cp_msg4[] = "A:";
+	const static PROGMEM prog_uchar cp_mm[]   = "mm";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(msg1);
+		lcd.writeFromPgmspace(LOCALIZE(cp_msg1));
 
 		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(msg2);
+		lcd.writeFromPgmspace(LOCALIZE(cp_msg2));
 
 		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(msg3);
+		lcd.writeFromPgmspace(LOCALIZE(cp_msg3));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(msg4);
+		lcd.writeFromPgmspace(LOCALIZE(cp_msg4));
 	}
 
 	Point position = steppers::getStepperPosition();
 
 	lcd.setCursor(3, 0);
 	lcd.writeFloat(stepperAxisStepsToMM(position[0], X_AXIS), 3);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
 
 	lcd.setCursor(3, 1);
 	lcd.writeFloat(stepperAxisStepsToMM(position[1], Y_AXIS), 3);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
 
 	lcd.setCursor(3, 2);
 	lcd.writeFloat(stepperAxisStepsToMM(position[2], Z_AXIS), 3);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
 
 	lcd.setCursor(3, 3);
 	lcd.writeFloat(stepperAxisStepsToMM(position[3], A_AXIS), 3);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
 }
 
 void CurrentPositionMode::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -3816,23 +3818,23 @@ void UnableToOpenFileMenu::resetState() {
 }
 
 void UnableToOpenFileMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar msg1[]   = "Failed to open";
-	const static PROGMEM prog_uchar msg2[]   = "file.  Name too";
-	const static PROGMEM prog_uchar msg3[]   = "long?";
-	const static PROGMEM prog_uchar cont[]   =  "Continue";
+	const static PROGMEM prog_uchar utof_msg1[]   = "Failed to open";
+	const static PROGMEM prog_uchar utof_msg2[]   = "file.  Name too";
+	const static PROGMEM prog_uchar utof_msg3[]   = "long?";
+	const static PROGMEM prog_uchar utof_cont[]   = "Continue";
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(msg1);
+		lcd.writeFromPgmspace(LOCALIZE(utof_msg1));
 		break;
 	case 1:
-		lcd.writeFromPgmspace(msg2);
+		lcd.writeFromPgmspace(LOCALIZE(utof_msg2));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(msg3);
+		lcd.writeFromPgmspace(LOCALIZE(utof_msg3));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(cont);
+		lcd.writeFromPgmspace(LOCALIZE(utof_cont));
 		break;
 	}
 }
@@ -3868,25 +3870,25 @@ void AcceleratedSettingsMode::reset() {
 }
 
 void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1xMaxAccelRate[] 	= "X Max Accel:";
-	const static PROGMEM prog_uchar message1yMaxAccelRate[] 	= "Y Max Accel:";
-	const static PROGMEM prog_uchar message1zMaxAccelRate[] 	= "Z Max Accel:";
-	const static PROGMEM prog_uchar message1aMaxAccelRate[] 	= "Right Max Accel:";
-	const static PROGMEM prog_uchar message1bMaxAccelRate[] 	= "Left Max Accel:";
-	const static PROGMEM prog_uchar message1ExtruderNorm[]  	= "Max Accel:";
-	const static PROGMEM prog_uchar message1ExtruderRetract[]	= "Max Accel Extdr:";
-	const static PROGMEM prog_uchar message1AdvanceK[]		= "JKN Advance K:";
-	const static PROGMEM prog_uchar message1AdvanceK2[]		= "JKN Advance K2:";
-	const static PROGMEM prog_uchar message1ExtruderDeprimeA[]	= "Extdr.DeprimeR:";
-	const static PROGMEM prog_uchar message1ExtruderDeprimeB[]	= "Extdr.DeprimeL:";
-	const static PROGMEM prog_uchar message1SlowdownLimit[]		= "SlowdownEnabled:";
-	const static PROGMEM prog_uchar message1MaxSpeedChangeX[]	= "MaxSpeedChangeX:";
-	const static PROGMEM prog_uchar message1MaxSpeedChangeY[]	= "MaxSpeedChangeY:";
-	const static PROGMEM prog_uchar message1MaxSpeedChangeZ[]	= "MaxSpeedChangeZ:";
-	const static PROGMEM prog_uchar message1MaxSpeedChangeA[]	= "MaxSpeedChangeR:";
-	const static PROGMEM prog_uchar message1MaxSpeedChangeB[]	= "MaxSpeedChangeL:";
-	const static PROGMEM prog_uchar message4[]  = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar blank[]     = "    ";
+	const static PROGMEM prog_uchar as_message1xMaxAccelRate[] 	= "X Max Accel:";
+	const static PROGMEM prog_uchar as_message1yMaxAccelRate[] 	= "Y Max Accel:";
+	const static PROGMEM prog_uchar as_message1zMaxAccelRate[] 	= "Z Max Accel:";
+	const static PROGMEM prog_uchar as_message1aMaxAccelRate[] 	= "Right Max Accel:";
+	const static PROGMEM prog_uchar as_message1bMaxAccelRate[] 	= "Left Max Accel:";
+	const static PROGMEM prog_uchar as_message1ExtruderNorm[]  	= "Max Accel:";
+	const static PROGMEM prog_uchar as_message1ExtruderRetract[]	= "Max Accel Extdr:";
+	const static PROGMEM prog_uchar as_message1AdvanceK[]		= "JKN Advance K:";
+	const static PROGMEM prog_uchar as_message1AdvanceK2[]		= "JKN Advance K2:";
+	const static PROGMEM prog_uchar as_message1ExtruderDeprimeA[]	= "Extdr.DeprimeR:";
+	const static PROGMEM prog_uchar as_message1ExtruderDeprimeB[]	= "Extdr.DeprimeL:";
+	const static PROGMEM prog_uchar as_message1SlowdownLimit[]	= "SlowdownEnabled:";
+	const static PROGMEM prog_uchar as_message1MaxSpeedChangeX[]	= "MaxSpeedChangeX:";
+	const static PROGMEM prog_uchar as_message1MaxSpeedChangeY[]	= "MaxSpeedChangeY:";
+	const static PROGMEM prog_uchar as_message1MaxSpeedChangeZ[]	= "MaxSpeedChangeZ:";
+	const static PROGMEM prog_uchar as_message1MaxSpeedChangeA[]	= "MaxSpeedChangeR:";
+	const static PROGMEM prog_uchar as_message1MaxSpeedChangeB[]	= "MaxSpeedChangeL:";
+	const static PROGMEM prog_uchar as_message4[]			= "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar as_blank[]			= "    ";
 
 	if ( accelerateSettingsState != lastAccelerateSettingsState )	forceRedraw = true;
 
@@ -3896,62 +3898,62 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(0,0);
 		switch(accelerateSettingsState) {
                 	case AS_MAX_ACCELERATION_X:
-				lcd.writeFromPgmspace(message1xMaxAccelRate);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1xMaxAccelRate));
 				break;
                 	case AS_MAX_ACCELERATION_Y:
-				lcd.writeFromPgmspace(message1yMaxAccelRate);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1yMaxAccelRate));
 				break;
                 	case AS_MAX_ACCELERATION_Z:
-				lcd.writeFromPgmspace(message1zMaxAccelRate);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1zMaxAccelRate));
 				break;
                 	case AS_MAX_ACCELERATION_A:
-				lcd.writeFromPgmspace(message1aMaxAccelRate);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1aMaxAccelRate));
 				break;
                 	case AS_MAX_ACCELERATION_B:
-				lcd.writeFromPgmspace(message1bMaxAccelRate);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1bMaxAccelRate));
 				break;
                 	case AS_MAX_EXTRUDER_NORM:
-				lcd.writeFromPgmspace(message1ExtruderNorm);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1ExtruderNorm));
 				break;
                 	case AS_MAX_EXTRUDER_RETRACT:
-				lcd.writeFromPgmspace(message1ExtruderRetract);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1ExtruderRetract));
 				break;
                 	case AS_ADVANCE_K:
-				lcd.writeFromPgmspace(message1AdvanceK);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1AdvanceK));
 				break;
                 	case AS_ADVANCE_K2:
-				lcd.writeFromPgmspace(message1AdvanceK2);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1AdvanceK2));
 				break;
                 	case AS_EXTRUDER_DEPRIME_A:
-				lcd.writeFromPgmspace(message1ExtruderDeprimeA);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1ExtruderDeprimeA));
 				break;
                 	case AS_EXTRUDER_DEPRIME_B:
-				lcd.writeFromPgmspace(message1ExtruderDeprimeB);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1ExtruderDeprimeB));
 				break;
                 	case AS_SLOWDOWN_FLAG:
-				lcd.writeFromPgmspace(message1SlowdownLimit);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1SlowdownLimit));
 				break;
                 	case AS_MAX_SPEED_CHANGE_X:
-				lcd.writeFromPgmspace(message1MaxSpeedChangeX);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1MaxSpeedChangeX));
 				break;
                 	case AS_MAX_SPEED_CHANGE_Y:
-				lcd.writeFromPgmspace(message1MaxSpeedChangeY);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1MaxSpeedChangeY));
 				break;
                 	case AS_MAX_SPEED_CHANGE_Z:
-				lcd.writeFromPgmspace(message1MaxSpeedChangeZ);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1MaxSpeedChangeZ));
 				break;
                 	case AS_MAX_SPEED_CHANGE_A:
-				lcd.writeFromPgmspace(message1MaxSpeedChangeA);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1MaxSpeedChangeA));
 				break;
                 	case AS_MAX_SPEED_CHANGE_B:
-				lcd.writeFromPgmspace(message1MaxSpeedChangeB);
+				lcd.writeFromPgmspace(LOCALIZE(as_message1MaxSpeedChangeB));
 				break;
 			default:
 				break;
 		}
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(as_message4));
 	}
 
 	uint32_t value = 0;
@@ -3978,7 +3980,7 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 					lcd.writeFloat((float)value, 0);
 					break;
 	}
-	lcd.writeFromPgmspace(blank);
+	lcd.writeFromPgmspace(LOCALIZE(as_blank));
 
 	lastAccelerateSettingsState = accelerateSettingsState;
 }
@@ -4063,24 +4065,24 @@ void EndStopConfigScreen::reset() {
 }
 
 void EndStopConfigScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1[] = "EndstopsPresent:";
-	const static PROGMEM prog_uchar message4[] = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar blank[]    = " ";
+	const static PROGMEM prog_uchar esc_message1[] = "EndstopsPresent:";
+	const static PROGMEM prog_uchar esc_message4[] = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar esc_blank[]    = " ";
 
 	if (forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(message1);
+		lcd.writeFromPgmspace(LOCALIZE(esc_message1));
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(esc_message4));
 	}
 
 	// Redraw tool info
 	lcd.setCursor(0,1);
 	lcd.writeFloat((float)endstops, 0);
-	lcd.writeFromPgmspace(blank);
+	lcd.writeFromPgmspace(LOCALIZE(esc_blank));
 }
 
 void EndStopConfigScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -4128,11 +4130,11 @@ void HomingFeedRatesMode::reset() {
 }
 
 void HomingFeedRatesMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar message1x[] = "X Home Feedrate:";
-	const static PROGMEM prog_uchar message1y[] = "Y Home Feedrate:";
-	const static PROGMEM prog_uchar message1z[] = "Z Home Feedrate:";
-	const static PROGMEM prog_uchar message4[]  = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar mm[]        = "mm/min ";
+	const static PROGMEM prog_uchar hfr_message1x[] = "X Home Feedrate:";
+	const static PROGMEM prog_uchar hfr_message1y[] = "Y Home Feedrate:";
+	const static PROGMEM prog_uchar hfr_message1z[] = "Z Home Feedrate:";
+	const static PROGMEM prog_uchar hfr_message4[]  = "Up/Dn/Ent to Set";
+	const static PROGMEM prog_uchar hfr_mm[]        = "mm/min ";
 
 	if ( homingFeedRateState != lastHomingFeedRateState )	forceRedraw = true;
 
@@ -4142,20 +4144,20 @@ void HomingFeedRatesMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(0,0);
 		switch(homingFeedRateState) {
 			case HFRS_OFFSET_X:
-				lcd.writeFromPgmspace(message1x);
+				lcd.writeFromPgmspace(LOCALIZE(hfr_message1x));
 				break;
                 	case HFRS_OFFSET_Y:
-				lcd.writeFromPgmspace(message1y);
+				lcd.writeFromPgmspace(LOCALIZE(hfr_message1y));
 				break;
                 	case HFRS_OFFSET_Z:
-				lcd.writeFromPgmspace(message1z);
+				lcd.writeFromPgmspace(LOCALIZE(hfr_message1z));
 				break;
 			default:
 				break;
 		}
 
 		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(message4);
+		lcd.writeFromPgmspace(LOCALIZE(hfr_message4));
 	}
 
 	float feedRate = 0.0;
@@ -4176,7 +4178,7 @@ void HomingFeedRatesMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	lcd.setCursor(0,1);
 	lcd.writeFloat((float)feedRate, 0);
-	lcd.writeFromPgmspace(mm);
+	lcd.writeFromPgmspace(LOCALIZE(hfr_mm));
 
 	lastHomingFeedRateState = homingFeedRateState;
 }
@@ -4250,22 +4252,22 @@ void EepromMenu::resetState() {
 void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( warningScreen ) {
 		if ( forceRedraw ) {
-			const static PROGMEM prog_uchar msg1[]		= "This menu can";
-			const static PROGMEM prog_uchar msg2[]		= "make your bot";
-			const static PROGMEM prog_uchar msg3[]		= "inoperable.";
-			const static PROGMEM prog_uchar msg4[]		= "Press Y+ to cont";
+			const static PROGMEM prog_uchar eeprom_msg1[]	= "This menu can";
+			const static PROGMEM prog_uchar eeprom_msg2[]  	= "make your bot";
+			const static PROGMEM prog_uchar eeprom_msg3[]  	= "inoperable.";
+			const static PROGMEM prog_uchar eeprom_msg4[]  	= "Press Y+ to cont";
 
 			lcd.setCursor(0,0);
-			lcd.writeFromPgmspace(msg1);
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg1));
 
 			lcd.setCursor(0,1);
-			lcd.writeFromPgmspace(msg2);
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg2));
 
 			lcd.setCursor(0,2);
-			lcd.writeFromPgmspace(msg3);
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg3));
 
 			lcd.setCursor(0,3);
-			lcd.writeFromPgmspace(msg4);
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg4));
 		}
 	}
 	else {
@@ -4274,34 +4276,34 @@ void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 			lcd.setCursor(0,0);
 		}
 
-		const static PROGMEM prog_uchar message_dump[]		= "Saving...";
-		const static PROGMEM prog_uchar message_restore[]	= "Restoring...";
-		const static PROGMEM prog_uchar message_erase[]		= "Erasing...";
+		const static PROGMEM prog_uchar eeprom_message_dump[]		= "Saving...";
+		const static PROGMEM prog_uchar eeprom_message_restore[]	= "Restoring...";
+		const static PROGMEM prog_uchar eeprom_message_erase[]		= "Erasing...";
 
 		const char dumpFilename[] = "eeprom_dump.bin";
 
-		const static PROGMEM prog_uchar message_error[]		= "Error:";
+		const static PROGMEM prog_uchar eeprom_message_error[]		= "Error:";
 
 		switch ( itemSelected ) {
 			case 0:	//Dump
 				if ( ! sdcard::fileExists(dumpFilename) ) {
-					lcd.writeFromPgmspace(message_dump);
+					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_dump));
 					if ( ! eeprom::saveToSDFile(dumpFilename) ) {
-						const static PROGMEM prog_uchar msg1[]	= "Write Failed!";
+						const static PROGMEM prog_uchar eeprom_msg11[] = "Write Failed!";
 						lcd.clear();
 						lcd.setCursor(0,0);
-						lcd.writeFromPgmspace(msg1);
+						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg11));
 						_delay_us(5000000);
 					}
 				} else {
-					const static PROGMEM prog_uchar msg3[]	= "File exists!";
+					const static PROGMEM prog_uchar eeprom_msg12[] = "File exists!";
 					lcd.clear();
 					lcd.setCursor(0,0);
-					lcd.writeFromPgmspace(message_error);
+					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_error));
 					lcd.setCursor(0,1);
 					lcd.writeString((char *)dumpFilename);
 					lcd.setCursor(0,2);
-					lcd.writeFromPgmspace(msg3);
+					lcd.writeFromPgmspace(LOCALIZE(eeprom_msg12));
 					_delay_us(5000000);
 				}
 				interface::popScreen();
@@ -4309,37 +4311,37 @@ void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 			case 1: //Restore
 				if ( sdcard::fileExists(dumpFilename) ) {
-					lcd.writeFromPgmspace(message_restore);
+					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_restore));
 					if ( ! eeprom::restoreFromSDFile(dumpFilename) ) {
-						const static PROGMEM prog_uchar msg1[]	= "Read Failed!";
-						const static PROGMEM prog_uchar msg2[]	= "Eeprom maybe";
-						const static PROGMEM prog_uchar msg3[]	= "corrupt";
+						const static PROGMEM prog_uchar eeprom_msg5[] = "Read Failed!";
+						const static PROGMEM prog_uchar eeprom_msg6[] = "EEPROM may be";
+						const static PROGMEM prog_uchar eeprom_msg7[] = "corrupt";
 						lcd.clear();
 						lcd.setCursor(0,0);
-						lcd.writeFromPgmspace(msg1);
+						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg5));
 						lcd.setCursor(0,1);
-						lcd.writeFromPgmspace(msg2);
+						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg6));
 						lcd.setCursor(0,2);
-						lcd.writeFromPgmspace(msg3);
+						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg7));
 						_delay_us(5000000);
 					}
 					host::stopBuildNow();
 				} else {
-					const static PROGMEM prog_uchar msg3[]	= "File not found!";
+					const static PROGMEM prog_uchar eeprom_msg8[] = "File not found!";
 					lcd.clear();
 					lcd.setCursor(0,0);
-					lcd.writeFromPgmspace(message_error);
+					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_error));
 					lcd.setCursor(0,1);
 					lcd.writeString((char *)dumpFilename);
 					lcd.setCursor(0,2);
-					lcd.writeFromPgmspace(msg3);
+					lcd.writeFromPgmspace(LOCALIZE(eeprom_msg8));
 					_delay_us(5000000);
 					interface::popScreen();
 				}
 				break;
 
 			case 2: //Erase
-				lcd.writeFromPgmspace(message_erase);
+				lcd.writeFromPgmspace(LOCALIZE(eeprom_message_erase));
 				_delay_us(5000000);
 				eeprom::erase();
 				interface::popScreen();
@@ -4352,15 +4354,15 @@ void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 		lcd.setCursor(0,3);
 		if ( safetyGuard >= 1 ) {
-			const static PROGMEM prog_uchar msg1[]	= "* Press ";
-			const static PROGMEM prog_uchar msg2[]	= "x more!";
+			const static PROGMEM prog_uchar eeprom_msg9[]  = "* Press ";
+			const static PROGMEM prog_uchar eeprom_msg10[] = "x more!";
 
-			lcd.writeFromPgmspace(msg1);
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg9));
 			lcd.writeInt((uint16_t)(4-safetyGuard),1);
-			lcd.writeFromPgmspace(msg2);
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg10));
 		} else {
-			const static PROGMEM prog_uchar blank[]	= "                ";
-			lcd.writeFromPgmspace(blank);
+			const static PROGMEM prog_uchar eeprom_blank[] = "                ";
+			lcd.writeFromPgmspace(LOCALIZE(eeprom_blank));
 		}
 
 		itemSelected = -1;
@@ -4368,19 +4370,19 @@ void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 }
 
 void EepromMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar message_dump[]		= "Eeprom -> SD";
-	const static PROGMEM prog_uchar message_restore[]	= "SD -> Eeprom";
-	const static PROGMEM prog_uchar message_erase[]		= "Erase Eeprom";
+	const static PROGMEM prog_uchar e_message_dump[]       	= "EEPROM -> SD";
+	const static PROGMEM prog_uchar e_message_restore[]	= "SD -> EEPROM";
+	const static PROGMEM prog_uchar e_message_erase[]      	= "Erase EEPROM";
 	switch (index)
 	{
 		case 0:
-			lcd.writeFromPgmspace(message_dump);
+			lcd.writeFromPgmspace(LOCALIZE(e_message_dump));
 			break;
 		case 1:
-			lcd.writeFromPgmspace(message_restore);
+			lcd.writeFromPgmspace(LOCALIZE(e_message_restore));
 			break;
 		case 2:
-			lcd.writeFromPgmspace(message_erase);
+			lcd.writeFromPgmspace(LOCALIZE(e_message_erase));
 			break;
 	}
 }

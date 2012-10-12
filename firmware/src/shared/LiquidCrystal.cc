@@ -11,7 +11,7 @@
 #include "Eeprom.hh"
 #include "EepromMap.hh"
 #include "EepromDefaults.hh"
-
+#include "locale.h"
 
 //Custom degree character (Courtesy of Tonokip)
 
@@ -501,14 +501,14 @@ void LiquidCrystal::writeFloat(float value, uint8_t decimalPlaces) {
 //Example:  writeFixedPoint(2000 00000, 5, 5) displays 02000.00000
 
 void LiquidCrystal::writeFixedPoint(int64_t value, uint8_t padding, uint8_t precision) {
-        const static PROGMEM prog_uchar overflow[]  = "overflow";
+        const static PROGMEM prog_uchar lc_overflow[]  = "overflow";
 
 	int64_t divisor = 1;
 	for (uint8_t i = 0; i < (padding + precision); i ++ )
 		divisor *= 10;
 	
 	if (( value / divisor ) > 0) {
-        	writeFromPgmspace(overflow);
+        	writeFromPgmspace(LOCALIZE(lc_overflow));
 		return;
 	}
 
