@@ -17,7 +17,7 @@
 // Splash screen
 splash1 "  Sailfish FW   "
 splash2 " -------------- "
-splash3 "Thing 15380 4.0z"
+splash3 "Thing 32084 4.0z"
 splash4 " Revision: ____ "
 
 // User view menu
