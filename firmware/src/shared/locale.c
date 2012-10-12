@@ -5,10 +5,20 @@
 #include <time.h>
 #include <errno.h>
 
+#define BAD_LEFT      1
+#define MISSING_QUOTE 2
+#define PREMATURE_EOL 3
+
+#define DEFAULT_LOCALE "en"
+
 static void usage(FILE *f, const char *prog, int exit_code)
 {
-    fprintf(f ? f : stderr, "usage: %s locale infile outfile\n",
-	    prog ? prog : "locale");
+    fprintf(f ? f : stderr,
+	    "usage: %s [locale [infile outfile]]\n"
+	    "  locale  -- locale name (default = %s)\n"
+	    "  infile  -- input file name (default = menu_<locale>.txt)\n"
+	    "  outfile -- output file name (default = menu_<locale>.h)\n",
+	    prog ? prog : "locale", DEFAULT_LOCALE);
     exit(exit_code);
 }
 
@@ -18,7 +28,7 @@ static int process(const char *line, const char *locale, FILE *f)
     int done, literal, name_len, text_len;
 
     if (!locale)
-	    locale = "c";
+	locale = "c";
 
     if (!line || !line[0] || !f)
 	return(0);
@@ -35,13 +45,13 @@ static int process(const char *line, const char *locale, FILE *f)
     if ((line[0] == '/' && line[1] == '/') ||
 	(line[0] == '\n'))
     {
-	    fputs(line, f);
-	    return(0);
+	fputs(line, f);
+	return(0);
     }
     else if (line[0] == '\0')
     {
-	    fputc('\n', f);
-	    return(0);
+	fputc('\n', f);
+	return(0);
     }
 
     literal = 0;
@@ -68,14 +78,14 @@ static int process(const char *line, const char *locale, FILE *f)
 	}
 	else
 	    // Syntax error
-	    return(1);
+	    return(BAD_LEFT);
 
 	++line;
     }
 
     // Premature end of line?
     if (c == '\0')
-	return(1);
+	return(PREMATURE_EOL);
 
     // Skip over any whitespace
     while (isspace(*line))
@@ -83,7 +93,7 @@ static int process(const char *line, const char *locale, FILE *f)
 
     // Must have a '"'
     if (*line++ != '"')
-	return(1);
+	return(MISSING_QUOTE);
 
     // We allow \ as an escape character.  The character
     // sets for which this may cause a problem aren't
@@ -126,18 +136,28 @@ static int process(const char *line, const char *locale, FILE *f)
 
 int main(int argc, const char *argv[])
 {
-    char buf[1024];
+    char buf[1024], inbuf[1024], outbuf[1024];
     FILE *infile, *outfile;
     const char *infname, *locale, *outfname;
     size_t lineno;
     time_t t;
 
-    if (argc != 4)
+    if (argc <= 2)
+    {
+	locale   = (argc == 2) ? argv[1] : DEFAULT_LOCALE;
+	infname  = inbuf;
+	outfname = outbuf;
+	snprintf(inbuf,  sizeof(inbuf),  "menu_%s.txt", locale);
+	snprintf(outbuf, sizeof(outbuf), "menu_%s.h",   locale);
+    }
+    else if (argc == 4)
+    {
+	locale   = argv[1];
+	infname  = argv[2];
+	outfname = argv[3];
+    }
+    else
 	usage(stderr, argv[0], 1);
-
-    locale = argv[1];
-    infname = argv[2];
-    outfname = argv[3];
 
     infile = fopen(infname, "r");
     if (!infile)
@@ -176,11 +196,34 @@ int main(int argc, const char *argv[])
     lineno = 0;
     while(fgets(buf, sizeof(buf), infile))
     {
+	int r;
+
 	++lineno;
-	if (process(buf, locale, outfile))
+	if ((r = process(buf, locale, outfile)))
 	{
-	    fprintf(stderr, "processing terminated; error on line %lu of \"%s\"\n",
+	    fprintf(stderr,
+		    "processing terminated; error on line %lu of \"%s\"\n",
 		    lineno, infname);
+
+	    switch (r)
+	    {
+	    default :
+		break;
+
+	    case BAD_LEFT :
+		fprintf(stderr, "invalid character encountered in name\n");
+		break;
+
+	    case MISSING_QUOTE :
+		fprintf(stderr,
+			"text string did not begin with a double quote, \"\n");
+		break;
+	
+	    case PREMATURE_EOL :
+		fprintf(stderr, "premature end-of-line encountered\n");
+		break;
+	    }
+
 	    fclose(infile);
 	    fclose(outfile);
 	    unlink(outfname);
