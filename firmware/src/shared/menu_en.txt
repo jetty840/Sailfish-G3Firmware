@@ -1,0 +1,380 @@
+# Comments introduced with a '#' are not copied to the output file
+# Comments introduced with '//' are copied to the output file
+#
+# Blank lines are copied to the output file
+#
+# Escape the double quote '"' with a backslash '\'
+# E.g., "Press \"x\" to continue"
+#
+# This file should be processed with locale.c
+#
+# cc -o locale locale.c
+# locale en menu_en.txt menu_en.h
+
+// ---------------------------------------------------------
+// Menu.cc strings
+
+// Splash screen
+splash1 "  Sailfish FW   "
+splash2 " -------------- "
+splash3 "Thing 15380 4.0z"
+splash4 " Revision: ____ "
+
+// User view menu
+uv_msg   "X/Y Direction"
+uv_model "Model View"
+uv_user  "User View"
+
+// JogMode menu
+j_jog1       "Jog mode: "
+j_jog2       "   Y+         Z+"
+j_jog3       "X- V  X+  (mode)"
+j_jog4       "   Y-         Z-"
+j_jog2_user  "  Y           Z+"
+j_jog3_user  "X V X     (mode)"
+j_jog4_user  "  Y           Z-"
+
+j_distance0_1mm ".1mm"
+j_distance1mm   "1mm"
+j_distanceCont  "Cont.."
+
+// ExtruderMode menu
+e_extrude1  "Extrude: "
+e_extrude2  "(set mm/s)   Fwd"
+e_extrude3  " (stop)    (dur)"
+e_extrude4  "---/---C     Rev"
+e_secs      "SECS"
+e_blank     "       "
+
+// Extruder Too Cold menu
+etc_warning  "Tool0 too cold!"
+etc_cancel   "Cancel"
+etc_override "Override"
+
+// Mood Light Mode menu
+ml_mood1   "Mood: "
+ml_mood3_1 "(set RGB)"
+ml_msg4    "Up/Dn/Ent to Set"
+ml_blank   "          "
+ml_moodNotPresent1 "Mood Light not"
+ml_moodNotPresent2 "present!!"
+ml_moodNotPresent3 "See Thingiverse"
+ml_moodNotPresent4 "   thing:15347"
+
+// Mood Light Set RGB menu
+mlsrgb_message1_red   "Red:"
+mlsrgb_message1_green "Green:"
+mlsrgb_message1_blue  "Blue:"
+mlsrgb_message4       "Up/Dn/Ent to Set"
+
+// Monitor menu
+mon_extruder_temp     "Tool   ---/---\001"
+mon_platform_temp     "Bed    ---/---\001"
+mon_elapsed_time      "Elapsed:   0h00m"
+mon_completed_percent "Completed:   0% "
+mon_time_left         "TimeLeft:  0h00m"
+mon_time_left_secs    "secs"
+mon_time_left_none    "   none"
+mon_zpos              "ZPos:           "
+mon_speed             "Acc:            "
+mon_zpos_mm           "mm"
+mon_filament          "Filament:0.00m  "
+mon_copies            "Copy:           "
+mon_of                " of "
+mon_error             "error!"
+
+// Version menu
+v_version1 "Motherboard: _._"
+v_version2 "   Extruder: _._"
+v_version3 "   Revision:___"
+v_version4 "FreeSram: "
+
+// Cancel Build menu
+cb_choose       "Please Choose:"
+cb_abort        "Abort Print   "
+cb_printAnother "Print Another"
+cb_pauseZ       "Pause at ZPos "
+cb_pause        "Pause         "
+cb_pauseNoHeat  "Pause No Heat "
+cb_back         "Continue Build"
+
+// Main menu
+main_monitor         "Monitor"
+main_build           "Build from SD"
+main_jog             "Jog"
+main_preheat         "Preheat"
+main_extruder        "Extrude"
+main_homeAxis        "Home Axis"
+main_advanceABP      "Advance ABP"
+main_steppersS       "Steppers"
+main_moodlight       "Mood Light"
+main_buzzer          "Buzzer"
+main_buildSettings   "Build Settings"
+main_profiles        "Profiles"
+main_extruderFan     "Extruder Fan"
+main_calibrate       "Calibrate"
+main_homeOffsets     "Home Offsets"
+main_filamentUsed    "Filament Used"
+main_currentPosition "Position"
+main_endStops        "Test End Stops"
+main_homingRates     "Homing Rates"
+main_versions        "Version"
+main_eeprom          "Eeprom"
+
+// Value Set screen
+vs_message4 "Up/Dn/Ent to Set"
+
+// Preheat menu
+ph_heat     "Heat "
+ph_cool     "Cool "
+ph_tool0    "Tool0"
+ph_platform "Bed"
+ph_tool0set "Set Tool0 Temp"
+ph_platset  "Set Bed Temp"
+
+// Home axis menu
+ha_home1 "Home Axis: "
+ha_home2 "  Y            Z"
+ha_home3 "X   X (endstops)"
+ha_home4 "  Y            Z"
+
+// Enable Disable menu
+ed_disable "Disable"
+ed_enable  "Enable"
+
+// Test End Stops menu
+tes_test1 "Test End Stops: "
+tes_test2 "XMin:N    XMax:N"
+tes_test3 "YMin:N    YMax:N"
+tes_test4 "ZMin:N    ZMax:N"
+tes_strY  "Y"
+tes_strN  "N"
+
+// Pause menu
+p_waitForCurrentCommand "Entering pause.."
+p_retractFilament       "Retract filament"
+p_clearingBuild         "Clearing build.."
+p_heating               "Heating...      "
+p_leavingPaused         "Leaving pause.. "
+p_paused1               "Paused("
+p_paused2               "   Y+         Z+"
+p_paused3               "X- Rev X+  (Fwd)"
+p_paused4               "   Y-         Z-"
+
+// Pause @ ZPos menu
+pz_message1 "Pause at ZPos:"
+pz_message4 "Up/Dn/Ent to Set"
+pz_mm       "mm   "
+
+// Advance ABP menu
+abp_msg1 "Advance ABP:"
+abp_msg2 "hold key..."
+abp_msg3 "           (fwd)"
+
+// Calibrate menu
+c_calib1 "Calibrate: Move "
+c_calib2 "build platform"
+c_calib3 "until nozzle..."
+c_calib4 "          (cont)"
+c_calib5 "lies in center,"
+c_calib6 "turn threaded"
+c_calib7 "rod until..."
+c_calib8 "nozzle just"
+c_calib9 "touches."
+c_homeZ  "Homing Z..."
+c_homeY  "Homing Y..."
+c_homeX  "Homing X..."
+c_done   "! Calibrated !"
+c_regen  "Regenerate gcode"
+c_reset  "         (reset)"
+
+// Home Offsets menu
+ho_message1x "X Offset:"
+ho_message1y "Y Offset:"
+ho_message1z "Z Offset:"
+ho_message4  "Up/Dn/Ent to Set"
+ho_mm        "mm"
+
+// Buzzer Set Repeats menu
+bsr_message1 "Repeat Buzzer:"
+bsr_message2 "(0=Buzzer Off)"
+bsr_message4 "Up/Dn/Ent to Set"
+bsr_times    " times "
+
+// Filament Used Reset menu
+fur_msg "Reset To Zero?"
+fur_no  "No"
+fur_yes "Yes"
+
+// Filament Used menu
+fu_lifetime "Lifetime Odo.:"
+fu_trip     "Trip Odometer:"
+fu_but_life "(trip)   (reset)"
+fu_but_trip "(life)   (reset)"
+
+// Build Settings menu
+bs_item1 "Override Temp"
+bs_item2 "ABP Copies (SD)"
+bs_item3 "Ditto Print"
+bs_item4 "Accel. On/Off"
+bs_item5 "Accel. Settings"
+
+// ABP Copies Set menu
+abp_message1 "ABP Copies (SD):"
+abp_message4 "Up/Dn/Ent to Set"
+
+// Acceleration On Off menu
+aof_msg1 "Accelerated"
+aof_msg2 "Printing:"
+aof_off  "Off"
+aof_on   "On"
+
+// Profiles menu
+pro_defaultProfile "Profile?"
+
+// Profile Sub menu
+ps_msg1 "Restore"
+ps_msg2 "Display Config"
+ps_msg3 "Change Name"
+ps_msg4 "Save To Profile"
+
+// Profile Change Name menu
+pcn_message1 "Profile Name:"
+pcn_message4 "Up/Dn/Ent to Set"
+pcn_blank    " "
+
+// Profile Display Settings menu
+pds_xOffset  "XOff: "
+pds_yOffset  "YOff: "
+pds_zOffset  "ZOff: "
+pds_hbp      "HBP Temp:   "
+pds_tool0    "Tool0 Temp: "
+pds_extruder "ExtrdrMM/s: "
+
+// Current Position menu
+cp_msg1 "X:"
+cp_msg2 "Y:"
+cp_msg3 "Z:"
+cp_msg4 "A:"
+cp_mm   "mm"
+
+// Unable To Open File menu
+utof_msg1 "Failed to open"
+utof_msg2 "file.  Name too"
+utof_msg3 "long?"
+utof_cont "Continue"
+
+// Accelerated Settings menu
+as_message1xMaxAccelRate    "X Max Accel:"
+as_message1yMaxAccelRate    "Y Max Accel:"
+as_message1zMaxAccelRate    "Z Max Accel:"
+as_message1aMaxAccelRate    "Right Max Accel:"
+as_message1bMaxAccelRate    "Left Max Accel:"
+as_message1ExtruderNorm     "Max Accel:"
+as_message1ExtruderRetract  "Max Accel Extdr:"
+as_message1AdvanceK         "JKN Advance K:"
+as_message1AdvanceK2        "JKN Advance K2:"
+as_message1ExtruderDeprimeA "Extdr.DeprimeR:"
+as_message1ExtruderDeprimeB "Extdr.DeprimeL:"
+as_message1SlowdownLimit    "SlowdownEnabled:"
+as_message1MaxSpeedChangeX  "MaxSpeedChangeX:"
+as_message1MaxSpeedChangeY  "MaxSpeedChangeY:"
+as_message1MaxSpeedChangeZ  "MaxSpeedChangeZ:"
+as_message1MaxSpeedChangeA  "MaxSpeedChangeR:"
+as_message1MaxSpeedChangeB  "MaxSpeedChangeL:"
+as_message4                 "Up/Dn/Ent to Set"
+as_blank                    "    "
+
+// End Stop Config menu
+esc_message1 "EndstopsPresent:"
+esc_message4 "Up/Dn/Ent to Set"
+esc_blank    " "
+
+// Homing Feed Rates menu
+hfr_message1x "X Home Feedrate:"
+hfr_message1y "Y Home Feedrate:"
+hfr_message1z "Z Home Feedrate:"
+hfr_message4  "Up/Dn/Ent to Set"
+hfr_mm        "mm/min "
+
+// Eeprom menu 1
+e_message_dump    "EEPROM -> SD"
+e_message_restore "SD -> EEPROM"
+e_message_erase   "Erase EEPROM"
+
+// Eeprom menu 2
+eeprom_message_dump    "Saving..."
+eeprom_message_restore "Restoring..."
+eeprom_message_erase   "Erasing..."
+eeprom_message_error   "Error:"
+
+eeprom_msg1  "This menu can"
+eeprom_msg2  "make your bot"
+eeprom_msg3  "inoperable."
+eeprom_msg4  "Press Y+ to cont"
+eeprom_msg5  "Read Failed!"
+eeprom_msg6  "EEPROM may be"
+eeprom_msg7  "corrupt"
+eeprom_msg8  "File not found!"
+eeprom_msg9  "* Press "
+eeprom_msg10 "x more!"
+eeprom_msg11 "Write Failed!"
+eeprom_msg12 "File exists!"
+eeprom_blank "                "
+
+// ---------------------------------------------------------
+// MoodLightController.cc strings
+
+mood_script0   "Bot Status"
+mood_script1   "Custom RGB"
+mood_script2   "Off"
+mood_script3   "White"
+mood_script4   "Red"
+mood_script5   "Green"
+mood_script6   "Blue"
+mood_script7   "Cyan"
+mood_script8   "Magenta"
+mood_script9   "Yellow"
+mood_script10  "Purple"
+mood_script11  "Orange"
+mood_script12  "Almond"
+mood_script13  "Peach Puff"
+mood_script14  "Mint Cream"
+mood_script15  "Alice Blue"
+mood_script16  "Lavender"
+mood_script17  "Misty Rose"
+mood_script18  "Slate Gray"
+mood_script19  "Gray"
+mood_script20  "Light Gray"
+mood_script21  "MidnghtBlu"
+mood_script22  "DeepSkyBlu"
+mood_script23  "OliveGreen"
+mood_script24  "ForstGreen"
+mood_script25  "Gold"
+mood_script26  "Hot Pink"
+mood_script27  "Linen"
+mood_script100 "WRGB"
+mood_script101 "RGB"
+mood_script102 "WhiteFlash"
+mood_script103 "Red Flash"
+mood_script104 "GreenFlash"
+mood_script105 "Blue Flash"
+mood_script106 "Cyan Flash"
+mood_script107 "MgntaFlash"
+mood_script108 "Yell Flash"
+mood_script109 "Black"
+mood_script110 "Hue Cycle"
+mood_script111 "Mood Light"
+mood_script112 "Candle"
+mood_script113 "Water"
+mood_script114 "Old Neon"
+mood_script115 "Seasons"
+mood_script116 "Thundrstrm"
+mood_script117 "Stop Light"
+mood_script118 "S. O. S."
+mood_script_unknown "UNKNOWN"
+
+// ---------------------------------------------------------
+// LiquidCrystral.cc strings
+
+lc_overflow "overflow"
