@@ -404,12 +404,7 @@ bool st_interrupt() {
 				#endif
 				   )
 			#endif
-			{
-				//Disable the Z axis is acceleration_zhold is off and we're idle
-				if ( ! acceleration_zhold ) axesEnabled &= ~(_BV(Z_AXIS)); 
-
 				stepperAxisSetHardwareEnabledToMatch(axesEnabled);
-			}
 		}
 	} 
 
