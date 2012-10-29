@@ -717,6 +717,8 @@ void ExtruderMode::extrude(int32_t seconds, bool overrideTempCheck) {
 }
 
 void ExtruderMode::notifyButtonPressed(ButtonArray::ButtonName button) {
+	static const PROGMEM prog_uchar e_message1[] = "Extruder speed:";
+	static const PROGMEM prog_uchar e_units[]    = " mm/s ";
 	switch (button) {
         	case ButtonArray::OK:
 			switch(extrudeSeconds) {
@@ -764,8 +766,8 @@ void ExtruderMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 			// Show Extruder MMS Setting Screen
 			extruderSetMMSScreen.location = eeprom::EXTRUDE_MMS;
 			extruderSetMMSScreen.default_value = EEPROM_DEFAULT_EXTRUDE_MMS;
-			extruderSetMMSScreen.message1 = (char *)"Extruder speed:";
-			extruderSetMMSScreen.units = (char *)" mm/s ";
+			extruderSetMMSScreen.message1 = LOCALIZE(e_message1);
+			extruderSetMMSScreen.units = LOCALIZE(e_units);
                         interface::pushScreen(&extruderSetMMSScreen);
 			break;
         	case ButtonArray::ZERO:
@@ -2102,7 +2104,7 @@ void ValueSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.clear();
 
 		lcd.setCursor(0,0);
-		lcd.writeString(message1);
+		lcd.writeFromPgmspace(message1);
 
 		lcd.setCursor(0,3);
 		lcd.writeFromPgmspace(LOCALIZE(vs_message4));
@@ -2112,7 +2114,7 @@ void ValueSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	// Redraw tool info
 	lcd.setCursor(0,1);
 	lcd.writeInt(value,3);
-	if ( units )	lcd.writeString(units);
+	if ( units )	lcd.writeFromPgmspace(units);
 }
 
 void ValueSetScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -2208,6 +2210,9 @@ void PreheatMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 }
 
 void PreheatMenu::handleSelect(uint8_t index) {
+	static const PROGMEM prog_uchar ph_message1[] = "Tool0 Targ Temp:";
+	const static PROGMEM prog_uchar ph_message2[] = "Bed Target Temp:";
+
 	OutPacket responsePacket;
 	switch (index) {
 		case 0:
@@ -2236,7 +2241,7 @@ void PreheatMenu::handleSelect(uint8_t index) {
 			// Show Extruder Temperature Setting Screen
 			heaterTempSetScreen.location = eeprom::TOOL0_TEMP;
 			heaterTempSetScreen.default_value = EEPROM_DEFAULT_TOOL0_TEMP;
-			heaterTempSetScreen.message1 = (char *)"Tool0 Targ Temp:";
+			heaterTempSetScreen.message1 = LOCALIZE(ph_message1);
 			heaterTempSetScreen.units = NULL;
                         interface::pushScreen(&heaterTempSetScreen);
 			break;
@@ -2244,7 +2249,7 @@ void PreheatMenu::handleSelect(uint8_t index) {
 			// Show Platform Temperature Setting Screen
 			heaterTempSetScreen.location = eeprom::PLATFORM_TEMP;
 			heaterTempSetScreen.default_value = EEPROM_DEFAULT_PLATFORM_TEMP;
-			heaterTempSetScreen.message1 = (char *)"Bed Target Temp:";
+			heaterTempSetScreen.message1 = LOCALIZE(ph_message2);
 			heaterTempSetScreen.units = NULL;
                         interface::pushScreen(&heaterTempSetScreen);
 			break;
@@ -2359,10 +2364,10 @@ void EnabledDisabledMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 
 	switch (index) {
 	case 0:
-		lcd.writeString(msg1);
+		lcd.writeFromPgmspace(msg1);
 		break;
 	case 1:
-		if ( msg2 ) lcd.writeString(msg2);
+		if ( msg2 ) lcd.writeFromPgmspace(msg2);
 		break;
 	case 2:
 		lcd.writeFromPgmspace(LOCALIZE(ed_disable));
@@ -2395,8 +2400,10 @@ void SteppersMenu::enable(bool enabled) {
 }
 
 void SteppersMenu::setupTitle() {
-	msg1 = (char *)"Stepper Motors:";
-	msg2 = NULL;
+	const static PROGMEM prog_uchar step_msg1[] = "Stepper Motors:";
+	const static PROGMEM prog_uchar step_msg2[] = "";
+	msg1 = LOCALIZE(step_msg1);
+	msg2 = LOCALIZE(step_msg2);
 }
 
 void TestEndStopsMode::reset() {
@@ -3041,8 +3048,10 @@ void ExtruderFanMenu::enable(bool enabled) {
 }
 
 void ExtruderFanMenu::setupTitle() {
-	msg1 = (char *)"Extruder Fan:";
-	msg2 = NULL;
+	static const PROGMEM prog_uchar ext_msg1[] = "Extruder Fan:";
+	static const PROGMEM prog_uchar ext_msg2[] = "";
+	msg1 = LOCALIZE(ext_msg1);
+	msg2 = LOCALIZE(ext_msg2);
 }
 
 FilamentUsedResetMenu::FilamentUsedResetMenu() {
@@ -3316,8 +3325,10 @@ void OverrideGCodeTempMenu::enable(bool enabled) {
 }
 
 void OverrideGCodeTempMenu::setupTitle() {
-	msg1 = (char *)"Override GCode";
-	msg2 = (char *)"Temperature:";
+	static const PROGMEM prog_uchar ogct_msg1[] = "Override GCode";
+	static const PROGMEM prog_uchar ogct_msg2[] = "Temperature:";
+	msg1 = LOCALIZE(ogct_msg1);
+	msg2 = LOCALIZE(ogct_msg2);
 }
 
 AccelerationOnOffMenu::AccelerationOnOffMenu() {
@@ -3389,8 +3400,10 @@ void DittoPrintMenu::enable(bool enabled) {
 }
 
 void DittoPrintMenu::setupTitle() {
-	msg1 = (char *)"Ditto Printing:";
-	msg2 = (char *)"";
+	static const PROGMEM prog_uchar dp_msg1[] = "Ditto Printing:";
+	static const PROGMEM prog_uchar dp_msg2[] = "";
+	msg1 = LOCALIZE(dp_msg1);
+	msg2 = LOCALIZE(dp_msg2);
 }
 
 #define NUM_PROFILES 4
