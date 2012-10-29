@@ -86,6 +86,25 @@ Timeout print_time;
 
 const static uint32_t ONE_HOUR = 3600000000U;
 
+// Some gcode is loaded with enable/disable extruder commands. E.g., before each travel-only move.
+// This seems okay for 1.75 mm filament extruders.  However, it is problematic for 3mm filament
+// extruders: when the stepper motor is disabled, too much filament backs out owing to the high
+// melt chamber pressure and the free-wheeling pinch gear.  To combat this, the firmware has an
+// option to leave the extruder stepper motors engaged throughout an entire build, ignoring any
+// gcode / s3g command to disable the extruder stepper motors.  This is somewhat complicated by
+// the fact that deprime benefits from knowing when the gcode/s3g asked for an extruder stepper
+// to be disabled: it helps indicate a travel move.  When printing at very thin layer heights,
+// very little plastic is extruded.  Many moves have no extruder steps yet they ARE not to be
+// considered travel-only moves in need of deprime.  Thus, it can be hard to spot actual travel
+// only moves without doing expensive distance calculations.  Hence the desire to note when the
+// gcode called for the extruder stepper motor to be disabled.
+
+bool extruderHoldEnable = (EEPROM_DEFAULT_EXTRUDER_HOLD) ? true : false;
+
+// A mask indicating which extruder stepper motors to force enabled
+// When set to 0x00, no extruders are forced to be enabled.  When set to _BV(A_AXIS) | _BV(B_AXIS)
+// then both extruders are forced to be enabled
+bool extruder_hold[2] = {false, false};
 
 bool do_host_reset = false;
 bool hard_reset = false;
@@ -243,8 +262,8 @@ bool processCommandPacket(const InPacket& from_host, OutPacket& to_host) {
 // puts fw version into a reply packet, and send it back
 inline void handleVersion(const InPacket& from_host, OutPacket& to_host) {
 
-    // Case to give an error on Replicator G versions older than 0025. See footnote 1
-    if(from_host.read16(1)  <=  25   ) {
+    // Case to give an error on Replicator G versions older than 0039
+    if(from_host.read16(1) < 39) {
         to_host.append8(RC_OK);
         to_host.append16(0x0000);
     }
@@ -546,10 +565,26 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 	startPrintTime();
 	command::clearLineNumber();
 	buildState = BUILD_RUNNING;
+	extruderHoldEnable = (eeprom::getEeprom8(eeprom::EXTRUDER_HOLD, EEPROM_DEFAULT_EXTRUDER_HOLD)) != 0;
+	extruder_hold[0] = false;
+	extruder_hold[1] = false;
+}
+
+void extruderStepperCleanup()
+{
+	if (extruderHoldEnable) {
+		if ( extruder_hold[0] ) steppers::enableAxis(A_AXIS, false);
+#if EXTRUDERS > 1
+		if ( extruder_hold[1] ) steppers::enableAxis(B_AXIS, false);
+#endif
+	}
+	extruder_hold[0] = false;
+	extruder_hold[1] = false;
 }
 
     // set build state to ready
 void handleBuildStopNotification(uint8_t stopFlags) {
+	extruderStepperCleanup();
 	stopPrintTime();
 	last_print_line = command::getLineNumber();
 	buildState = BUILD_FINISHED_NORMALLY;
@@ -737,6 +772,7 @@ void stopBuildNow() {
 		cancel_timeout.start(1000000); //look for commands from repG for one second before resetting
 		cancelBuild = true;
 	}
+	extruderStepperCleanup();
 	last_print_line = command::getLineNumber();
 	stopPrintTime();
 	do_host_reset = true; // indicate reset after response has been sent
