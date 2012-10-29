@@ -45,6 +45,8 @@ e_extrude3  " (stop)    (dur)"
 e_extrude4  "---/---C     Rev"
 e_secs      "SECS"
 e_blank     "       "
+e_units     " mm/s "
+e_message1  "Extruder speed:"
 
 // Extruder Too Cold menu
 etc_warning  "Tool0 too cold!"
@@ -68,8 +70,8 @@ mlsrgb_message1_blue  "Blue:"
 mlsrgb_message4       "Up/Dn/Ent to Set"
 
 // Monitor menu
-mon_extruder_temp     "Tool   ---/---\001"
-mon_platform_temp     "Bed    ---/---\001"
+mon_extruder_temp     "Tool   ---/---\\001"
+mon_platform_temp     "Bed    ---/---\\001"
 mon_elapsed_time      "Elapsed:   0h00m"
 mon_completed_percent "Completed:   0% "
 mon_time_left         "TimeLeft:  0h00m"
@@ -131,6 +133,8 @@ ph_tool0    "Tool0"
 ph_platform "Bed"
 ph_tool0set "Set Tool0 Temp"
 ph_platset  "Set Bed Temp"
+ph_message1 "Tool0 Targ Temp:"
+ph_message2 "Bed Target Temp:"
 
 // Home axis menu
 ha_home1 "Home Axis: "
@@ -321,6 +325,23 @@ eeprom_msg10 "x more!"
 eeprom_msg11 "Write Failed!"
 eeprom_msg12 "File exists!"
 eeprom_blank "                "
+
+// Steppers menu
+step_msg1 "Stepper Motors:"
+step_msg2 ""
+
+// Extruder Fan menu
+ext_msg1 "Extruder Fan:"
+ext_msg2 ""
+
+// Override GCode Temp menu
+ogct_msg1 "Override GCode"
+ogct_msg2 "Temperature:"
+
+// Ditto Print menu
+dp_msg1 "Ditto Printing:"
+dp_msg2 ""
+
 
 // ---------------------------------------------------------
 // MoodLightController.cc strings
