@@ -130,6 +130,7 @@ void setJettyFirmwareDefaults() {
     putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_B);
 
     eeprom_write_byte((uint8_t*)eeprom::DITTO_PRINT_ENABLED,		EEPROM_DEFAULT_DITTO_PRINT_ENABLED);
+    eeprom_write_byte((uint8_t*)eeprom::EXTRUDER_HOLD,			EEPROM_DEFAULT_EXTRUDER_HOLD);
 
     verifyAndFixVidPid();
 }
