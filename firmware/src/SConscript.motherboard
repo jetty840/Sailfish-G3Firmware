@@ -40,6 +40,8 @@ import re
 from os.path import dirname
 # Parameters
 platform = ARGUMENTS.get('platform','mb24')
+# Locale
+locale = ARGUMENTS.get('locale','')
 # fived only applicable for rrmbv12
 fived = ARGUMENTS.get('fived','false')
 f_cpu='16000000L'
@@ -47,6 +49,16 @@ f_cpu='16000000L'
 # Get the svn version number and use the last part
 svn_version = os.popen('svnversion ../..').read()[:-1]
 svn_version = svn_version.split(':')[-1]
+
+# -DLOCALE=locale-name
+locale_def = ''
+
+# '-locale-name' string to insert in the hex file name
+locale_tname = ''
+
+if locale != '':
+   locale_tname = '-' + locale
+   locale_def = '-DLOCALE=' + locale
 
 def parse_version(v):
     if not v:
@@ -66,7 +78,7 @@ vstr = ARGUMENTS.get('version',vstr)
 
 version = parse_version(vstr)
 
-target_name = "MB-"+platform+"-v"+str(version//100)+"."+str(version%100)
+target_name = "MB-"+platform+locale_tname+"-v"+str(version//100)+"."+str(version%100)
 
 if (platform == 'rrmbv12'):
 	default_baud = '38400'
@@ -136,6 +148,7 @@ flags=[
 	'-DSVN_VERSION='+str(svn_version),
 	'-D__PROG_TYPES_COMPAT__',
 	'-D__DELAY_BACKWARD_COMPATIBLE__',
+	locale_def,
 	'-mmcu='+mcu,
 	'-g',
 	'-Os',
@@ -176,6 +189,8 @@ env=Environment(tools=['g++', 'gcc'],
 	CPPPATH=include_paths,
 	CCFLAGS=flags)
 objs = env.Object(srcs)
+if locale != '':
+   env.Depends(srcs, 'shared/menu_' + locale + '.h')
 
 # run_alias = Alias('run', [program], program[0].path)
 # AlwaysBuild(run_alias)
