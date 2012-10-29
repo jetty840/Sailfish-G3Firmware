@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 by Adam Mayer	 <adam@makerbot.com>
+ * Copyright 2010 by Adam Mayer   <adam@makerbot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -306,9 +306,10 @@
 //be hit due to positioning accuracy and the possibility of an endstop triggering
 //a few steps around where it should be.
 //If the value isn't defined, the axis is moved
+#define BUILD_CLEAR_MARGIN 5.0
 //#define BUILD_CLEAR_X (stepperAxis[X_AXIS].max_axis_steps_limit)
 //#define BUILD_CLEAR_Y (stepperAxis[Y_AXIS].max_axis_steps_limit)
-#define BUILD_CLEAR_Z (stepperAxis[Z_AXIS].max_axis_steps_limit)
+#define BUILD_CLEAR_Z (stepperAxis[Z_AXIS].max_axis_steps_limit - (int32_t)(BUILD_CLEAR_MARGIN * stepperAxisStepsPerMM(Z_AXIS)))
 
 //When pausing, filament is retracted to stop stringing / blobbing.
 //This sets the amount of filament in mm's to be retracted
