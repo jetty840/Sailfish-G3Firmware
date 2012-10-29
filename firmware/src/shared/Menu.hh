@@ -331,8 +331,8 @@ private:
 	uint8_t value;
 
 public:
-	char *message1;
-	char *units;
+	const prog_uchar *message1;
+	const prog_uchar *units;
 	uint16_t location;
 	uint8_t default_value;
 
@@ -497,7 +497,7 @@ protected:
 
 	virtual void setupTitle() {};
 
-	char *msg1, *msg2;
+	const prog_uchar *msg1, *msg2;
 };
 
 class SteppersMenu: public EnabledDisabledMenu {
