@@ -15,6 +15,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
+#include <math.h>
 #include "Configuration.hh"
 #include "Command.hh"
 #include "Steppers.hh"
@@ -82,7 +83,6 @@ float elapsedSecondsSinceBuildStart;
         bool dittoPrinting = false;
 #endif
 bool deleteAfterUse = true;
-
 
 uint16_t getRemainingCapacity() {
 	uint16_t sz;
@@ -352,7 +352,7 @@ void retractFilament(bool retract) {
 // otherwise restores the last position before platformAccess(true) was called
 
 void platformAccess(bool clearPlatform) {
-   Point targetPosition;
+   Point currentPosition, targetPosition;
 
    if ( clearPlatform ) {
 	//if we haven't defined a position or we haven't homed, then we
@@ -383,7 +383,7 @@ void platformAccess(bool clearPlatform) {
 
 	//Extruders may have moved, so we use the current position
 	//for them and define it 
-	Point currentPosition = steppers::getPlannerPosition();
+	currentPosition = steppers::getPlannerPosition();
 
 	steppers::definePosition(Point(currentPosition[0], currentPosition[1], currentPosition[2],
 					targetPosition[3], targetPosition[4]));
@@ -391,7 +391,14 @@ void platformAccess(bool clearPlatform) {
 
    //Calculate the dda speed.  Somewhat crude but effective.  Use the Z
    //axis, it generally has the slowest feed rate
-   int32_t dda_interval = (int32_t)(1000000.0 / (stepperAxis[Z_AXIS].max_feedrate * (float)stepperAxis[Z_AXIS].steps_per_mm));
+   int32_t dda_rate = (int32_t)(stepperAxis[Z_AXIS].max_feedrate * (float)stepperAxis[Z_AXIS].steps_per_mm);
+
+   // Calculate the distance
+   currentPosition = steppers::getPlannerPosition();
+   float dx = (float)(currentPosition[0] - targetPosition[0]) / (float)stepperAxis[X_AXIS].steps_per_mm;
+   float dy = (float)(currentPosition[1] - targetPosition[1]) / (float)stepperAxis[Y_AXIS].steps_per_mm;
+   float dz = (float)(currentPosition[2] - targetPosition[2]) / (float)stepperAxis[Z_AXIS].steps_per_mm;
+   float distance = sqrtf(dx*dx + dy*dy + dz*dz);
 
 #ifdef DITTO_PRINT
    if ( dittoPrinting ) {
@@ -400,7 +407,8 @@ void platformAccess(bool clearPlatform) {
    }
 #endif
 
-   steppers::setTarget(targetPosition, dda_interval);
+   steppers::setTargetNewExt(targetPosition, dda_rate, (uint8_t)0, distance,
+			     (int16_t)(64.0 * stepperAxis[Z_AXIS].max_feedrate));
 }
 
 
@@ -1068,7 +1076,18 @@ void runCommandSlice() {
 					pop8(); // remove the command code
 					uint8_t axes = pop8();
 					line_number ++;
+					bool enable = (axes & 0x80) != 0;
 
+					if ( host::extruderHoldEnable && enable ) {
+						// Note whether an extruder stepper motor has been enabled
+						// We'll then use this mask to ensure that the stepper remains
+						// enabled.  Note that with the use of an acceleration planner
+						// this means that we may enable the extruder stepper motor in
+						// advance of the actual move which triggerred this enabling,
+						// but that's okay.
+						if ( axes & _BV(A_AXIS) ) host::extruder_hold[0] = true;
+						if ( axes & _BV(B_AXIS) ) host::extruder_hold[1] = true;
+					}
 #ifdef DITTO_PRINT
 					if ( dittoPrinting ) {
 						if ( currentToolIndex == 0 ) {
@@ -1082,8 +1101,6 @@ void runCommandSlice() {
 						}
 					}
 #endif
-
-					bool enable = (axes & 0x80) != 0;
 					for (int i = 0; i < STEPPER_COUNT; i++) {
 						if ((axes & _BV(i)) != 0) {
 							steppers::enableAxis(i, enable);
@@ -1459,6 +1476,21 @@ void runCommandSlice() {
 					line_number++;
 					uint8_t status = pop8();
 					steppers::setSegmentAccelState(status == 1);
+				}
+			} else if ( command == HOST_CMD_STREAM_VERSION ) {
+
+				if (command_buffer.getLength() >= 21){
+					pop8(); // remove the command code
+					line_number++;
+					pop8(); // version high
+					pop8(); // version low
+					pop8(); // reserved;
+					pop32(); // reserved;
+					pop16(); // bot type pid
+					pop16(); // reserved
+					pop32(); // reserved;
+					pop32(); // reserved;
+					pop8(); // reserved;
 				}
 			} else {
 			}
