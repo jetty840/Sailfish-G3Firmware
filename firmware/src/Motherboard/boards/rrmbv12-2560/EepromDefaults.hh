@@ -69,3 +69,5 @@
 #define EEPROM_DEFAULT_TOOL_COUNT			1
 
 #define EEPROM_DEFAULT_BUZZER_REPEATS                   3
+
+#define EEPROM_DEFAULT_EXTRUDER_HOLD          0
