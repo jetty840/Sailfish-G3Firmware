@@ -1,0 +1,399 @@
+# Comments introduced with a '#' are not copied to the output file
+# Comments introduced with '//' are copied to the output file
+#
+# Blank lines are copied to the output file
+#
+# Escape the double quote '"' with a backslash '\'
+# E.g., "Press \"x\" to continue"
+#
+# This file should be processed with locale.c
+#
+# cc -o locale locale.c
+# locale en menu_en.txt menu_en.h
+
+// ---------------------------------------------------------
+// Menu.cc strings
+
+// Splash screen
+splash1 "  Sailfish FW   "
+splash2 " -------------- "
+splash3 "Thing 32084 4.0z"
+splash4 " Revision: ____ "
+
+// User view menu
+uv_msg   "Direccion X/Y:"
+uv_model "Vista normal"
+uv_user  "Inversa"
+
+// JogMode menu
+j_jog1       "Modo: "
+j_jog2       "   Y+         Z+"
+j_jog3       "X- V  X+  (modo)"
+j_jog4       "   Y-         Z-"
+j_jog2_user  "  Y           Z+"
+j_jog3_user  "X V X     (modo)"
+j_jog4_user  "  Y           Z-"
+
+j_distance0_1mm ".1 mm"
+j_distance1mm   "1 mm"
+j_distanceCont  "Continuo"
+
+// ExtruderMode menu
+e_extrude1  "Extrusor: "
+e_extrude2  "  (rpm)      Ade"
+e_extrude3  "(detener)  (dur)"
+e_extrude4  "---/---\\001     Rev"
+e_secs      "segs"
+e_blank     "       "
+e_units     " mm/s "
+e_message1  "Velocidad extr:"
+
+// Extruder Too Cold menu
+etc_warning  "Extrusor frio!"
+etc_cancel   "Detener"
+etc_override "Ignorar"
+
+// Mood Light Mode menu
+ml_mood1   "Modo: "
+ml_mood3_1 "(definir)"
+ml_msg4    "Arriba/Abajo  OK"
+ml_blank   "          "
+ml_moodNotPresent1 "No hay control"
+ml_moodNotPresent2 "de luces"
+ml_moodNotPresent3 "Vea Thingiverse"
+ml_moodNotPresent4 "   thing:15347"
+
+// Mood Light Set RGB menu
+mlsrgb_message1_red   "Rojo:"
+mlsrgb_message1_green "Verde:"
+mlsrgb_message1_blue  "Azul:"
+mlsrgb_message4       "Arriba/Abajo  OK"
+
+// Monitor menu
+mon_extruder_temp     "Extr:  ---/---\\001"
+mon_platform_temp     "Plat:  ---/---\\001"
+mon_elapsed_time      "Tiempo:    0h00m"
+mon_completed_percent "Progreso:    0% "
+mon_time_left         "Restante:  0h00m"
+mon_time_left_secs    "segs"
+mon_time_left_none    "   n/a "
+mon_zpos              "Altura:         "
+mon_speed             "Vel:            "
+mon_zpos_mm           " mm"
+mon_filament          "Material:0.00m  "
+mon_copies            "Copia:          "
+mon_of                " de "
+mon_error             "error!"
+
+// Version menu
+v_version1 "Placa madre: _._"
+v_version2 "   Extrusor: _._"
+v_version3 "   Revision:___"
+v_version4 "RAM Libre: "
+
+// Cancel Build menu
+cb_choose       "Opciones:"
+cb_abort        "Detener proceso"
+cb_printAnother "Imprimir otro"
+cb_pauseZ       "Programar pausa"
+cb_pause        "Pausar         "
+cb_pauseNoHeat  "Pausar/enfriar"
+cb_back         "Continuar"
+
+// Main menu
+main_monitor         "Estado"
+main_build           "Imprimir objeto"
+main_jog             "Posicionamiento"
+main_preheat         "Temperaturas"
+main_extruder        "Extrusor"
+main_homeAxis        "Ejes al inicio"
+main_advanceABP      "Avanzar ABP"
+main_steppersS       "Bloqueo motores"
+main_moodlight       "Control luces"
+main_buzzer          "Alarma sonora"
+main_buildSettings   "Opciones"
+main_profiles        "Perfiles"
+main_extruderFan     "Ventilador"
+main_calibrate       "Calibrador"
+main_homeOffsets     "Desplazamientos"
+main_filamentUsed    "Uso material"
+main_currentPosition "Posicion actual"
+main_endStops        "Prueba sensores"
+main_homingRates     "Velocidades"
+main_versions        "Acerca de"
+main_eeprom          "EEPROM"
+
+// Value Set screen
+vs_message4 "Arriba/Abajo  OK"
+
+// Preheat menu
+ph_heat     "Calentar "
+ph_cool     "Enfriar "
+ph_tool0    "Extr"
+ph_platform "Plat"
+ph_tool0set "Ajustar Extr"
+ph_platset  "Ajustar Plat"
+ph_message1 "Temp Extrusor:"
+ph_message2 "Temp Plataforma:"
+
+// Home axis menu
+ha_home1 "Mover al inicio:"
+ha_home2 "  Y            Z"
+ha_home3 "X   X (sensores)"
+ha_home4 "  Y            Z"
+
+// Enable Disable menu
+ed_disable "Desactivado"
+ed_enable  "Activado"
+
+// Test End Stops menu
+tes_test1 "Prueba sensores:"
+tes_test2 "XMin:0    XMax:0"
+tes_test3 "YMin:0    YMax:0"
+tes_test4 "ZMin:0    ZMax:0"
+tes_strY  "1"
+tes_strN  "0"
+
+// Pause menu
+p_waitForCurrentCommand "Pausando...     "
+p_retractFilament       "Ajustando...    "
+p_clearingBuild         "Preparando...   "
+p_heating               "Calentando...   "
+p_leavingPaused         "Continuando...  "
+p_paused1               "Pausa ("
+p_paused2               "   Y+         Z+"
+p_paused3               "X- Rev X+  (Ade)"
+p_paused4               "   Y-         Z-"
+
+// Pause @ ZPos menu
+pz_message1 "Altura de pausa:"
+pz_message4 "Arriba/Abajo  OK"
+pz_mm       "mm   "
+
+// Advance ABP menu
+abp_msg1 "Avanzar ABP:"
+abp_msg2 "pulse y mantenga"
+abp_msg3 "       (avanzar)"
+
+// Calibrate menu
+c_calib1 "Calibrador:"
+c_calib2 "Mueva la"
+c_calib3 "plataforma al"
+c_calib4 "     (siguiente)"
+c_calib5 "centro, con el"
+c_calib6 "extrusor tocando"
+c_calib7 "suavemente la"
+c_calib8 "superficie de la"
+c_calib9 "plataforma."
+c_homeZ  "Calibrando Z..."
+c_homeY  "Calibrando Y..."
+c_homeX  "Calibrando X..."
+c_done   "Calibracion"
+c_regen  "lista!"
+c_reset  "     (reiniciar)"
+
+// Home Offsets menu
+ho_message1x "Limite eje X:"
+ho_message1y "Limite eje Y:"
+ho_message1z "Limite eje Z:"
+ho_message4  "Arriba/Abajo  OK"
+ho_mm        "mm"
+
+// Buzzer Set Repeats menu
+bsr_message1 "Alarma sonora:"
+bsr_message2 "(0=Apagado)"
+bsr_message4 "Arriba/Abajo  OK"
+bsr_times    " veces "
+
+// Filament Used Reset menu
+fur_msg "Colocar a cero?"
+fur_no  "No"
+fur_yes "Si"
+
+// Filament Used menu
+fu_lifetime "Uso total:    "
+fu_trip     "Uso actual:   "
+fu_but_life "(actual)(borrar)"
+fu_but_trip "(total) (borrar)"
+
+// Build Settings menu
+bs_item1 "Ignorar Temp"
+bs_item2 "Copias ABP (SD)"
+bs_item3 "Imprimir doble"
+bs_item4 "Modo impresion"
+bs_item5 "Aceleracion"
+// ABP Copies Set menu
+abp_message1 "Copias ABP (SD):"
+abp_message4 "Arriba/Abajo  OK"
+
+// Acceleration On Off menu
+aof_msg1 "Modo de impresion"
+aof_msg2 "a utilizar:"
+aof_off  "Normal"
+aof_on   "Acelerado"
+
+// Profiles menu
+pro_defaultProfile "Perfil ?"
+
+// Profile Sub menu
+ps_msg1 "Cargar perfil"
+ps_msg2 "Ver detalles"
+ps_msg3 "Cambiar nombre"
+ps_msg4 "Guardar perfil"
+
+// Profile Change Name menu
+pcn_message1 "Nombre perfil:"
+pcn_message4 "Arriba/Abajo  OK"
+pcn_blank    " "
+
+// Profile Display Settings menu
+pds_xOffset  "XOff: "
+pds_yOffset  "YOff: "
+pds_zOffset  "ZOff: "
+pds_hbp      "Plat Temp:  "
+pds_tool0    "Extr Temp:  "
+pds_extruder "Extr MM/s:  "
+
+// Current Position menu
+cp_msg1 "X:"
+cp_msg2 "Y:"
+cp_msg3 "Z:"
+cp_msg4 "A:"
+cp_mm   " mm"
+
+// Unable To Open File menu
+utof_msg1 "Error: El nombre"
+utof_msg2 "del archivo es"
+utof_msg3 "demasiado largo"
+utof_cont "Continuar"
+
+// Accelerated Settings menu
+as_message1xMaxAccelRate    "X Max Accel:"
+as_message1yMaxAccelRate    "Y Max Accel:"
+as_message1zMaxAccelRate    "Z Max Accel:"
+as_message1aMaxAccelRate    "Right Max Accel:"
+as_message1bMaxAccelRate    "Left Max Accel:"
+as_message1ExtruderNorm     "Max Accel:"
+as_message1ExtruderRetract  "Max Accel Extdr:"
+as_message1AdvanceK         "JKN Advance K:"
+as_message1AdvanceK2        "JKN Advance K2:"
+as_message1ExtruderDeprimeA "Extdr.DeprimeR:"
+as_message1ExtruderDeprimeB "Extdr.DeprimeL:"
+as_message1SlowdownLimit    "SlowdownEnabled:"
+as_message1MaxSpeedChangeX  "MaxSpeedChangeX:"
+as_message1MaxSpeedChangeY  "MaxSpeedChangeY:"
+as_message1MaxSpeedChangeZ  "MaxSpeedChangeZ:"
+as_message1MaxSpeedChangeA  "MaxSpeedChangeR:"
+as_message1MaxSpeedChangeB  "MaxSpeedChangeL:"
+as_message4                 "Arriba/Abajo  OK"
+as_blank                    "    "
+
+// End Stop Config menu
+esc_message1 "EndstopsPresent:"
+esc_message4 "Arriba/Abajo  OK"
+esc_blank    " "
+
+// Homing Feed Rates menu
+hfr_message1x "Velocidad eje X:"
+hfr_message1y "Velocidad eje Y:"
+hfr_message1z "Velocidad eje Z:"
+hfr_message4  "Arriba/Abajo  OK"
+hfr_mm        "mm/min "
+
+// Eeprom menu 1
+e_message_dump    "EEPROM -> SD"
+e_message_restore "SD -> EEPROM"
+e_message_erase   "Borrar EEPROM"
+
+// Eeprom menu 2
+eeprom_message_dump    "Guardando..."
+eeprom_message_restore "Restaurando..."
+eeprom_message_erase   "Borrando..."
+eeprom_message_error   "Error:"
+
+eeprom_msg1  "Estas opciones"
+eeprom_msg2  "deben ser usadas"
+eeprom_msg3  "con cuidado."
+eeprom_msg4  "Presione (Y+)"
+eeprom_msg5  "Fallo al leer!"
+eeprom_msg6  "La EEPROM puede"
+eeprom_msg7  "estar corrupta"
+eeprom_msg8  "No hay archivo!"
+eeprom_msg9  "* Pulse "
+eeprom_msg10 " veces!"
+eeprom_msg11 "Escritura fallo!"
+eeprom_msg12 "Archivo existe!"
+eeprom_blank "                "
+
+// Steppers menu
+step_msg1 "Bloquear motores:"
+step_msg2 ""
+
+// Extruder Fan menu
+ext_msg1 "Ventilador"
+ext_msg2 "del extrusor:"
+
+// Override GCode Temp menu
+ogct_msg1 "Ignorar temps"
+ogct_msg2 "del GCode:"
+
+// Ditto Print menu
+dp_msg1 "Ambos extrusores"
+dp_msg2 "imprimen igual:"
+
+// ---------------------------------------------------------
+// MoodLightController.cc strings
+
+mood_script0   "(Estado)"
+mood_script1   "Personal"
+mood_script2   "Apagado"
+mood_script3   "Blanco"
+mood_script4   "Rojo"
+mood_script5   "Verde"
+mood_script6   "Azul"
+mood_script7   "Cian"
+mood_script8   "Purpura"
+mood_script9   "Amarillo"
+mood_script10  "Purpura"
+mood_script11  "Naranjo"
+mood_script12  "Almendra"
+mood_script13  "Durazno"
+mood_script14  "Menta"
+mood_script15  "Azul suave"
+mood_script16  "Lavanda"
+mood_script17  "Rosa suave"
+mood_script18  "Pizarra"
+mood_script19  "Gris"
+mood_script20  "Gris suave"
+mood_script21  "Azul noche"
+mood_script22  "Azulado"
+mood_script23  "Oliva"
+mood_script24  "Bosque"
+mood_script25  "Oro"
+mood_script26  "Rosado"
+mood_script27  "Lino"
+mood_script100  "WRGB*"
+mood_script101  "RGB*"
+mood_script102  "Blanco*"
+mood_script103  "Rojo*"
+mood_script104  "Verde*"
+mood_script105  "Azul*"
+mood_script106  "Cian*"
+mood_script107  "Magenta*"
+mood_script108  "Amarillo*"
+mood_script109  "Negro"
+mood_script110  "Tonos*"
+mood_script111  "Animo*"
+mood_script112  "Velas*"
+mood_script113  "Agua*"
+mood_script114  "Neon*"
+mood_script115  "Estacione*"
+mood_script116  "Tormenta*"
+mood_script117 " "Semaforo*"
+mood_script118  "S.O.S.*"
+mood_script_unknown "DESCONOCIDO"
+
+// ---------------------------------------------------------
+// LiquidCrystral.cc strings
+
+lc_overflow "overflow"
