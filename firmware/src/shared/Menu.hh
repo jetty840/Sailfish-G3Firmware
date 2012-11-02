@@ -669,6 +669,17 @@ protected:
 	void handleSelect(uint8_t index);
 };
 
+class ExtruderHoldOnOffMenu: public Menu {
+public:
+	ExtruderHoldOnOffMenu();
+
+	void resetState();
+protected:
+	void drawItem(uint8_t index, LiquidCrystal& lcd);
+
+	void handleSelect(uint8_t index);
+};
+
 class AcceleratedSettingsMode: public Screen {
 private:
 	enum accelerateSettingsState {
@@ -723,6 +734,7 @@ private:
 	DittoPrintMenu			dittoPrintMenu;
 	AccelerationOnOffMenu		accelerationOnOffMenu;
 	AcceleratedSettingsMode		acceleratedSettingsMode;
+	ExtruderHoldOnOffMenu		extruderHoldOnOffMenu;
 	
 	bool acceleration;
 public:

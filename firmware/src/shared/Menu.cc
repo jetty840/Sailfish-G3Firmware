@@ -3177,7 +3177,7 @@ void FilamentUsedMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 }
 
 BuildSettingsMenu::BuildSettingsMenu() {
-	itemCount = 4;
+	itemCount = 5;
 	reset();
 }
 
@@ -3185,8 +3185,8 @@ void BuildSettingsMenu::resetState() {
 	if ( eeprom::getEeprom8(eeprom::ACCELERATION_ON, EEPROM_DEFAULT_ACCELERATION_ON) & 0x01 )	acceleration = true;
 	else												acceleration = false;
 
-	if ( acceleration )	itemCount = 5;
-	else			itemCount = 4;
+	if ( acceleration )	itemCount = 6;
+	else			itemCount = 5;
 
 	itemIndex = 0;
 	firstItemIndex = 0;
@@ -3196,8 +3196,9 @@ void BuildSettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar bs_item1[] = "Override Temp";
 	const static PROGMEM prog_uchar bs_item2[] = "ABP Copies (SD)";
 	const static PROGMEM prog_uchar bs_item3[] = "Ditto Print";
-	const static PROGMEM prog_uchar bs_item4[] = "Accel. On/Off";
-	const static PROGMEM prog_uchar bs_item5[] = "Accel. Settings";
+	const static PROGMEM prog_uchar bs_item4[] = "Extruder Hold";
+	const static PROGMEM prog_uchar bs_item5[] = "Accel. On/Off";
+	const static PROGMEM prog_uchar bs_item6[] = "Accel. Settings";
 
 	switch (index) {
 	case 0:
@@ -3213,8 +3214,11 @@ void BuildSettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 		lcd.writeFromPgmspace(LOCALIZE(bs_item4));
 		break;
 	case 4:
-		if ( ! acceleration ) return;
 		lcd.writeFromPgmspace(LOCALIZE(bs_item5));
+		break;
+	case 5:
+		if ( ! acceleration ) return;
+		lcd.writeFromPgmspace(LOCALIZE(bs_item6));
 		break;
 	}
 }
@@ -3236,9 +3240,14 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 			interface::pushScreen(&dittoPrintMenu);
 			break;
 		case 3:
-			interface::pushScreen(&accelerationOnOffMenu);
+			//Extruder Hold
+			interface::pushScreen(&extruderHoldOnOffMenu);
 			break;
 		case 4:
+			//Acceleraton On/Off Menu
+			interface::pushScreen(&accelerationOnOffMenu);
+			break;
+		case 5:
 			if ( ! acceleration )	return;
 			interface::pushScreen(&acceleratedSettingsMode);
 			break;
@@ -3384,6 +3393,65 @@ void AccelerationOnOffMenu::handleSelect(uint8_t index) {
 	if ( newValue != oldValue ) {
 		cli();
 		eeprom_write_byte((uint8_t*)eeprom::ACCELERATION_ON, newValue);
+		sei();
+		//Reset
+		host::stopBuildNow();
+	}
+}
+
+ExtruderHoldOnOffMenu::ExtruderHoldOnOffMenu() {
+	itemCount = 4;
+	reset();
+}
+
+void ExtruderHoldOnOffMenu::resetState() {
+	uint8_t extruderHold = ((eeprom::getEeprom8(eeprom::EXTRUDER_HOLD, EEPROM_DEFAULT_EXTRUDER_HOLD)) != 0);
+	if	( extruderHold )	itemIndex = 3;
+	else				itemIndex = 2;
+	firstItemIndex = 2;
+}
+
+void ExtruderHoldOnOffMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
+	const static PROGMEM prog_uchar eof_msg1[] = "Extruder";
+	const static PROGMEM prog_uchar eof_msg2[] = "Hold:";
+	const static PROGMEM prog_uchar eof_off[]  = "Off";
+	const static PROGMEM prog_uchar eof_on[]   = "On";
+
+	switch (index) {
+	case 0:
+		lcd.writeFromPgmspace(LOCALIZE(eof_msg1));
+		break;
+	case 1:
+		lcd.writeFromPgmspace(LOCALIZE(eof_msg2));
+		break;
+	case 2:
+		lcd.writeFromPgmspace(LOCALIZE(eof_off));
+		break;
+	case 3:
+		lcd.writeFromPgmspace(LOCALIZE(eof_on));
+		break;
+	}
+}
+
+void ExtruderHoldOnOffMenu::handleSelect(uint8_t index) {
+	uint8_t oldValue = ((eeprom::getEeprom8(eeprom::EXTRUDER_HOLD, EEPROM_DEFAULT_EXTRUDER_HOLD)) != 0);
+	uint8_t newValue = oldValue;
+	
+	switch (index) {
+		case 2:  
+			newValue = 0x00;
+			interface::popScreen();
+			break;
+		case 3:
+			newValue = 0x01;
+                	interface::popScreen();
+			break;
+	}
+
+	//If the value has changed, do a reset
+	if ( newValue != oldValue ) {
+		cli();
+		eeprom_write_byte((uint8_t*)eeprom::EXTRUDER_HOLD, newValue);
 		sei();
 		//Reset
 		host::stopBuildNow();
