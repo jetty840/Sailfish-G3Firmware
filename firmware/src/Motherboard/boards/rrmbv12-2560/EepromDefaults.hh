@@ -70,4 +70,4 @@
 
 #define EEPROM_DEFAULT_BUZZER_REPEATS                   3
 
-#define EEPROM_DEFAULT_EXTRUDER_HOLD          0
+#define EEPROM_DEFAULT_EXTRUDER_HOLD			0

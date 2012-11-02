@@ -1,5 +1,5 @@
 /*
- * Copyright 2010 by Adam Mayer   <adam@makerbot.com>
+ * Copyright 2010 by Adam Mayer	 <adam@makerbot.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -282,4 +282,3 @@
 #define CUPCAKE_3G5D_COMBINED_ENDSTOPS
 
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
-
