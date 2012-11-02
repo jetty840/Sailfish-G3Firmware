@@ -1076,18 +1076,7 @@ void runCommandSlice() {
 					pop8(); // remove the command code
 					uint8_t axes = pop8();
 					line_number ++;
-					bool enable = (axes & 0x80) != 0;
 
-					if ( host::extruderHoldEnable && enable ) {
-						// Note whether an extruder stepper motor has been enabled
-						// We'll then use this mask to ensure that the stepper remains
-						// enabled.  Note that with the use of an acceleration planner
-						// this means that we may enable the extruder stepper motor in
-						// advance of the actual move which triggerred this enabling,
-						// but that's okay.
-						if ( axes & _BV(A_AXIS) ) host::extruder_hold[0] = true;
-						if ( axes & _BV(B_AXIS) ) host::extruder_hold[1] = true;
-					}
 #ifdef DITTO_PRINT
 					if ( dittoPrinting ) {
 						if ( currentToolIndex == 0 ) {
@@ -1101,6 +1090,8 @@ void runCommandSlice() {
 						}
 					}
 #endif
+
+					bool enable = (axes & 0x80) != 0;
 					for (int i = 0; i < STEPPER_COUNT; i++) {
 						if ((axes & _BV(i)) != 0) {
 							steppers::enableAxis(i, enable);

@@ -28,8 +28,6 @@
 /// also responsible for handling prints from SD card.
 namespace host {
 
-extern bool extruderHoldEnable;
-extern bool extruder_hold[2];
 const int MAX_MACHINE_NAME_LEN = 16;
 const int MAX_FILE_LEN = MAX_PACKET_PAYLOAD-1;
 

@@ -42,14 +42,18 @@
 #include "StepperAxis.hh"
 #include "Steppers.hh"
 
-namespace host {
-	extern bool extruder_hold[2];
-}
-
 block_t		*current_block;				// A pointer to the block currently being traced
 int16_t		extruder_deprime_steps[EXTRUDERS];	// Positive number of steps to prime / deprime
 bool		extrude_when_negative[EXTRUDERS];	// True if negative values cause an extruder to extrude material
 float		extruder_only_max_feedrate[EXTRUDERS];
+
+// Some gcode is loaded with enable/disable extruder commands. E.g., before each travel-only move.
+// This seems okay for 1.75 mm filament extruders.  However, it is problematic for 3mm filament
+// extruders: when the stepper motor is disabled, too much filament backs out owing to the high
+// melt chamber pressure and the free-wheeling pinch gear.  To combat this, the firmware has an
+// option to leave the extruder stepper motors engaged throughout an entire build, ignoring any
+// gcode / s3g command to disable the extruder stepper motors.
+bool		extruder_hold[EXTRUDERS];		// True if the extruders should not be disabled during printing
 
 #ifdef JKN_ADVANCE
 	enum AdvanceState {
@@ -320,9 +324,9 @@ FORCE_INLINE void setup_next_block() {
 
 	//if we have e_steps, re-enable the active extruders
 	uint8_t extruderOverriddenAxesEnabled = current_block->axesEnabled;
-	if ( e_steps[0] || host::extruder_hold[0] )	extruderOverriddenAxesEnabled |= A_AXIS;
+	if ( e_steps[0] || extruder_hold[0])	extruderOverriddenAxesEnabled |= A_AXIS;
 #if EXTRUDERS > 1
-	if ( e_steps[1] || host::extruder_hold[1] )	extruderOverriddenAxesEnabled |= B_AXIS;
+	if ( e_steps[1] || extruder_hold[1])	extruderOverriddenAxesEnabled |= B_AXIS;
 #endif
 
 	stepperAxisSetHardwareEnabledToMatch(extruderOverriddenAxesEnabled);
@@ -407,7 +411,7 @@ bool st_interrupt() {
 				#endif
 				   )
 			#endif
-				stepperAxisSetHardwareEnabledToMatch(axesEnabled);
+			        stepperAxisSetHardwareEnabledToMatch(axesEnabled);
 		}
 	} 
 
