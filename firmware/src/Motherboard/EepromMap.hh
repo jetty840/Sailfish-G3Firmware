@@ -355,6 +355,7 @@ const static uint16_t DITTO_PRINT_ENABLED	= 0x01DC;
 //$BEGIN_ENTRY
 //$type:q
 const static uint16_t FILAMENT_TRIP_B		= 0x01DD;
+
 //Hardware vendor id (in this case, Sailfish vendor id) - (4 bytes)
 //$BEGIN_ENTRY
 //$type:BBBB
@@ -363,7 +364,8 @@ const static uint16_t VID_PID_INFO		 = 0x1E5;
 //Extruder hold (1 byte)
 //$BEGIN_ENTRY
 //$type:B
-const static uint16_t EXTRUDER_HOLD		 = 0x1E9; 
+const static uint16_t EXTRUDER_HOLD		 = 0x1E9;
+
 
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
