@@ -98,7 +98,6 @@ extern block_t	*current_block;  // A pointer to the block currently being traced
 extern int16_t	extruder_deprime_steps[EXTRUDERS];
 extern bool	extrude_when_negative[EXTRUDERS];
 extern float	extruder_only_max_feedrate[EXTRUDERS];
-extern bool	extruder_hold[EXTRUDERS];
 
 //Enables and disables deprime
 extern void st_deprime_enable(bool enable);
