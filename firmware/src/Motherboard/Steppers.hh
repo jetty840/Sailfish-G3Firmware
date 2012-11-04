@@ -44,6 +44,7 @@ namespace steppers {
 
     extern bool acceleration;
     extern FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
+    extern bool extruder_hold[EXTRUDERS];
 
     /// Check if the stepper subsystem is running
     /// \return True if the stepper subsystem is running or paused. False
