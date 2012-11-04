@@ -72,6 +72,14 @@ bool acceleration = true;
 uint8_t plannerMaxBufferSize;
 FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
 
+// Some gcode is loaded with enable/disable extruder commands. E.g., before each travel-only move.
+// This seems okay for 1.75 mm filament extruders.  However, it is problematic for 3mm filament
+// extruders: when the stepper motor is disabled, too much filament backs out owing to the high
+// melt chamber pressure and the free-wheeling pinch gear.  To combat this, the firmware has an
+// option to leave the extruder stepper motors engaged throughout an entire build, ignoring any
+// gcode / s3g command to disable the extruder stepper motors.
+bool extruder_hold[EXTRUDERS]; // True if the extruders should not be disabled during printing
+
 // Segments are accelerated when segmentAccelState is true; unaccelerated otherwise
 static bool segmentAccelState = true;
 
