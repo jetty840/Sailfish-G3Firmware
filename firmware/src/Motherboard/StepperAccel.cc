@@ -324,9 +324,9 @@ FORCE_INLINE void setup_next_block() {
 
 	//if we have e_steps, re-enable the active extruders
 	uint8_t extruderOverriddenAxesEnabled = current_block->axesEnabled;
-	if ( e_steps[0] || extruder_hold[0])	extruderOverriddenAxesEnabled |= A_AXIS;
+	if ( e_steps[0] || extruder_hold[0])	extruderOverriddenAxesEnabled |= _BV(A_AXIS);
 #if EXTRUDERS > 1
-	if ( e_steps[1] || extruder_hold[1])	extruderOverriddenAxesEnabled |= B_AXIS;
+	if ( e_steps[1] || extruder_hold[1])	extruderOverriddenAxesEnabled |= _BV(B_AXIS);
 #endif
 
 	stepperAxisSetHardwareEnabledToMatch(extruderOverriddenAxesEnabled);
