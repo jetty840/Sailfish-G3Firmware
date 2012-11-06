@@ -326,4 +326,7 @@
 //When defined, acceleration stats are displayed on the LCD screen
 #define ACCEL_STATS
 
+// Our software variant id for the advanced version command
+#define SOFTWARE_VARIANT_ID 0x81
+
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
