@@ -288,4 +288,7 @@
 // The pin that drives the buzzer
 #define BUZZER_PIN              Pin(PortC,6)
 
+// Our software variant id for the advanced version command
+#define SOFTWARE_VARIANT_ID 0x81
+
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
