@@ -281,4 +281,7 @@
 //away from the homing endstop after triggering it
 #define CUPCAKE_3G5D_COMBINED_ENDSTOPS
 
+// Our software variant id for the advanced version command
+#define SOFTWARE_VARIANT_ID 0x81
+
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
