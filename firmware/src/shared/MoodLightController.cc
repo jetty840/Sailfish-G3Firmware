@@ -230,8 +230,8 @@ void MoodLightController::playScript(uint8_t scriptId) {
 
 	blinkM.stopScript();
 
-	blinkM.setFadeSpeed(8);
-	blinkM.setTimeAdjust(50);
+	blinkM.setFadeSpeed(15);
+	blinkM.setTimeAdjust(0);
 
 	if      ( scriptId == 0 ) {						//Bot Status
 		blinkM.fadeToRGB(255, 255, 255);
