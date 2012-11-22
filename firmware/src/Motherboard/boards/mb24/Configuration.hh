@@ -327,6 +327,6 @@
 #define ACCEL_STATS
 
 // Our software variant id for the advanced version command
-#define SOFTWARE_VARIANT_ID 0x81
+#define SOFTWARE_VARIANT_ID 0x80
 
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
