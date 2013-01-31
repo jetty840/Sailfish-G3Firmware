@@ -31,6 +31,7 @@
 #include "EepromDefaults.hh"
 #include <avr/eeprom.h>
 #include "StepperAccelPlanner.hh"
+#include "SDCard.hh"
 
 //Warnings to remind us that certain things should be switched off for release
 
@@ -117,6 +118,9 @@ void Motherboard::setupAccelStepperTimer() {
 //      Timer 0 = 8 bit with PWM
 //      Timers 1,3,4,5 = 16 bit with PWM
 //      Timer 2 = 8 bit with PWM
+//
+// External Interrupt 0 set to trigger on any edge and thereby detect
+// removal or insertion of an SD card
 
 void Motherboard::initClocks(){
         // Reset and configure timer 2, the microsecond timer, debug LED flasher timer and Advance timer.
@@ -139,6 +143,21 @@ void Motherboard::initClocks(){
 	TIMSK4 = 0x02; // turn on OCR4A match interrupt
 
         // Timer 5 (unused unless DEBUG_TIMER is defined in StepperAccel.hh)
+
+	// External Interrupt 1 (PD1) is tied to the SD card's card-detect switch.
+	// That switch is wired to go HIGH when no card is inserted and LOW when
+	// a card is present.
+
+	// We wish to note when the card is inserted and removed so that we
+	// know when the SD card reading state needs to be reinitialized
+
+	// The following sequence below is as per the Atmel ATmega 2560 / 1280 documentation
+	EIMSK &= ~( 1 << INT1 );  // Disable INT1 temporarily
+	DDRD  &= ~( 1 << PD1 );   // Port D1 is read
+	EICRA &= ~( 1 << ISC11 ); // Establish external INT1 as triggering on any edge
+	EICRA |=  ( 1 << ISC10 ); //     ISC11 = 0; ISC10 = 1
+	EIFR  |=  ( 1 << PD1 );   // Clear the INT1 flag
+	EIMSK |=  ( 1 << INT1 );  // Re-enable INT1
 }
 
 
@@ -311,6 +330,7 @@ ISR(STEPPER_TIMERn_COMPA_vect) {
 	Motherboard::getBoard().doStepperInterrupt();
 }
 
+
 /// Number of times to blink the debug LED on each cycle
 volatile uint8_t blink_count = 0;
 
@@ -460,6 +480,9 @@ ISR(TIMER4_COMPA_vect) {
 	Motherboard::getBoard().UpdateMicros();
 }
 
+ISR(INT1_vect) {
+	sdcard::mustReinit = true;
+}
 
 /// Timer2 overflow cycles that the LED remains on while blinking
 #define OVFS_ON 18

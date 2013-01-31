@@ -72,7 +72,7 @@ bool pauseUnRetract = false;
 
 int16_t pausedPlatformTemp;
 int16_t pausedExtruderTemp[2];
-volatile bool pauseNoHeat;
+volatile uint8_t pauseNoHeat = PAUSE_HEAT_ON;
 
 uint8_t buildPercentage = 101;
 float startingBuildTimeSeconds;
@@ -105,9 +105,9 @@ void pauseUnRetractClear(void) {
 	pauseUnRetract = false;
 }
 
-void pause(bool pause, bool pauseWithoutHeat) {
+void pause(bool pause, uint8_t heaterControl) {
 	//We only store this on a pause, because an unpause needs to unpause based on the setting before
-	if ( pause )	pauseNoHeat = pauseWithoutHeat;
+	if ( pause )	pauseNoHeat = heaterControl;
 
 	if ( pause )	paused = (enum PauseState)PAUSE_STATE_ENTER_COMMAND;
 	else		paused = (enum PauseState)PAUSE_STATE_EXIT_COMMAND;
@@ -256,9 +256,6 @@ enum {
 /// Action to take when button times out
 uint8_t button_timeout_behavior;
 
-
-bool sdcard_reset = false;
-
 void reset() {
 	buildPercentage = 101;
 	startingBuildTimeSeconds = 0.0;
@@ -275,7 +272,6 @@ void reset() {
 	line_number = 0;
 	paused = PAUSE_STATE_NONE;
 	sd_count = 0;
-	sdcard_reset = false;
 #ifdef HAS_FILAMENT_COUNTER
         filamentLength[0] = filamentLength[1] = 0;
         lastFilamentLength[0] = lastFilamentLength[1] = 0;
@@ -519,13 +515,16 @@ void storeHeaterTemperatures(void) {
 
 
 //Switch the heaters off
-void pauseHeaters(void) {
+void pauseHeaters(uint8_t which) {
 	OutPacket responsePacket;
 
-	extruderControl(0, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)0);
-	if ( eeprom::getEeprom8(eeprom::TOOL_COUNT, 1) == 2 )
-		extruderControl(1, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)0);
-	extruderControl(0, SLAVE_CMD_SET_PLATFORM_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)0);
+	if ( which & PAUSE_EXT_OFF ) {
+		extruderControl(0, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)0);
+		if ( eeprom::getEeprom8(eeprom::TOOL_COUNT, 1) == 2 )
+			extruderControl(1, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)0);
+	}
+	if ( which & PAUSE_HBP_OFF )
+		extruderControl(0, SLAVE_CMD_SET_PLATFORM_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)0);
 }
 
 
@@ -864,11 +863,11 @@ void handlePauseState(void) {
 			cancelling = true;
 
 		//Store the current heater temperatures for restoring later
-		if ( pauseNoHeat )	storeHeaterTemperatures();
+		if ( pauseNoHeat != PAUSE_HEAT_ON )	storeHeaterTemperatures();
 
 		//If we're pausing, and we have HEAT_DURING_PAUSE switched off, switch off the heaters
-		if (( ! cancelling ) && ( pauseNoHeat ))
-			pauseHeaters();
+		if (( ! cancelling ) && ( pauseNoHeat != PAUSE_HEAT_ON ))
+			pauseHeaters(pauseNoHeat);
 
 			//Switch off the extruder fan
 			extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 0);
@@ -885,17 +884,17 @@ void handlePauseState(void) {
 
 	case PAUSE_STATE_EXIT_START_HEATERS:
 		//We've begun to exit the pause, instruct the heaters to resume their set points
-		if ( pauseNoHeat )	unPauseHeaters();
+		if ( pauseNoHeat != PAUSE_HEAT_ON )	unPauseHeaters();
 
 		//Switch on the extruder fan if we're noheat pausing
-		if ( pauseNoHeat )	extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 1);
+		if ( pauseNoHeat != PAUSE_HEAT_ON )	extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 1);
 
 		paused = PAUSE_STATE_EXIT_WAIT_FOR_HEATERS;
 		break;
 
 	case PAUSE_STATE_EXIT_WAIT_FOR_HEATERS:
 		//Waiting for the heaters to reach their set points
-		if (( pauseNoHeat ) && ( ! areHeatersAtTemperature() ))	break;
+		if (( pauseNoHeat != PAUSE_HEAT_ON ) && ( ! areHeatersAtTemperature() ))	break;
 		paused = PAUSE_STATE_EXIT_START_RETURNING_PLATFORM;
 		break;
 

@@ -75,7 +75,7 @@ namespace steppers {
 
     /// Get current position
     /// When accelerated, this is the position right now
-    const Point getStepperPosition();
+    const Point getStepperPosition(uint8_t *active_toolhead = 0);
 
     /// Control whether the Z axis should stay enabled during the entire
     /// build (defaults to off). This is useful for machines that have

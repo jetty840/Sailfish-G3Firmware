@@ -18,7 +18,7 @@
 // Splash screen
 const static PROGMEM prog_uchar splash1_en[] = "  Sailfish FW   ";
 const static PROGMEM prog_uchar splash2_en[] = " -------------- ";
-const static PROGMEM prog_uchar splash3_en[] = "Thing 32084 4.0z";
+const static PROGMEM prog_uchar splash3_en[] = "Thing 32084 4.1z";
 const static PROGMEM prog_uchar splash4_en[] = " Revision: ____ ";
 
 // User view menu
@@ -98,8 +98,10 @@ const static PROGMEM prog_uchar cb_abort_en[] = "Abort Print   ";
 const static PROGMEM prog_uchar cb_printAnother_en[] = "Print Another";
 const static PROGMEM prog_uchar cb_pauseZ_en[] = "Pause at ZPos ";
 const static PROGMEM prog_uchar cb_pause_en[] = "Pause         ";
-const static PROGMEM prog_uchar cb_pauseNoHeat_en[] = "Pause No Heat ";
-const static PROGMEM prog_uchar cb_back_en[] = "Continue Build";
+const static PROGMEM prog_uchar cb_pauseHBPHeat_en[] = "Pause, HBP on ";
+const static PROGMEM prog_uchar cb_pauseNoHeat_en[] = "Pause, No Heat";
+const static PROGMEM prog_uchar cb_cont_en[] = "Continue Build";
+const static PROGMEM prog_uchar cb_back_en[] = "Return to Menu";
 
 // Main menu
 const static PROGMEM prog_uchar main_monitor_en[] = "Monitor";

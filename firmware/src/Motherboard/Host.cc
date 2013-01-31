@@ -274,9 +274,9 @@ inline void handleGetAdvancedVersion(const InPacket& from_host, OutPacket& to_ho
     // return build name
 inline void handleGetBuildName(const InPacket& from_host, OutPacket& to_host) {
 	to_host.append8(RC_OK);
-	for (uint8_t idx = 0; idx < MAX_FILE_LEN; idx++) {
+	for (uint8_t idx = 0; idx < sizeof(buildName); idx++) {
 	  to_host.append8(buildName[idx]);
-	  if (buildName[idx] == '\0') { break; }
+	  if (buildName[idx] == '\0') break;
 	}
 }
 
@@ -323,9 +323,13 @@ inline void handleGetPositionExt(const InPacket& from_host, OutPacket& to_host) 
 
     // capture to SD
 inline void handleCaptureToFile(const InPacket& from_host, OutPacket& to_host) {
+	// Drop the file into the current working directory
+	// To instead put it into root, uncomment the next line
+	// sdcard::forceReinit();
+
 	char *p = (char*)from_host.getData() + 1;
 	to_host.append8(RC_OK);
-	to_host.append8(sdcard::startCapture(p));
+	to_host.append8((uint8_t)sdcard::startCapture(p));
 }
 
     // stop capture to SD
@@ -337,41 +341,47 @@ inline void handleEndCapture(const InPacket& from_host, OutPacket& to_host) {
 
     // playback from SD
 inline void handlePlayback(const InPacket& from_host, OutPacket& to_host) {
+	// Drop the file into the current working directory
+	// To instead put it into root, uncomment the next line
+	// sdcard::forceReinit();
+
 	to_host.append8(RC_OK);
-	for (int idx = 1; (idx < from_host.getLength()) && (idx < MAX_FILE_LEN); idx++) {
+	for (uint8_t idx = 1; (idx < from_host.getLength()) && (idx < sizeof(buildName)); idx++) {
 		buildName[idx-1] = from_host.read8(idx);
 	}
-	buildName[MAX_FILE_LEN-1] = '\0';
+	buildName[sizeof(buildName)-1] = '\0';
 
-	uint8_t response = startBuildFromSD();
-	to_host.append8(response);
+	to_host.append8((uint8_t)startBuildFromSD(0));
 }
 
-    // retrive SD file names
+    // retrieve SD file names
 void handleNextFilename(const InPacket& from_host, OutPacket& to_host) {
 	to_host.append8(RC_OK);
 	uint8_t resetFlag = from_host.read8(1);
 	if (resetFlag != 0) {
+		// force the filesystem back to root
+		// sdcard::forceReinit();
 		sdcard::SdErrorCode e = sdcard::directoryReset();
-		if (e != sdcard::SD_SUCCESS) {
+		if (e != sdcard::SD_SUCCESS && e != sdcard::SD_ERR_CARD_LOCKED) {
 			to_host.append8(e);
 			to_host.append8(0);
 			return;
 		}
 	}
-	int MAX_FILE_LEN = MAX_PACKET_PAYLOAD-1;
 	char fnbuf[MAX_FILE_LEN];
-	sdcard::SdErrorCode e;
+	bool isdir;
 	// Ignore dot-files
 	do {
-		e = sdcard::directoryNextEntry(fnbuf,MAX_FILE_LEN);
+		sdcard::directoryNextEntry(fnbuf,sizeof(fnbuf),&isdir);
 		if (fnbuf[0] == '\0') break;
-	} while (e == sdcard::SD_SUCCESS && fnbuf[0] == '.');
-	to_host.append8(e);
+		else if ( (fnbuf[0] != '.') ||
+			  ( isdir && fnbuf[1] == '.' && fnbuf[2] == 0) ) break;
+	} while (true);
+	// Note that the old directoryNextEntry() always returned SD_SUCCESS
+	to_host.append8(sdcard::SD_SUCCESS);
 	uint8_t idx;
-	for (idx = 0; (idx < MAX_FILE_LEN) && (fnbuf[idx] != 0); idx++) {
+	for (idx = 0; (idx < sizeof(fnbuf)) && (fnbuf[idx] != 0); idx++)
 		to_host.append8(fnbuf[idx]);
-	}
 	to_host.append8(0);
 }
 
@@ -529,7 +539,7 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 		case HOST_STATE_BUILDING_FROM_SD:
 			do {
 				newName[idx++] = buf.pop();		
-			} while ((newName[idx-1] != '\0') && (idx < MAX_FILE_LEN));
+			} while ((newName[idx-1] != '\0') && (idx < sizeof(newName)));
 			if(strcmp(newName, "RepG Build"))
 				strcpy(buildName, newName);
 			break;
@@ -538,7 +548,7 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 		case HOST_STATE_BUILDING:
 			do {
 				buildName[idx++] = buf.pop();		
-                        } while ((buildName[idx-1] != '\0') && (idx < MAX_FILE_LEN));
+                        } while ((buildName[idx-1] != '\0') && (idx < sizeof(buildName)));
 			break;
 		default:
 			break;
@@ -709,20 +719,35 @@ BuildState getBuildState() {
 	return buildState;
 }
 
-sdcard::SdErrorCode startBuildFromSD() {
+sdcard::SdErrorCode startBuildFromSD(char *fname) {
 	sdcard::SdErrorCode e;
 
+	// See if we should copy the file name to the build name
+	if ( !fname )
+		// The filename is already stored in the build name
+		fname = buildName;
+	else if (fname != buildName ) {
+		// Copy a possibly truncated version of the file name to the build name
+		uint8_t i = 0;
+		while ( fname[i] )
+		{
+			buildName[i] = fname[i];
+			if ( ++i >= (sizeof(buildName) - 1) ) break;
+		}
+		buildName[i] = 0;
+	}
+
 	// Attempt to start build
-	e = sdcard::startPlayback(buildName);
-	if (e != sdcard::SD_SUCCESS) {
+	e = sdcard::startPlayback(fname);
+	if (e == sdcard::SD_CWD) return sdcard::SD_SUCCESS;
+	else if (e != sdcard::SD_SUCCESS) {
 		// TODO: report error
 		return e;
 	}
-
+	
 	command::reset();
 	steppers::reset();
 	steppers::abort();
-	
 
 	currentState = HOST_STATE_BUILDING_FROM_SD;
 

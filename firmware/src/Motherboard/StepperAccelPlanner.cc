@@ -130,6 +130,7 @@ int32_t		planner_position[STEPPER_COUNT];			//rescaled from extern when axisStep
 int32_t		planner_target[STEPPER_COUNT];
 
 static FPTYPE	prev_speed[STEPPER_COUNT];
+static FPTYPE   prev_nominal = 0;
 
 #ifdef SIMULATOR
 	static block_t	*sblock = NULL;
@@ -872,7 +873,7 @@ void planner_reverse_pass_kernel(block_t *current, block_t *next) {
 		// If entry speed is already at the maximum entry speed, no need to recheck. Block is cruising.
 		// If not, block in state of acceleration or deceleration. Reset entry speed to maximum and
 		// check for maximum allowable speed reductions to ensure maximum possible planned speed.
-		if (VNEQ(current->entry_speed, current->max_entry_speed)) {
+		if ((current->max_entry_speed - current->entry_speed) > KCONSTANT_3) {
     
 			// If nominal length true, max junction speed is guaranteed to be reached. Only compute
 			// for max allowable speed if block is decelerating and nominal length is false.
@@ -888,9 +889,9 @@ void planner_reverse_pass_kernel(block_t *current, block_t *next) {
 				initial_speed(-current->acceleration,next->entry_speed,current->millimeters));
 			} else {
 				current->entry_speed = current->max_entry_speed;
-				current->speed_changed = true;
 			}
 
+			current->speed_changed = true;
 			current->recalculate_flag = true;
 		}
 	} // Skip last block. Already initialized and set for recalculation.
@@ -930,7 +931,10 @@ void planner_forward_pass_kernel(block_t *previous, block_t *current) {
 	// speeds have already been reset, maximized, and reverse planned by reverse planner.
 	// If nominal length is true, max junction speed is guaranteed to be reached. No need to recheck.
 	if (!previous->nominal_length_flag && previous->speed_changed) {
-		if (VLT(previous->entry_speed, current->entry_speed)) {
+		if ((((previous->nominal_speed) < current->nominal_speed) &&
+		     ((previous->entry_speed + KCONSTANT_3) > current->entry_speed)) ||
+		    (((previous->nominal_speed) > current->nominal_speed) &&
+		     ((previous->entry_speed + KCONSTANT_3) < current->entry_speed))) {
 			// We want to know what the terminal speed from the prior block would be if
 			// it accelerated over the entire block with starting speed prev->entry_speed
 
@@ -1046,6 +1050,7 @@ void plan_init(FPTYPE extruderAdvanceK, FPTYPE extruderAdvanceK2, bool zhold) {
 
 	block_buffer_head = 0;
 	block_buffer_tail = 0;
+	prev_nominal      = 0;
 
 	// clear planner_position
 	for ( uint8_t i = 0; i < STEPPER_COUNT; i ++ )
@@ -1236,17 +1241,15 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 	//For code clarity purposes, we add to the buffer and drop out here for accelerated blocks
 	//Saves having a very long spanning "if"
 	if ( ! block->use_accel ) {
-			#ifdef FIXED
-				FPTYPE speed_factor = KCONSTANT_1; //factor <=1 do decrease speed
-			#else
-				FPTYPE speed_factor = 1.0; //factor <=1 do decrease speed
-			#endif
+		bool docopy = true;
 
-                // block->nominal_rate = dda_rate;
+	        // Note that re-assignment here overrides any speed reduction made by the slowdown logic
+                block->nominal_rate = dda_rate;
 
 		//Non-accelerated blocks are constrained to max_speed_change
 		//But we can only do this if we are the type of move that has a feed rate 
 		if ( feed_rate != 0 ) {
+			FPTYPE speed_factor = KCONSTANT_1; //factor <=1 do decrease speed
 			for(unsigned char i=0; i < STEPPER_COUNT; i++) {
 				if(FPABS(current_speed[i]) > max_speed_change[i])
 					speed_factor = min(speed_factor, FPDIV(max_speed_change[i], FPABS(current_speed[i])));
@@ -1259,6 +1262,11 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 				block->nominal_rate <<= 4;
 			}
 			else	block->nominal_rate = (uint32_t)FPTOI(FPMULT2(ITOFP((int32_t)block->nominal_rate), speed_factor));
+			if (speed_factor != KCONSTANT_1) {
+				for (uint8_t i = 0; i < STEPPER_COUNT; i++)
+					prev_speed[i] = FPMULT2(current_speed[i], speed_factor);
+				docopy = false;
+			}
 		}
 
   		//For non accelerated block, if we set accelerate_until to 0 and decelerate_after to bigger than the number
@@ -1266,6 +1274,11 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
   		//avoid having to calculate accelerated stuff that we don't need.
 		block->accelerate_until = 0;
 		block->decelerate_after = (int32_t)block->step_event_count + 1;
+
+		if ( docopy ) {
+			for ( uint8_t i = 0; i < STEPPER_COUNT; i ++ )
+				prev_speed[i] = current_speed[i];
+		}
 
 		#ifdef SIMULATOR
 			block->nominal_speed = feed_rate;
@@ -1416,7 +1429,7 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 		FPTYPE delta_v;
 		for (uint8_t i = 0; i < STEPPER_COUNT; i++) {
 			delta_v = FPABS(current_speed[i] - prev_speed[i]);
-			if ( current_speed[i] != 0 && delta_v > max_speed_change[i] ) {
+			if ( delta_v > max_speed_change[i] ) {
 
 				// We wish to moderate max_entry_speed such that delta_v
 				// remains <= max_speed_change.  Moreover, any moderation we
@@ -1425,7 +1438,10 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 				// As such, we need to determine a scaling factor, s.
 
 				FPTYPE s;
-				if ( current_speed[i] > prev_speed[i] ) {
+				if ( current_speed[i] == 0) {
+					s = 0;
+				}
+				else if ( current_speed[i] > prev_speed[i] ) {
 					s = FPDIV(prev_speed[i] + max_speed_change[i], current_speed[i]);
 				} else {
 					s = FPDIV(prev_speed[i] - max_speed_change[i], current_speed[i]);
@@ -1437,7 +1453,7 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 			}
 		}
 
-		if (scaling != KCONSTANT_1) {
+		if (scaling <= KCONSTANT_1) {
 			vmax_junction = FPMULT2(block->nominal_speed, scaling);
 			for (uint8_t i = 0; i < STEPPER_COUNT; i++)
 				prev_speed[i] = FPMULT2(current_speed[i], scaling);
@@ -1465,14 +1481,15 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 
 	// It's the max. speed we can achieve if we accelerate the entire length of the block
 	//   starting with an initial speed of minimumPlannerSpeed
-	FPTYPE v_allowable = final_speed(block->acceleration,minimumPlannerSpeed,block->millimeters);
+	FPTYPE v_allowable = final_speed(block->acceleration, minimumPlannerSpeed, block->millimeters);
+	prev_nominal = v_allowable;
 
 	// And this will typically produce a larger value
 	if (vmax_junction < minimumPlannerSpeed) {
-		block->entry_speed = minimumPlannerSpeed;
+		block->entry_speed     = minimumPlannerSpeed;
 		block->max_entry_speed = minimumPlannerSpeed;
 	} else {
-		block->entry_speed = vmax_junction;
+		block->entry_speed     = min(prev_nominal, vmax_junction);
 		block->max_entry_speed = vmax_junction;
 	}
 

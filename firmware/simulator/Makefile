@@ -94,7 +94,7 @@ endif
 #
 ##########
 
-EXE_TARGETS = planner s3gdump
+EXE_TARGETS = planner sailtime s3gdump
 
 ##########
 #
@@ -119,6 +119,20 @@ planner_SRCS = planner.cc \
 planner_LIBS = m
 
 planner_OBJS = $(notdir $(patsubst %.c,%$(OBJ),$(planner_SRCS:.cc=$(OBJ))))
+
+sailtime_DEFS = $(AVRFIXFLAGS) -DSAILTIME
+sailtime_SRCS = sailtime.cc \
+	  StepperAccelPlannerExtras.cc \
+	  s3g.c \
+	  s3g_stdio.c \
+	  $(AVRFIXDIR)/avrfix.c \
+	  $(MOTHERDIR)/StepperAccelPlanner.cc \
+	  $(MOTHERDIR)/Point.cc \
+	  $(MOTHERDIR)/Steppers.cc \
+	  $(MOTHERDIR)/StepperAxis.cc
+sailtime_LIBS = m
+
+sailtime_OBJS = $(notdir $(patsubst %.c,%$(OBJ),$(sailtime_SRCS:.cc=$(OBJ))))
 
 s3gdump_SRCS = s3gdump.c \
 	s3g.c \

@@ -366,6 +366,11 @@ const static uint16_t VID_PID_INFO		 = 0x1E5;
 //$type:B
 const static uint16_t EXTRUDER_HOLD		 = 0x1E9;
 
+//Toolhead offset system (1 byte)
+//$BEGIN_ENTRY
+//$type:B
+const static uint16_t TOOLHEAD_OFFSET_SYSTEM	 = 0x1EA;
+
 
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
