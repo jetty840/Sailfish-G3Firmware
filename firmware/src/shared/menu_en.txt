@@ -220,6 +220,14 @@ fu_but_life "(trip)   (reset)"
 fu_but_trip "(life)   (reset)"
 
 // Build Settings menu
+bs_item0 "Override Temp"
+bs_item1 "Ditto Print"
+bs_item2 "Accel. On/Off"
+bs_item3 "Accel. Settings"
+bs_item4 "Extruder Hold"
+bs_item5 "Toolhead System"
+bs_item6 "ABP Copies (SD)"
+
 bs_item1 "Override Temp"
 bs_item2 "ABP Copies (SD)"
 bs_item3 "Ditto Print"
@@ -236,6 +244,12 @@ aof_msg1 "Accelerated"
 aof_msg2 "Printing:"
 aof_off  "Off"
 aof_on   "On"
+
+// Toolhead Offset System menu
+ts_msg1 "Toolhead offset"
+ts_msg2 "system:"
+ts_old  "Old"
+ts_new  "New"
 
 // Profiles menu
 pro_defaultProfile "Profile?"

@@ -219,12 +219,13 @@ fu_but_life "(actual)(borrar)"
 fu_but_trip "(total) (borrar)"
 
 // Build Settings menu
-bs_item1 "Ignorar Temp"
-bs_item2 "Copias ABP (SD)"
-bs_item3 "Imprimir doble"
+bs_item0 "Ignorar Temp"
+bs_item1 "Imprimir doble"
+bs_item2 "Modo impresion"
+bs_item3 "Aceleracion"
 bs_item4 "Extruder Hold"
-bs_item5 "Modo impresion"
-bs_item6 "Aceleracion"
+bs_item4 "Toolhead System"
+bs_item6 "Copias ABP (SD)"
 
 // ABP Copies Set menu
 abp_message1 "Copias ABP (SD):"
@@ -235,6 +236,12 @@ aof_msg1 "Modo de impresion"
 aof_msg2 "a utilizar:"
 aof_off  "Normal"
 aof_on   "Acelerado"
+
+// Toolhead Offset System menu
+ts_msg1 "Toolhead offset"
+ts_msg2 "system:"
+ts_old  "Antiguo"
+ts_new  "Nuevo"
 
 // Profiles menu
 pro_defaultProfile "Perfil ?"
