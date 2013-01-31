@@ -240,6 +240,10 @@ enum ModeState {
 #endif
 };
 
+#ifdef HAS_INTERFACE_BOARD
+static bool hasInterfaceBoard = false;
+#endif
+
 enum ModeState mode = READY;
 
 Timeout delay_timeout;
@@ -282,6 +286,10 @@ void reset() {
 	if (( eeprom::getEeprom8(eeprom::TOOL_COUNT, 1) == 2 ) && ( eeprom::getEeprom8(eeprom::DITTO_PRINT_ENABLED, EEPROM_DEFAULT_DITTO_PRINT_ENABLED) ))
 		dittoPrinting = true;
 	else	dittoPrinting = false;
+#endif
+
+#ifdef HAS_INTERFACE_BOARD
+	hasInterfaceBoard = Motherboard::getBoard().hasInterface();
 #endif
 
 	mode = READY;
@@ -946,6 +954,14 @@ void runCommandSlice() {
 			sd_count++;
 			command_buffer.push(sdcard::playbackNext());
 		}
+#ifdef HAS_INTERFACE_BOARD
+		if ( !sdcard::playbackHasNext() && !hasInterfaceBoard )
+#else
+		if ( !sdcard::playbackHasNext() )
+#endif
+			// sdcard::isPlaying() will continue to return true
+			//   until we finish the playback
+			sdcard::finishPlayback();
 	}
 
 #ifdef PAUSEATZPOS

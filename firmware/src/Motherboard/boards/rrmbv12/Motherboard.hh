@@ -76,6 +76,8 @@ public:
         void doAdvanceInterrupt();
 	
 	void UpdateMicros();
+
+	bool hasInterface() { return false; }
 };
 
 #endif // BOARDS_RRMBV12_MOTHERBOARD_HH_

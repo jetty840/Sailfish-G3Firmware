@@ -79,6 +79,7 @@ Motherboard::Motherboard() :
             LCD_D1_PIN,
             LCD_D2_PIN,
             LCD_D3_PIN),
+	hasInterfaceBoard(false),
 	messageScreen(),
 	moodLightController(SOFTWARE_I2C_SDA_PIN,
 		  	    SOFTWARE_I2C_SCL_PIN),
