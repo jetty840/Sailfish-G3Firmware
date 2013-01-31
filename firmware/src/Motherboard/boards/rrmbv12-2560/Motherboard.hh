@@ -80,6 +80,8 @@ public:
 	/// Used on for rrmbv12-2560, this only sets the buzzer on, never off
 	void buzz(uint8_t buzzes, uint8_t duration, uint8_t repeats);
 	void stopBuzzer();
+
+	bool hasInterface() { return false; }
 };
 
 #endif // BOARDS_RRMBV12_MOTHERBOARD_HH_
