@@ -685,6 +685,17 @@ protected:
 	void handleSelect(uint8_t index);
 };
 
+class ToolheadSystemOnOffMenu: public Menu {
+public:
+	ToolheadSystemOnOffMenu();
+
+	void resetState();
+protected:
+	void drawItem(uint8_t index, LiquidCrystal& lcd);
+
+	void handleSelect(uint8_t index);
+};
+
 class AcceleratedSettingsMode: public Screen {
 private:
 	enum accelerateSettingsState {
@@ -740,7 +751,8 @@ private:
 	AccelerationOnOffMenu		accelerationOnOffMenu;
 	AcceleratedSettingsMode		acceleratedSettingsMode;
 	ExtruderHoldOnOffMenu		extruderHoldOnOffMenu;
-	
+	ToolheadSystemOnOffMenu		toolheadSystemOnOffMenu;
+
 	bool acceleration;
 public:
 	BuildSettingsMenu();

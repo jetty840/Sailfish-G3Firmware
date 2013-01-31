@@ -204,17 +204,20 @@ void UserViewMenu::handleSelect(uint8_t index) {
 	uint8_t jogModeSettings = eeprom::getEeprom8(eeprom::JOG_MODE_SETTINGS, EEPROM_DEFAULT_JOG_MODE_SETTINGS);
 
 	switch (index) {
+	default:
+		return;
 	case 2:
 		// Model View
-		eeprom_write_byte((uint8_t *)eeprom::JOG_MODE_SETTINGS, (jogModeSettings & (uint8_t)0xFE));
-		interface::popScreen();
+		jogModeSettings &= (uint8_t)0xFE;
 		break;
 	case 3:
 		// User View
-		eeprom_write_byte((uint8_t *)eeprom::JOG_MODE_SETTINGS, (jogModeSettings | (uint8_t)0x01));
-                interface::popScreen();
+		jogModeSettings |= (uint8_t)0x01;
 		break;
 	}
+	eeprom_write_byte((uint8_t *)eeprom::JOG_MODE_SETTINGS,
+			  jogModeSettings);
+	interface::popScreen();
 }
 
 void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
@@ -317,7 +320,7 @@ void MessageScreen::addMessage(CircularBuffer& buf) {
 		c = buf.pop();
 	}
 	// ensure that message is always null-terminated
-	if (cursor == BUF_SIZE-1) {
+	if (cursor >= BUF_SIZE) {
 		message[BUF_SIZE-1] = '\0';
 	} else {
 		message[cursor] = '\0';
@@ -327,35 +330,19 @@ void MessageScreen::addMessage(CircularBuffer& buf) {
 
 void MessageScreen::addMessage(const prog_uchar msg[]) {
 
-	cursor += strlcpy_P(message + cursor, (const prog_char *)msg, BUF_SIZE - cursor);
+	if ( cursor >= BUF_SIZE )
+		return;
+
+	cursor += strlcpy_P(message + cursor, (const prog_char *)msg,
+			    BUF_SIZE - cursor);
 
 	// ensure that message is always null-terminated
-	if (cursor == BUF_SIZE) {
+	if (cursor >= BUF_SIZE) {
 		message[BUF_SIZE-1] = '\0';
 	} else {
 		message[cursor] = '\0';
 	}
 }
-
-#if 0
-
-void MessageScreen::addMessage(char msg[]) {
-
-	char* letter = msg;
-	while (*letter != 0) {
-		message[cursor++] = *letter;
-		letter++;
-	}
-
-	// ensure that message is always null-terminated
-	if (cursor == BUF_SIZE) {
-		message[BUF_SIZE-1] = '\0';
-	} else {
-		message[cursor] = '\0';
-	}
-}
-
-#endif
 
 void MessageScreen::clearMessage() {
 	x = y = 0;
@@ -725,20 +712,22 @@ void ExtruderTooColdMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar etc_warning[]  = "Tool0 too cold!";
 	const static PROGMEM prog_uchar etc_cancel[]   = "Cancel";
 	const static PROGMEM prog_uchar etc_override[] = "Override";
+	const prog_uchar *msg;
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(LOCALIZE(etc_warning));
+		msg = LOCALIZE(etc_warning);
 		break;
-	case 1:
-		break;
+	default:
+		return;
 	case 2:
-		lcd.writeFromPgmspace(LOCALIZE(etc_cancel));
+		msg = LOCALIZE(etc_cancel);
 		break;
 	case 3:
-		lcd.writeFromPgmspace(LOCALIZE(etc_override));
+		msg = LOCALIZE(etc_override);
 		break;
 	}
+	lcd.writeFromPgmspace(msg);
 }
 
 void ExtruderTooColdMenu::handleCancel() {
@@ -748,16 +737,17 @@ void ExtruderTooColdMenu::handleCancel() {
 
 void ExtruderTooColdMenu::handleSelect(uint8_t index) {
 	switch (index) {
+	default :
+		return;
 	case 2:
 		// Cancel extrude
 		overrideExtrudeSeconds = 0;
-		interface::popScreen();
 		break;
 	case 3:
 		// Override and extrude
-                interface::popScreen();
 		break;
 	}
+	interface::popScreen();
 }
 
 void MoodLightMode::reset() {
@@ -818,10 +808,8 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		break;
 	}
 
-	updatePhase++;
-	if (updatePhase > 1) {
+	if (++updatePhase > 1)
 		updatePhase = 0;
-	}
 }
 
 
@@ -833,54 +821,52 @@ void MoodLightMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 	uint8_t i;
 
 	switch (button) {
-        	case ButtonArray::OK:
-			eeprom_write_byte((uint8_t *)eeprom::MOOD_LIGHT_SCRIPT, scriptId);
-               		interface::popScreen();
-			break;
+	case ButtonArray::OK:
+		eeprom_write_byte((uint8_t *)eeprom::MOOD_LIGHT_SCRIPT,
+				  scriptId);
+		interface::popScreen();
+		break;
 
-        	case ButtonArray::ZERO:
-			if ( scriptId == 1 )
-			{
-				//Set RGB Values
-                        	interface::pushScreen(&moodLightSetRGBScreen);
-			}
-			break;
+	case ButtonArray::ZERO:
+		if ( scriptId == 1 )
+			//Set RGB Values
+			interface::pushScreen(&moodLightSetRGBScreen);
+		break;
 
-	        case ButtonArray::ZPLUS:
-			// increment more
-			for ( i = 0; i < 5; i ++ )
-				scriptId = interface::moodLightController().nextScriptId(scriptId);
-			interface::moodLightController().playScript(scriptId);
-			break;
-
-        	case ButtonArray::ZMINUS:
-			// decrement more
-			for ( i = 0; i < 5; i ++ )
-				scriptId = interface::moodLightController().prevScriptId(scriptId);
-			interface::moodLightController().playScript(scriptId);
-			break;
-
-        	case ButtonArray::YPLUS:
-			// increment less
+	case ButtonArray::ZPLUS:
+		// increment more
+		for ( i = 0; i < 5; i ++ )
 			scriptId = interface::moodLightController().nextScriptId(scriptId);
-			interface::moodLightController().playScript(scriptId);
-			break;
+		interface::moodLightController().playScript(scriptId);
+		break;
 
-        	case ButtonArray::YMINUS:
-			// decrement less
+	case ButtonArray::ZMINUS:
+		// decrement more
+		for ( i = 0; i < 5; i ++ )
 			scriptId = interface::moodLightController().prevScriptId(scriptId);
-			interface::moodLightController().playScript(scriptId);
-			break;
+		interface::moodLightController().playScript(scriptId);
+		break;
 
-        	case ButtonArray::XMINUS:
-        	case ButtonArray::XPLUS:
-			break;
+	case ButtonArray::YPLUS:
+		// increment less
+		scriptId = interface::moodLightController().nextScriptId(scriptId);
+		interface::moodLightController().playScript(scriptId);
+		break;
 
-       	 	case ButtonArray::CANCEL:
-			scriptId = eeprom_read_byte((uint8_t *)eeprom::MOOD_LIGHT_SCRIPT);
-			interface::moodLightController().playScript(scriptId);
-               		interface::popScreen();
-			break;
+	case ButtonArray::YMINUS:
+		// decrement less
+		scriptId = interface::moodLightController().prevScriptId(scriptId);
+		interface::moodLightController().playScript(scriptId);
+		break;
+
+	default:
+		break;
+
+	case ButtonArray::CANCEL:
+		scriptId = eeprom_read_byte((uint8_t *)eeprom::MOOD_LIGHT_SCRIPT);
+		interface::moodLightController().playScript(scriptId);
+		interface::popScreen();
+		break;
 	}
 }
 
@@ -3103,42 +3089,43 @@ BuildSettingsMenu::BuildSettingsMenu() {
 }
 
 void BuildSettingsMenu::resetState() {
-	if ( eeprom::getEeprom8(eeprom::ACCELERATION_ON, EEPROM_DEFAULT_ACCELERATION_ON) & 0x01 )	acceleration = true;
-	else												acceleration = false;
-
-	if ( acceleration )	itemCount = 6;
-	else			itemCount = 5;
-
+	acceleration = 1 == (eeprom::getEeprom8(eeprom::ACCELERATION_ON, EEPROM_DEFAULT_ACCELERATION_ON) & 0x01);
+	itemCount = acceleration ? 7 : 6;
 	itemIndex = 0;
 	firstItemIndex = 0;
 }
 
 void BuildSettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	const static PROGMEM prog_uchar bs_item1[] = "Override Temp";
-	const static PROGMEM prog_uchar bs_item2[] = "ABP Copies (SD)";
-	const static PROGMEM prog_uchar bs_item3[] = "Ditto Print";
+	const static PROGMEM prog_uchar bs_item0[] = "Override Temp";
+	const static PROGMEM prog_uchar bs_item1[] = "Ditto Print";
+	const static PROGMEM prog_uchar bs_item2[] = "Accel. On/Off";
+	const static PROGMEM prog_uchar bs_item3[] = "Accel. Settings";
 	const static PROGMEM prog_uchar bs_item4[] = "Extruder Hold";
-	const static PROGMEM prog_uchar bs_item5[] = "Accel. On/Off";
-	const static PROGMEM prog_uchar bs_item6[] = "Accel. Settings";
+	const static PROGMEM prog_uchar bs_item5[] = "Toolhead System";
+	const static PROGMEM prog_uchar bs_item6[] = "ABP Copies (SD)";
+
+	if ( !acceleration && index > 2 ) ++index;
 
 	switch (index) {
 	case 0:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item1));
+		lcd.writeFromPgmspace(LOCALIZE(bs_item0));
 		break;
 	case 1:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item2));
+		lcd.writeFromPgmspace(LOCALIZE(bs_item1));
 		break;
 	case 2:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item3));
+		lcd.writeFromPgmspace(LOCALIZE(bs_item2));
 		break;
 	case 3:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item4));
+		lcd.writeFromPgmspace(LOCALIZE(bs_item3));
 		break;
 	case 4:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item5));
+		lcd.writeFromPgmspace(LOCALIZE(bs_item4));
 		break;
 	case 5:
-		if ( ! acceleration ) return;
+		lcd.writeFromPgmspace(LOCALIZE(bs_item5));
+		break;
+	case 6:
 		lcd.writeFromPgmspace(LOCALIZE(bs_item6));
 		break;
 	}
@@ -3147,30 +3134,35 @@ void BuildSettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 void BuildSettingsMenu::handleSelect(uint8_t index) {
 	OutPacket responsePacket;
 
+	if ( !acceleration && index > 2 ) ++index;
+
 	switch (index) {
 		case 0:
 			//Override the gcode temperature
 			interface::pushScreen(&overrideGCodeTempMenu);
 			break;
 		case 1:
-			//Change number of ABP copies
-			interface::pushScreen(&abpCopiesSetScreen);
-			break;
-		case 2:
 			//Ditto Print
 			interface::pushScreen(&dittoPrintMenu);
 			break;
-		case 3:
-			//Extruder Hold
-			interface::pushScreen(&extruderHoldOnOffMenu);
-			break;
-		case 4:
+		case 2:
 			//Acceleraton On/Off Menu
 			interface::pushScreen(&accelerationOnOffMenu);
 			break;
-		case 5:
-			if ( ! acceleration )	return;
+		case 3:
 			interface::pushScreen(&acceleratedSettingsMode);
+			break;
+		case 4:
+			//Extruder Hold
+			interface::pushScreen(&extruderHoldOnOffMenu);
+			break;
+		case 5:
+			//Toolhead System
+			interface::pushScreen(&toolheadSystemOnOffMenu);
+			break;
+		case 6:
+			//Change number of ABP copies
+			interface::pushScreen(&abpCopiesSetScreen);
 			break;
 	}
 }
@@ -3296,17 +3288,18 @@ void AccelerationOnOffMenu::handleSelect(uint8_t index) {
 	uint8_t newValue = oldValue;
 	
 	switch (index) {
+	        default:
+			return;
 		case 2:  
 			newValue = 0x00;
-			interface::popScreen();
 			break;
 		case 3:
 			newValue = 0x01;
-                	interface::popScreen();
 			break;
 	}
 
 	//If the value has changed, do a reset
+	interface::popScreen();
 	if ( newValue != oldValue ) {
 		cli();
 		eeprom_write_byte((uint8_t*)eeprom::ACCELERATION_ON, newValue);
@@ -3323,8 +3316,7 @@ ExtruderHoldOnOffMenu::ExtruderHoldOnOffMenu() {
 
 void ExtruderHoldOnOffMenu::resetState() {
 	uint8_t extruderHold = ((eeprom::getEeprom8(eeprom::EXTRUDER_HOLD, EEPROM_DEFAULT_EXTRUDER_HOLD)) != 0);
-	if	( extruderHold )	itemIndex = 3;
-	else				itemIndex = 2;
+	itemIndex = extruderHold ? 3 : 2;
 	firstItemIndex = 2;
 }
 
@@ -3333,21 +3325,25 @@ void ExtruderHoldOnOffMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar eof_msg2[] = "Hold:";
 	const static PROGMEM prog_uchar eof_off[]  = "Off";
 	const static PROGMEM prog_uchar eof_on[]   = "On";
+	const prog_uchar *msg;
 
 	switch (index) {
+	default :
+		return;
 	case 0:
-		lcd.writeFromPgmspace(LOCALIZE(eof_msg1));
+		msg = LOCALIZE(eof_msg1);
 		break;
 	case 1:
-		lcd.writeFromPgmspace(LOCALIZE(eof_msg2));
+		msg = LOCALIZE(eof_msg2);
 		break;
 	case 2:
-		lcd.writeFromPgmspace(LOCALIZE(eof_off));
+		msg = LOCALIZE(eof_off);
 		break;
 	case 3:
-		lcd.writeFromPgmspace(LOCALIZE(eof_on));
+		msg = LOCALIZE(eof_on);
 		break;
 	}
+	lcd.writeFromPgmspace(msg);
 }
 
 void ExtruderHoldOnOffMenu::handleSelect(uint8_t index) {
@@ -3355,20 +3351,87 @@ void ExtruderHoldOnOffMenu::handleSelect(uint8_t index) {
 	uint8_t newValue = oldValue;
 	
 	switch (index) {
-		case 2:  
-			newValue = 0x00;
-			interface::popScreen();
-			break;
-		case 3:
-			newValue = 0x01;
-                	interface::popScreen();
-			break;
+	default :
+		return;
+
+	case 2:  
+		newValue = 0x00;
+		break;
+	case 3:
+		newValue = 0x01;
+		break;
 	}
 
+	interface::popScreen();
 	//If the value has changed, do a reset
 	if ( newValue != oldValue ) {
 		cli();
 		eeprom_write_byte((uint8_t*)eeprom::EXTRUDER_HOLD, newValue);
+		sei();
+		//Reset
+		host::stopBuildNow();
+	}
+}
+
+ToolheadSystemOnOffMenu::ToolheadSystemOnOffMenu() {
+	itemCount = 4;
+	reset();
+}
+
+void ToolheadSystemOnOffMenu::resetState() {
+	uint8_t system = eeprom::getEeprom8(eeprom::TOOLHEAD_OFFSET_SYSTEM,
+					    EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM);
+	itemIndex = ( system == 0 ) ? 2 : 3;
+	firstItemIndex = 2;
+}
+
+void ToolheadSystemOnOffMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
+	const static PROGMEM prog_uchar ts_msg1[] = "Toolhead offset";
+	const static PROGMEM prog_uchar ts_msg2[] = "system:";
+	const static PROGMEM prog_uchar ts_old[]  = "Old";
+	const static PROGMEM prog_uchar ts_new[]  = "New";
+	const prog_uchar *msg;
+
+	switch (index) {
+	default :
+		return;
+	case 0:
+		msg = LOCALIZE(ts_msg1);
+		break;
+	case 1:
+		msg = LOCALIZE(ts_msg2);
+		break;
+	case 2:
+		msg = LOCALIZE(ts_old);
+		break;
+	case 3:
+		msg = LOCALIZE(ts_new);
+		break;
+	}
+	lcd.writeFromPgmspace(msg);
+}
+
+void ToolheadSystemOnOffMenu::handleSelect(uint8_t index) {
+	uint8_t oldValue = eeprom::getEeprom8(eeprom::TOOLHEAD_OFFSET_SYSTEM,
+					      EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM);
+	uint8_t newValue = oldValue;
+	
+	switch (index) {
+	default :
+		return;
+	case 2:  
+		newValue = 0x00;
+		break;
+	case 3:
+		newValue = 0x01;
+		break;
+	}
+
+	//If the value has changed, do a reset
+	interface::popScreen();
+	if ( newValue != oldValue ) {
+		cli();
+		eeprom_write_byte((uint8_t*)eeprom::TOOLHEAD_OFFSET_SYSTEM, newValue);
 		sei();
 		//Reset
 		host::stopBuildNow();
