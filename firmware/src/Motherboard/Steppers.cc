@@ -107,19 +107,84 @@ bool isHoming() {
 }
 
 void loadToleranceOffsets() {
-	// get toolhead offsets
-	ATOMIC_BLOCK(ATOMIC_RESTORESTATE){
-		for(int i = 0; i  < 3; i++){
-			int32_t tolerance_err = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + i*4, 0)) / 10;
-			tolerance_offset_T0[i] = (tolerance_err/2);
-		}
-		// For now, force Z offset to be zero as bad things can happen if it has a value AND there is no use case for it having a value on the replicator
-		// extruder axes are 0 because offset concept does not apply
-		for (int i = 2; i < STEPPER_COUNT; i++)
-			tolerance_offset_T0[i] = 0;
 
-		for(int i = 0; i < STEPPER_COUNT; i++)
-			tolerance_offset_T1[i] = -1 * tolerance_offset_T0[i];
+#define TOOLHEAD_OFFSET_X 33.0
+
+	ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+		// Force all toolhead offsets to 0
+		// Note that when the bot's tool count is set to 1, RepG won't display the
+		//   toolhead offsets.  It then becomes possible for a bot operator to not
+		//   realize that s/he has non-zero toolhead offsets set.  RepG won't show
+		//   them but they're there and effect behavior unless we force the offsets
+		//   to zero when the tool count is != 2.
+
+		for (uint8_t i = 0; i < STEPPER_COUNT; i++) {
+			tolerance_offset_T0[i] = 0;
+			tolerance_offset_T1[i] = 0;
+		}
+	}
+
+	// get toolhead offsets for dual extruder units
+
+	if ( eeprom::getEeprom8(eeprom::TOOL_COUNT, 1) == 2 ) {
+
+		// ~4 mm expressed in units of steps
+		int32_t fourMM = ((int32_t)stepperAxisStepsPerMM(0)) << 2;
+
+		// The X Toolhead offset in units of stepps
+		int32_t xToolheadOffset = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 0, 0)) / 10;
+
+		// See which toolhead offset system is used
+		uint8_t system = eeprom::getEeprom8(eeprom::TOOLHEAD_OFFSET_SYSTEM, EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM);
+		if ( system == 0 ) {
+
+			// OLD SYSTEM: stored offset is the deviation from the
+			//    ideal offset of 33.0 or 35.0 mm.
+			
+			// See if the stored offset is > 4 mm.  If so, then it's
+			//    likely meant for the new system.  If so, convert it
+			//    to the old system.
+
+			if ( abs(xToolheadOffset) > fourMM )
+				xToolheadOffset -=
+					(int32_t)(0.5 + TOOLHEAD_OFFSET_X * stepperAxisStepsPerMM(0));
+
+			ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+				// In the RepG 39 and earlier system
+				//
+				//    T0[i] = +1/2 offset[i]
+				//    T1[i] = -1/2 offset[i]
+				//
+				// MOREOVER, the offset is the deviation from the ideal offset
+				tolerance_offset_T0[0] = xToolheadOffset >> 1;
+				tolerance_offset_T1[0] = -1 * tolerance_offset_T0[0];
+				tolerance_offset_T0[1] = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 4, 0)) / 20;
+				tolerance_offset_T1[1] = -1 * tolerance_offset_T0[1];
+			}
+		}
+		else {
+
+			// NEW SYSTEM: stored offset is the actual offset (33 or 35 mm)
+			
+			// See if the stored offset is < 4.0 mm.  If so, then it's
+			//    likely meant for the old system.  If so, convert it
+			//    to the new system.
+
+			if ( abs(xToolheadOffset) <= fourMM )
+				xToolheadOffset +=
+					(int32_t)(0.5 + TOOLHEAD_OFFSET_X * stepperAxisStepsPerMM(0)); 
+
+			ATOMIC_BLOCK(ATOMIC_RESTORESTATE) {
+				// In the RepG 40 and later system
+				//
+				//    T0[i] = 0
+				//    T1[i] = offset[i]
+				//
+				// The offset is the full offset, not the deviation from the offset
+				tolerance_offset_T1[0] = xToolheadOffset;
+				tolerance_offset_T1[1] = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 4, 0)) / 10;
+			}
+		}
 	}
 }
 
@@ -144,7 +209,10 @@ void reset() {
 
 	stepperAxisInit(false);
 
+	// must be after stepperAxisInit() so that stepperAxisStepsPerMM() functions correctly
 	loadToleranceOffsets();
+
+	// must be after loadToleranceOffsets() so that the toolhead offsets are at hand
 	changeToolIndex(0);
 
         //Get the acceleration settings
@@ -379,7 +447,7 @@ const Point getPlannerPosition() {
 
 #ifndef SIMULATOR
 
-const Point getStepperPosition() {
+const Point getStepperPosition(uint8_t *toolhead) {
 	uint8_t active_toolhead;
 	int32_t position[STEPPER_COUNT];
 
@@ -404,13 +472,15 @@ const Point getStepperPosition() {
 	#else
 		Point p = Point(position[X_AXIS], position[Y_AXIS], position[Z_AXIS], position[A_AXIS], 0);
 	#endif
+	if ( toolhead ) *toolhead = active_toolhead;
 	return p;
 }
 
 #else
 
-const Point getStepperPosition() {
+const Point getStepperPosition(uint8_t *toolhead) {
 	Point p = Point(0,0,0,0,0);
+	if ( toolhead ) *toolhead = 0;
 	return p;
 }
 

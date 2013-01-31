@@ -60,6 +60,10 @@ void erase() {
 bool saveToSDFile(const char *filename) {
 	uint8_t v;
 
+	// Drop the file into the current working directory
+	// To instead put it into root, uncomment the next line
+	// sdcard::forceReinit();
+
 	//Open the file for writing
 	if ( sdcard::startCapture((char *)filename) != sdcard::SD_SUCCESS )	return false;
 
@@ -78,6 +82,10 @@ bool saveToSDFile(const char *filename) {
 //Restores eeprom from filename on the sdcard
 bool restoreFromSDFile(const char *filename) {
 	uint8_t v;
+
+	// Drop the file into the current working directory
+	// To instead put it into root, uncomment the next line
+	// sdcard::forceReinit();
 
 	if ( sdcard::startPlayback((char *)filename) != sdcard::SD_SUCCESS )	return false;
 

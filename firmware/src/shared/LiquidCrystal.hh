@@ -45,14 +45,15 @@
 #define LCD_5x10DOTS 0x04
 #define LCD_5x8DOTS 0x00
 
-// Custom chars
-#define LCD_CUSTOM_CHAR_DEGREE			1
+// Custom chars 0x00 - 0x0F
+#define LCD_CUSTOM_CHAR_DEGREE		        1
 #define LCD_CUSTOM_CHAR_EXTRUDER_NORMAL		2
 #define LCD_CUSTOM_CHAR_EXTRUDER_HEATING	3
 #define LCD_CUSTOM_CHAR_PLATFORM_NORMAL		4
 #define LCD_CUSTOM_CHAR_PLATFORM_HEATING	5
-#define LCD_CUSTOM_CHAR_ARROW			6
-
+#define LCD_CUSTOM_CHAR_ARROW		     0x7e
+#define LCD_CUSTOM_CHAR_FOLDER                  7  // Must not be 0
+#define LCD_CUSTOM_CHAR_RETURN                  8  // Must not be 0
 
 class LiquidCrystal {
 public:
@@ -78,6 +79,8 @@ public:
   void clear();
   void home();
 
+  void homeCursor(); // faster version of home()
+  void clearHomeCursor();  // clear() and homeCursor() combined
   void noDisplay();
   void display();
   void noBlink();
@@ -93,6 +96,7 @@ public:
 
   void createChar(uint8_t, uint8_t[]);
   void setCursor(uint8_t, uint8_t); 
+  void setRow(uint8_t); 
   virtual void write(uint8_t);
 
   /** Added by MakerBot Industries to support storing strings in flash **/

@@ -191,7 +191,11 @@ private:
 	uint8_t updatePhase;
 	uint8_t lastItemIndex;
 	bool	drawItemLockout;
+        bool    selectable;
+	int8_t  folderStackIndex;
+	uint8_t folderStack[4]; // Recall file itemIndex up to 4 folders deep
 	UnableToOpenFileMenu unableToOpenFileMenu;
+
 public:
 	SDMenu();
 
@@ -206,7 +210,8 @@ protected:
 
         bool getFilename(uint8_t index,
                          char buffer[],
-                         uint8_t buffer_size);
+                         uint8_t buffer_size,
+		         bool *isdir);
 
 	void drawItem(uint8_t index, LiquidCrystal& lcd);
 

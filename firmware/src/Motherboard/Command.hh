@@ -32,6 +32,10 @@
 #define PAUSE_STATE_ENTER_COMMAND	0x40
 #define PAUSE_STATE_EXIT_COMMAND	0x80
 
+#define PAUSE_HEAT_ON (uint8_t)0x00
+#define PAUSE_EXT_OFF (uint8_t)0x01
+#define PAUSE_HBP_OFF (uint8_t)0x02
+
 enum PauseState {
 	//Other states
 	PAUSE_STATE_NONE				= PAUSE_STATE_OTHER_COMMAND,
@@ -83,7 +87,7 @@ void pauseUnRetractClear(void);
 /// Pause the command processor
 /// \param[in] pause If true, disable the command processor. If false, enable it.
 /// If pauseWithoutHeat is true, heaters are switched off during pause (only applies to pausing, not unpausing)
-void pause(bool pause, bool pauseWithoutHeat);
+void pause(bool pause, uint8_t heaterControl);
 
 /// Returns the pausing intent
 /// \return true if we've previously called a pause, and false if we've previously called unpause

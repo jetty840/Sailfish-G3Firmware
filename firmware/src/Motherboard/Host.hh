@@ -28,8 +28,8 @@
 /// also responsible for handling prints from SD card.
 namespace host {
 
-const int MAX_MACHINE_NAME_LEN = 16;
-const int MAX_FILE_LEN = MAX_PACKET_PAYLOAD-1;
+#define MAX_MACHINE_NAME_LEN 16
+#define MAX_FILE_LEN (MAX_PACKET_PAYLOAD-1)
 
 /// The host can be in any of these four states.
 enum HostState {
@@ -72,7 +72,7 @@ BuildState getBuildState();
 /// Start a build from SD card. The build name should be set by overwriting
 /// the value of buildName, provided by #getBuildName().
 /// \return True if build started successfully.
-sdcard::SdErrorCode startBuildFromSD();
+sdcard::SdErrorCode startBuildFromSD(char *filename);
 
 /// Stop the current build immediately
 void stopBuildNow();

@@ -27,6 +27,7 @@
 #include "EepromMap.hh"
 #include "EepromDefaults.hh"
 #include "StepperAccelPlanner.hh"
+#include "SDCard.hh"
 
 //Warnings to remind us that certain things should be switched off for release
 
@@ -106,6 +107,18 @@ void Motherboard::initClocks(){
         TCCR2B = 0x04;  // prescaler at 1/64
         OCR2A = 25;     //Generate interrupts 16MHz / 64 / 25 = 10KHz
         TIMSK2 = 0x02; // turn on OCR2A match interrupt
+
+	// Pin Change Interrupt 3 (PB3) is tied to the SD card's card-detect switch.
+	// That switch is wired to go HIGH when no card is inserted and LOW when
+	// a card is present.
+
+	// We wish to note when the card is inserted and removed so that we
+	// know when the SD card reading state needs to be reinitialized
+
+	PCMSK0 &= ~( 1 << PCINT3 );  // Disable PCINT3 temporarily
+	DDRB   &= ~( 1 << PB3 );     // Port B3 is read
+	PCICR  |=  ( 1 << PCIE0 );   // Enable PCIE0 (PC interrupts 0 - 7)
+	PCMSK0 |=  ( 1 << PCINT3 );  // Re-enable PCINT3
 }
 
 /// Reset the motherboard to its initial state.
@@ -213,6 +226,10 @@ void Motherboard::UpdateMicros() {
 /// Timer one comparator match interrupt
 ISR(STEPPER_TIMERn_COMPA_vect) {
 	Motherboard::getBoard().doStepperInterrupt();
+}
+
+ISR(PCINT3_vect) {
+	sdcard::mustReinit = true;
 }
 
 /// Number of times to blink the debug LED on each cycle
