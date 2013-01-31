@@ -75,9 +75,7 @@ void setJettyFirmwareDefaults() {
     putEepromInt64(eeprom::STEPS_PER_MM_A,				EEPROM_DEFAULT_STEPS_PER_MM_A);
     putEepromInt64(eeprom::STEPS_PER_MM_B,				EEPROM_DEFAULT_STEPS_PER_MM_B);
 
-#ifdef EEPROM_DEFAULT_ABP_COPIES
     eeprom_write_byte((uint8_t*)eeprom::ABP_COPIES,			EEPROM_DEFAULT_ABP_COPIES);
-#endif
 
 #ifdef EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP
     eeprom_write_byte((uint8_t*)eeprom::OVERRIDE_GCODE_TEMP,		EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP);
@@ -130,8 +128,8 @@ void setJettyFirmwareDefaults() {
     putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B,			EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_B);
 
     eeprom_write_byte((uint8_t*)eeprom::DITTO_PRINT_ENABLED,		EEPROM_DEFAULT_DITTO_PRINT_ENABLED);
-
     eeprom_write_byte((uint8_t*)eeprom::EXTRUDER_HOLD,			EEPROM_DEFAULT_EXTRUDER_HOLD);
+    eeprom_write_byte((uint8_t*)eeprom::TOOLHEAD_OFFSET_SYSTEM,		EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM);
 
     verifyAndFixVidPid();
 }

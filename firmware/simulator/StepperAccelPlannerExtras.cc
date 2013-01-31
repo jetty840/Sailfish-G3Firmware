@@ -186,7 +186,15 @@ void init_extras(bool accel)
      steppers::setSegmentAccelState(steppers::acceleration);
 }
 
-void plan_dump_current_block(int discard)
+//#define CHECK_SPEED_CHANGES
+#ifdef CHECK_SPEED_CHANGES
+static int total_violation_count = 0;
+static float total_violation     = 0.0;
+static float total_violation_min = 1.0E10;
+static float total_violation_max = 0.0;
+#endif
+
+void plan_dump_current_block(int discard, int report)
 {
      int32_t acceleration_time, coast_time, deceleration_time;
      uint16_t acc_step_rate, dec_step_rate, intermed;
@@ -198,13 +206,25 @@ void plan_dump_current_block(int discard)
      uint8_t out_bits;
      static float z_height = 10.0;  // figure z-offset is around 10
      uint16_t timer;
+#ifdef CHECK_SPEED_CHANGES
+     static float maxd;
+     static float prev_speed[STEPPER_COUNT] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+     static const char axes_names[] = "XYZAB";
+#endif
 
      block = plan_get_current_block();
      if (!block)
 	  return;
 
-     if (block->message[0] != '\0')
+     if (report && block->message[0] != '\0')
 	  printf("%s", block->message);
+
+     out_bits = block->direction_bits;
+     count_direction[X_AXIS] = ((out_bits & (1<<X_AXIS)) != 0) ? -1 : 1;
+     count_direction[Y_AXIS] = ((out_bits & (1<<Y_AXIS)) != 0) ? -1 : 1;
+     count_direction[Z_AXIS] = ((out_bits & (1<<Z_AXIS)) != 0) ? -1 : 1;
+     count_direction[A_AXIS] = ((out_bits & (1<<A_AXIS)) != 0) ? -1 : 1;
+     count_direction[B_AXIS] = ((out_bits & (1<<B_AXIS)) != 0) ? -1 : 1;
 
      action[0] = (block->steps[X_AXIS] != 0) ?
 	  (((uint32_t)(0x7fffffff & block->steps[X_AXIS]) == block->step_event_count) ? 'X' : 'x') : ' ';
@@ -218,7 +238,7 @@ void plan_dump_current_block(int discard)
 	  (((uint32_t)(0x7fffffff & block->steps[B_AXIS]) == block->step_event_count) ? 'B' : 'b') : ' ';
      action[5] = '\0';
 
-     if (block->acceleration_rate == 0)
+     if (block->acceleration_rate == 0 || !block->use_accel )
      {
 	     // No acceleration
 	     initial_rate  = block->nominal_rate;
@@ -255,7 +275,7 @@ void plan_dump_current_block(int discard)
 				     (uint16_t)((0xffffffffff & ((uint64_t)(0x00ffffff & acceleration_time) * 
 								 (uint64_t)(0x00ffffff & block->acceleration_rate))) >> 24);
 			     acc_step_rate += block->initial_rate;
-			     if (acc_step_rate < old_acc_step_rate)
+			     if (report && acc_step_rate < old_acc_step_rate)
 				     printf("*** While accelerating, the step rate overflowed: "
 					    "acc_step_rate = %u = %u + %u = %u + 0x%x * 0x%x\n",
 					    acc_step_rate, block->initial_rate,
@@ -281,7 +301,7 @@ void plan_dump_current_block(int discard)
 				     dec_step_rate = acc_step_rate - intermed;
 			     if (dec_step_rate < block->final_rate)
 				     dec_step_rate = block->final_rate;
-			     if (intermed < old_intermed)
+			     if (report && intermed < old_intermed)
 				     printf("*** While decelerating, the step rate overflowed: "
 					    "%u = %u - %u = %u - 0x%x * 0x%x\n",
 					    dec_step_rate, acc_step_rate, intermed,
@@ -299,12 +319,38 @@ void plan_dump_current_block(int discard)
 	     }
      }
 
-     out_bits = block->direction_bits;
-     count_direction[X_AXIS] = ((out_bits & (1<<X_AXIS)) != 0) ? -1 : 1;
-     count_direction[Y_AXIS] = ((out_bits & (1<<Y_AXIS)) != 0) ? -1 : 1;
-     count_direction[Z_AXIS] = ((out_bits & (1<<Z_AXIS)) != 0) ? -1 : 1;
-     count_direction[A_AXIS] = ((out_bits & (1<<A_AXIS)) != 0) ? -1 : 1;
-     count_direction[B_AXIS] = ((out_bits & (1<<B_AXIS)) != 0) ? -1 : 1;
+#ifdef CHECK_SPEED_CHANGES
+     maxd = 0.0f;
+     for (int j = 0; j < STEPPER_COUNT; j++)
+     {
+	     float delta, s, speed;
+
+	     s = (float)block->steps[j] / (float)block->step_event_count;
+	     if (count_direction[j] < 0)
+		     s = -s;
+	     speed = s * (float)initial_rate * 10000000000.0f / (float)eeprom::axis_steps_per_mm[j];
+	     delta = fabs(speed - prev_speed[j]) - FPTOF(max_speed_change[j]);
+	     if (report && delta > 0.1f)
+	     {
+		     printf("Max speed change of %f for %c axis exceeded going into this move; change is %f + max speed change\n",
+			    FPTOF(max_speed_change[j]), (char)axes_names[j], delta); 
+		     if (delta > maxd)
+			     maxd = delta;
+	     }
+	     prev_speed[j] = s * (float)dec_step_rate * 10000000000.0f / (float)eeprom::axis_steps_per_mm[j];
+     }
+     if (maxd > 0.1f)
+     {
+	     // maxd isn't really the smallest
+	     if (maxd < total_violation_min)
+		     total_violation_min = maxd;
+	     if (maxd > total_violation_max)
+		     total_violation_max = maxd;
+	     total_violation += maxd;
+	     total_violation_count += 1;
+     }
+#endif
+
      if (block->steps[Z_AXIS] != 0)
      {
 	  float delta_z = (float)block->steps[Z_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[Z_AXIS];
@@ -318,30 +364,33 @@ void plan_dump_current_block(int discard)
      }
 
      i++;
-     if (simulator_dump_speeds)
+     if (report)
      {
-	  float total_time = (float)(acceleration_time + coast_time + deceleration_time /*- last_time */) / 2000000.0;
-	  float speed_xyze = FPTOF(block->millimeters)/total_time;
-	  float dx = (float)block->steps[X_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[X_AXIS];
-	  float dy = (float)block->steps[Y_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[Y_AXIS];
-	  float dz = (float)block->steps[Z_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[Z_AXIS];
-	  float speed_xyz = sqrt(dx*dx+dy*dy+dz*dz) / total_time;
+	 if (simulator_dump_speeds)
+	 {
+	     float total_time = (float)(acceleration_time + coast_time + deceleration_time /*- last_time */) / 2000000.0;
+	     float speed_xyze = FPTOF(block->millimeters)/total_time;
+	     float dx = (float)block->steps[X_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[X_AXIS];
+	     float dy = (float)block->steps[Y_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[Y_AXIS];
+	     float dz = (float)block->steps[Z_AXIS] * 10000000000.0f / (float)eeprom::axis_steps_per_mm[Z_AXIS];
+	     float speed_xyz = sqrt(dx*dx+dy*dy+dz*dz) / total_time;
 
-	  printf("%d %s: z=%4.1f entry=%5u, peak=%5d, final=%5d steps/s; planned=%d; "
-		 "feed_rate=%6.2f mm/s; xyze-dist/t=%6.2f, xyz-dist/t=%6.2f mm/s\n",
-		 i, action, z_height, initial_rate, acc_step_rate, dec_step_rate,
-		 block->planned, FPTOF(block->feed_rate), speed_xyze, speed_xyz);
+	     printf("%d %s: z=%5.2f entry=%5u, peak=%5d, final=%5d steps/s; planned=%d; "
+		    "feed_rate=%6.2f mm/s; xyze-dist/t=%6.2f, xyz-dist/t=%6.2f mm/s\n",
+		    i, action, z_height, initial_rate, acc_step_rate, dec_step_rate,
+		    block->planned, FPTOF(block->feed_rate), speed_xyze, speed_xyz);
+	 }
+	 else
+	     printf("%d %s: z=%5.2f entry=%5u, peak=%5d, final=%5d steps/s; planned=%d; "
+		    "feed_rate=%6.2f mm/s (x/y/z/a/b=%d/%d/%d/%d/%d)\n",
+		    i, action, z_height, initial_rate, acc_step_rate,
+		    dec_step_rate, block->planned, FPTOF(block->feed_rate),
+		    count_direction[X_AXIS]*block->steps[X_AXIS],
+		    count_direction[Y_AXIS]*block->steps[Y_AXIS],
+		    count_direction[Z_AXIS]*block->steps[Z_AXIS],
+		    count_direction[A_AXIS]*block->steps[A_AXIS],
+		    count_direction[B_AXIS]*block->steps[B_AXIS]);
      }
-     else
-	  printf("%d %s: z=%4.1f entry=%5u, peak=%5d, final=%5d steps/s; planned=%d; "
-		 "feed_rate=%6.2f mm/s (x/y/z/a/b=%d/%d/%d/%d/%d)\n",
-		 i, action, z_height, initial_rate, acc_step_rate,
-		 dec_step_rate, block->planned, FPTOF(block->feed_rate),
-		 count_direction[X_AXIS]*block->steps[X_AXIS],
-		 count_direction[Y_AXIS]*block->steps[Y_AXIS],
-		 count_direction[Z_AXIS]*block->steps[Z_AXIS],
-		 count_direction[A_AXIS]*block->steps[A_AXIS],
-		 count_direction[B_AXIS]*block->steps[B_AXIS]);
 
      planner_counts[max(0, min(block->planned, BLOCK_BUFFER_SIZE))] += 1;
      total_time += (float)(acceleration_time + coast_time + deceleration_time) / 2000000.0;
@@ -350,9 +399,10 @@ void plan_dump_current_block(int discard)
 	  plan_discard_current_block();
 }
 
-void plan_dump_run_data(void)
+void plan_dump_run_data(int time_only)
 {
-     int cnt, i, ihours, imins, isecs, idsecs;
+     int cnt, ihours, imins, isecs, idsecs;
+     size_t i;
      float ttime = total_time;
      uint32_t ztot1, zavg_min1, zavg_max1;
      uint32_t ztot2, zavg_min2, zavg_max2;
@@ -365,13 +415,29 @@ void plan_dump_run_data(void)
      isecs = (int)ttime;
      ttime -= (float)isecs;
      idsecs = (int)(0.5 + ttime * 100.0);
-     printf("Total time print time is %02d:%02d:%02d.%02d (%f seconds)\n",
+     printf("Total print time is %02d:%02d:%02d.%02d (%f seconds)\n",
 	    ihours, imins, isecs, idsecs, total_time);
+
+     if (time_only)
+	 return;
+
+#ifdef CHECK_SPEED_CHANGES
+     if (total_violation_count > 0)
+     {
+	     total_violation = total_violation / (float)total_violation_count;
+	     printf("%d max speed change violations; excess beyond max speed change Min / Average / Max = %f / %f / %f mm/s\n",
+		    total_violation_count, total_violation_min, total_violation, total_violation_max);
+     }
+     else
+     {
+	     printf("No violations of the maximum speed changes seen\n");
+     }
+#endif
 
      printf("Planner counts:\n");
      for (i = 0; i <= BLOCK_BUFFER_SIZE; i++)
 	  if (planner_counts[i])
-	       printf("    %d: %d\n", i, planner_counts[i]);
+		  printf("    %u: %d\n", (unsigned)i, planner_counts[i]);
 
      memset(planner_counts, 0, sizeof(planner_counts));
 
@@ -394,10 +460,10 @@ void plan_dump_run_data(void)
      }
      zavg1 = (float)ztot1 / (float)cnt;
      zavg2 = (float)ztot2 / (float)cnt;
-     printf("Min/Max/Average entry speed = %d / %d / %f steps/s\n",
-	    zavg_min1, zavg_max1, zavg1);
-     printf("Min/Max/Average peak speed = %d / %d / %f steps/s\n",
-	    zavg_min2, zavg_max2, zavg2);
+     printf("Min / Average / Max entry speed = %d / %f / %d steps/s\n",
+	    zavg_min1, zavg1, zavg_max1);
+     printf("Min / Average / Max peak speed = %d / %f / %d steps/s\n",
+	    zavg_min2, zavg2, zavg_max2);
 }
 
 void plan_block_notice(const char *fmt, ...)

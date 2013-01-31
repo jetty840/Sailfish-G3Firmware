@@ -27,7 +27,6 @@ uint8_t degree[8] =
 	0x00,	//00000
 };
 
-
 //Custom extruder / platform heating and arrow
 //characters (Courtesy of Erwin Ried)
 
@@ -75,17 +74,27 @@ uint8_t platform_heating[8] = {
 	0x00	//00000
 };
 
-uint8_t arrow[8] = {
-	0x00,	//00000
-	0x04,	//00100
-	0x02,	//00010
-	0x1F,	//11111
-	0x02,	//00010
-	0x04,	//00100
-	0x00,	//00000
+uint8_t folder_in[8] = {
+	0x08,	//01000
+	0x0C,	//01100
+	0x0E,	//01110
+	0x0F,	//01111
+	0x0E,	//01110
+	0x0C,	//01100
+	0x08,	//01000
 	0x00	//00000
 };
 
+uint8_t folder_out[8] = {
+	0x04,	//00100
+	0x0C,	//01100
+	0x1F,	//11111
+	0x0D,	//01101
+	0x05,	//00101
+	0x01,	//00001
+	0x1E,	//11110
+	0x00	//00000
+};
 
 // When the display powers up, it is configured as follows:
 //
@@ -303,7 +312,8 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   createChar(LCD_CUSTOM_CHAR_EXTRUDER_HEATING,extruder_heating);
   createChar(LCD_CUSTOM_CHAR_PLATFORM_NORMAL,platform_normal);
   createChar(LCD_CUSTOM_CHAR_PLATFORM_HEATING,platform_heating);
-  createChar(LCD_CUSTOM_CHAR_ARROW,arrow);
+  createChar(LCD_CUSTOM_CHAR_FOLDER,folder_in);
+  createChar(LCD_CUSTOM_CHAR_RETURN,folder_out);
 }
 
 /********** high level commands, for the user! */
@@ -317,6 +327,26 @@ void LiquidCrystal::home()
 {
   command(LCD_RETURNHOME);  // set cursor position to zero
   _delay_us(2000);  // this command takes a long time!
+}
+
+// A faster version of home()
+void LiquidCrystal::homeCursor()
+{
+	setCursor(0, 0);
+}
+
+void LiquidCrystal::setRow(uint8_t row)
+{
+	setCursor(0, row);
+}
+
+// A faster version of clear and fast home() combined
+// Since this is a common combination of calls, it saves code
+// space to combine them into one.
+void LiquidCrystal::clearHomeCursor()
+{
+	clear();
+	setCursor(0, 0);
 }
 
 void LiquidCrystal::setCursor(uint8_t col, uint8_t row)

@@ -17,7 +17,7 @@
 // Splash screen
 splash1 "  Sailfish FW   "
 splash2 " -------------- "
-splash3 "Thing 32084 4.0z"
+splash3 "Thing 32084 4.1z"
 splash4 " Revision: ____ "
 
 // User view menu
@@ -94,11 +94,13 @@ v_version4 "FreeSram: "
 // Cancel Build menu
 cb_choose       "Please Choose:"
 cb_abort        "Abort Print   "
-cb_printAnother "Print Another"
+cb_printAnother "Print Another "
 cb_pauseZ       "Pause at ZPos "
 cb_pause        "Pause         "
-cb_pauseNoHeat  "Pause No Heat "
-cb_back         "Continue Build"
+cb_pauseHBPHeat "Pause, HBP on "
+cb_pauseNoHeat  "Pause, No Heat"
+cb_cont         "Continue Build"
+cb_back         "Return to Menu"
 
 // Main menu
 main_monitor         "Monitor"
@@ -159,11 +161,12 @@ p_waitForCurrentCommand "Entering pause.."
 p_retractFilament       "Retract filament"
 p_clearingBuild         "Clearing build.."
 p_heating               "Heating...      "
-p_leavingPaused         "Leaving pause.. "
+p_leavingPaused         "Leaving pause..."
 p_paused1               "Paused("
 p_paused2               "   Y+         Z+"
 p_paused3               "X- Rev X+  (Fwd)"
 p_paused4               "   Y-         Z-"
+p_close                 "):"
 
 // Pause @ ZPos menu
 pz_message1 "Pause at ZPos:"
@@ -220,8 +223,9 @@ fu_but_trip "(life)   (reset)"
 bs_item1 "Override Temp"
 bs_item2 "ABP Copies (SD)"
 bs_item3 "Ditto Print"
-bs_item4 "Accel. On/Off"
-bs_item5 "Accel. Settings"
+bs_item4 "Extruder Hold"
+bs_item5 "Accel. On/Off"
+bs_item6 "Accel. Settings"
 
 // ABP Copies Set menu
 abp_message1 "ABP Copies (SD):"
@@ -256,16 +260,12 @@ pds_tool0    "Tool0 Temp: "
 pds_extruder "ExtrdrMM/s: "
 
 // Current Position menu
-cp_msg1 "X:"
-cp_msg2 "Y:"
-cp_msg3 "Z:"
-cp_msg4 "A:"
-cp_mm   "mm"
+cp_mm "mm"
 
 // Unable To Open File menu
 utof_msg1 "Failed to open"
-utof_msg2 "file.  Name too"
-utof_msg3 "long?"
+utof_msg2 "file or folder."
+utof_msg3 "Name too long?"
 utof_cont "Continue"
 
 // Accelerated Settings menu
@@ -342,6 +342,10 @@ ogct_msg2 "Temperature:"
 dp_msg1 "Ditto Printing:"
 dp_msg2 ""
 
+// SD menu
+sderr_badcard "SD card error"
+sderr_nocard  "No SD card"
+sderr_nofiles "No files found"
 
 // ---------------------------------------------------------
 // MoodLightController.cc strings

@@ -12,11 +12,13 @@
 #include "Point.hh"
 #include "Steppers.hh"
 #include "s3g.h"
+#include "boards/mb24/EepromDefaults.hh"
 
 static char pending_notices[10240];
 
 static void pending_notice(const char *fmt, ...)
 {
+#if !defined(SAILTIME)
      va_list ap;
      size_t len;
 
@@ -26,6 +28,7 @@ static void pending_notice(const char *fmt, ...)
      vsnprintf(pending_notices + len, sizeof(pending_notices) - len, fmt, ap);
 
      va_end(ap);
+#endif
 }
 
 static void handle_pending_notices(void)
@@ -48,11 +51,26 @@ static ssize_t display(void *ctx_, unsigned char *str, size_t len)
      if (!ctx)
 	  return((ssize_t)-1);
 
+#if !defined(SAILTIME)
      snprintf(ctx->buf, sizeof(ctx->buf), "*** %.*s ***",
 	      (int)(0x7fffffff & len), (const char *)str);
+#endif
 
      return(0);
 }
+
+
+#if defined(SAILTIME)
+#define PROGNAME "sailtime"
+#define OPTIONS "[-? | -h] [-a x,y,z,a,b] [-c x,y,z,a,b]"
+#define GETOPTS ":a:c:h?"
+#define REPORT 0
+#else
+#define PROGNAME "planner"
+#define OPTIONS "[-? | -h] [-a x,y,z,a,b] [-c x,y,z,a,b] [-msu] [-d mask] [-r rate]"
+#define GETOPTS ":a:c:hd:mr:su?"
+#define REPORT -1
+#endif
 
 static void usage(FILE *f, const char *prog)
 {
@@ -60,15 +78,35 @@ static void usage(FILE *f, const char *prog)
 	  f = stderr;
 
      fprintf(f,
-"Usage: %s [? | -h] [-m] [-s] [-d mask] [-r rate] [-u] [file]\n"
-"     file -- The name of the .s3g file to dump.  If not supplied then stdin is dumped\n"
-"  -d mask -- Selectively enable debugging with a bit mask \"mask\"\n"
-"       -m -- Display actual s3g move commands and\n"
-"  -r rate -- Flag feed rates which exceed \"rate\"\n"
-"       -s -- Display block initial, peak and final speeds (mm/s) along with rates\n"
-"       -u -- Display significant differences between interval based and us based feed rates\n"
-"    ?, -h -- This help message\n",
-	     prog ? prog : "s3gdump");
+"Usage: %s " OPTIONS " [file]\n"
+"         file -- The name of the .s3g or .x3g file to dump.  If not supplied then stdin is dumped\n"
+" -a x,y,z,a,b -- Maximum x, y, z, a, and b accelerations (mm/s^2)\n"
+" -c x,y,z,a,b -- Maximum x, y, z, a, and b speed changes (mm/s)\n"
+#if !defined(SAILTIME)
+"      -d mask -- Selectively enable debugging with a bit mask \"mask\"\n"
+"           -m -- Display actual s3g/x3g move commands and\n"
+"      -r rate -- Flag feed rates which exceed \"rate\"\n"
+"           -s -- Display block initial, peak and final speeds (mm/s) along with rates\n"
+"           -u -- Display significant differences between interval based and us based feed rates\n"
+#endif
+"        ?, -h -- This help message\n"
+"\n"
+" Default maximum accelerations are:\n"
+"     x, y = %d mm/s^2\n"
+"        z = %d mm/s^2\n"
+"     a, b = %d mm/s^2\n"
+"\n"
+" Default maximum speed changes are:\n"
+"     x, y = %d mm/s\n"
+"        z = %d mm/s\n"
+"     a, b = %d mm/s\n",
+	     prog ? prog : PROGNAME,
+	     EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_X,
+	     EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_Z,
+	     EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_A,
+	     EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_X,
+	     EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Z,
+	     EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_A);
 }
 
 int main(int argc, const char *argv[])
@@ -91,7 +129,7 @@ int main(int argc, const char *argv[])
      simulator_dump_speeds = false;
      simulator_show_alt_feed_rate = false;
 
-     while ((c = getopt(argc, (char **)argv, ":a:c:hd:mr:su?")) != -1)
+     while ((c = getopt(argc, (char **)argv, GETOPTS)) != -1)
      {
 	  switch(c)
 	  {
@@ -254,7 +292,7 @@ int main(int argc, const char *argv[])
 	       steppers::setTargetNew(target, cmd.t.queue_point_new.us, cmd.t.queue_point_new.rel);
 	       if (show_moves && myctx.buf[0]) pending_notice("%s\n", myctx.buf);
 	       handle_pending_notices();
-	       if (movesplanned() >= (BLOCK_BUFFER_SIZE >> 1)) plan_dump_current_block(1);
+	       if (movesplanned() >= (BLOCK_BUFFER_SIZE >> 1)) plan_dump_current_block(1, REPORT);
 	  }
 	  else if (cmd.cmd_id == HOST_CMD_QUEUE_POINT_NEW_EXT)
 	  {
@@ -267,7 +305,7 @@ int main(int argc, const char *argv[])
 					 cmd.t.queue_point_new_ext.feedrate_mult_64);
 	       if (show_moves && myctx.buf[0]) pending_notice("%s\n", myctx.buf);
 	       handle_pending_notices();
-	       if (movesplanned() >= (BLOCK_BUFFER_SIZE >> 1)) plan_dump_current_block(1);
+	       if (movesplanned() >= (BLOCK_BUFFER_SIZE >> 1)) plan_dump_current_block(1, REPORT);
 	  }
 	  else if (cmd.cmd_id == HOST_CMD_QUEUE_POINT_EXT)
 	  {
@@ -277,7 +315,7 @@ int main(int argc, const char *argv[])
 	       steppers::setTarget(target, cmd.t.queue_point_ext.dda);
 	       if (show_moves && myctx.buf[0]) pending_notice("%s\n", myctx.buf);
 	       handle_pending_notices();
-	       if (movesplanned() >= (BLOCK_BUFFER_SIZE >> 1)) plan_dump_current_block(1);
+	       if (movesplanned() >= (BLOCK_BUFFER_SIZE >> 1)) plan_dump_current_block(1, REPORT);
 	  }
 	  else if (cmd.cmd_id == HOST_CMD_SET_POSITION_EXT)
 	  {
@@ -303,10 +341,18 @@ int main(int argc, const char *argv[])
 		   cmd.cmd_id != HOST_CMD_SET_POSITION_EXT)
 	       {
 		    bool warn = movesplanned() != 0;
-		    if (warn) printf("*** >>> Draining planning buffer <<< ***\n");
+		    if (warn && REPORT)
+		    { 
+			printf("*** >>> Draining planning buffer <<< ***\n");
+			fflush(stdout);
+		    }
 		    while (movesplanned() != 0)
-			 plan_dump_current_block(1);
-		    if (warn) printf("*** >>> Planning buffer drained <<< ***\n");
+			plan_dump_current_block(1, REPORT);
+		    if (warn && REPORT)
+		    {
+			printf("*** >>> Planning buffer drained <<< ***\n");
+			fflush(stdout);
+		    }
 	       }
 
 	       if (myctx.buf[0] != '\0')
@@ -327,11 +373,11 @@ int main(int argc, const char *argv[])
 
      // Dump any remaining blocks
      while (movesplanned() != 0)
-	  plan_dump_current_block(1);
+	 plan_dump_current_block(1, REPORT);
 
      s3g_close(ctx);
 
-     plan_dump_run_data();
+     plan_dump_run_data((REPORT) ? 0 : -1);
 
      return(0);
 }

@@ -1,5 +1,8 @@
 // Future things that could be consolidated into 1 to save code space when required:
 //
+// Combined lcd.clear() and lcd.setCursor(0, 0) -> lcd.clearHomeCursor(): savings 184 bytes
+// lcd.setCursor(0, r) --> lcd.setRow(r): savings 162 bytes
+//
 // ValueSetScreen
 // BuzzerSetRepeatsMode
 // ABPCopiesSetScreen
@@ -32,6 +35,9 @@
 #include "Main.hh"
 #include "locale.h"
 
+// Maximum length of an SD card file
+#define SD_MAXFILELEN 64
+
 #define HOST_PACKET_TIMEOUT_MS 20
 #define HOST_PACKET_TIMEOUT_MICROS (1000L*HOST_PACKET_TIMEOUT_MS)
 
@@ -50,42 +56,28 @@ Point homePosition;
 #define STR_EXPAND(x) #x	//Surround the supplied macro by double quotes
 #define STR(x) STR_EXPAND(x)
 
+const static PROGMEM prog_uchar units_mm[] = "mm";
+static const char dumpFilename[] = "eeprom_dump.bin";
+static void timedMessage(LiquidCrystal& lcd, uint8_t which);
+
 void VersionMode::reset() {
 }
 
-void strcat(char *buf, const char* str)
-{
-	char *ptr = buf;
-	while (*ptr) ptr++;
-	while (*str) *ptr++ = *str++;
-	*ptr++ = '\0';
-}
 
-
-int appendTime(char *buf, uint8_t buflen, uint32_t val)
+//  Assumes room for up to 7 + NUL
+static void formatTime(char *buf, uint32_t val)
 {
 	bool hasdigit = false;
 	uint8_t idx = 0;
-	uint8_t written = 0;
-
-	if (buflen < 1) {
-		return written;
-	}
-
-	while (idx < buflen && buf[idx]) idx++;
-	if (idx >= buflen-1) {
-		buf[buflen-1] = '\0';
-		return written;
-	}
 
 	uint8_t radidx = 0;
 	const uint8_t radixcount = 5;
 	const uint8_t houridx = 2;
 	const uint8_t minuteidx = 4;
 	uint32_t radixes[radixcount] = {360000, 36000, 3600, 600, 60};
-	if (val >= 3600000) {
+	if (val >= 3600000)
 		val %= 3600000;
-	}
+
 	for (radidx = 0; radidx < radixcount; radidx++) {
 		char digit = '0';
 		uint8_t bit = 8;
@@ -99,111 +91,43 @@ int appendTime(char *buf, uint8_t buflen, uint32_t val)
 		if (hasdigit || digit != '0' || radidx >= houridx) {
 			buf[idx++] = digit;
 			hasdigit = true;
-		} else {
+		} else
 			buf[idx++] = ' ';
-		}
-		if (idx >= buflen) {
-			buf[buflen-1] = '\0';
-			return written;
-		}
-		written++;
-		if (radidx == houridx) {
+		if (radidx == houridx)
 			buf[idx++] = 'h';
-			if (idx >= buflen) {
-				buf[buflen-1] = '\0';
-				return written;
-			}
-			written++;
-		}
-		if (radidx == minuteidx) {
+		else if (radidx == minuteidx)
 			buf[idx++] = 'm';
-			if (idx >= buflen) {
-				buf[buflen-1] = '\0';
-				return written;
-			}
-			written++;
-		}
 	}
 
-	if (idx < buflen) {
-		buf[idx] = '\0';
-	} else {
-		buf[buflen-1] = '\0';
-	}
-
-	return written;
+	buf[idx] = '\0';
 }
 
 
-
-int appendUint8(char *buf, uint8_t buflen, uint8_t val)
+//  Assumes at least 3 spare bytes
+static void digits3(char *buf, uint8_t val)
 {
-	bool hasdigit = false;
-	uint8_t written = 0;
-	uint8_t idx = 0;
+	uint8_t v;
 
-	if (buflen < 1) {
-		return written;
+	if ( val >= 100 )
+	{
+		v = val / 100;
+		buf[0] = v + '0';
+		val -= v * 100;
 	}
+	else
+		buf[0] = ' ';
 
-	while (idx < buflen && buf[idx]) idx++;
-	if (idx >= buflen-1) {
-		buf[buflen-1] = '\0';
-		return written;
+	if ( val >= 10 || buf[0] != ' ')
+	{
+		v = val / 10;
+		buf[1] = v + '0';
+		val -= v * 10;
 	}
+	else
+		buf[1] = ' ';
 
-	if (val >= 100) {
-		uint8_t res = val / 100;
-		val -= res * 100;
-		buf[idx++] = '0' + res;
-		if (idx >= buflen) {
-			buf[buflen-1] = '\0';
-			return written;
-		}
-		hasdigit = true;
-		written++;
-	} else {
-		buf[idx++] = ' ';
-		if (idx >= buflen) {
-			buf[buflen-1] = '\0';
-			return written;
-		}
-		written++;
-	}
-
-	if (val >= 10 || hasdigit) {
-		uint8_t res = val / 10;
-		val -= res * 10;
-		buf[idx++] = '0' + res;
-		if (idx >= buflen) {
-			buf[buflen-1] = '\0';
-			return written;
-		}
-		hasdigit = true;
-		written++;
-	} else {
-		buf[idx++] = ' ';
-		if (idx >= buflen) {
-			buf[buflen-1] = '\0';
-			return written;
-		}
-		written++;
-	}
-
-	buf[idx++] = '0' + val;
-	if (idx >= buflen) {
-		buf[buflen-1] = '\0';
-		return written;
-	}
-	written++;
-
-	if (idx < buflen) {
-		buf[idx] = '\0';
-	} else {
-		buf[buflen-1] = '\0';
-	}
-
-	return written;
+	buf[2] = val + '0';
+	buf[3] = '\0';
 }
 
 
@@ -211,20 +135,20 @@ int appendUint8(char *buf, uint8_t buflen, uint8_t val)
 void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar splash1[] = "  Sailfish FW   ";
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
-	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.0 ";
+	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.1z";
 	const static PROGMEM prog_uchar splash4[] = " Revision: ____ "; 
 
 	if (forceRedraw) {
-		lcd.setCursor(0,0);
+		lcd.homeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(splash1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(splash2));
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(splash3));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(splash4));
 		lcd.setCursor(11,3);
                 lcd.writeString((char *)STR(SVN_VERSION));
@@ -294,7 +218,8 @@ void UserViewMenu::handleSelect(uint8_t index) {
 }
 
 void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
-	Point position = steppers::getStepperPosition();
+	uint8_t active_toolhead;
+	Point position = steppers::getStepperPosition(&active_toolhead);
 	int32_t interval = 1000;
 
 	float	speed = 1.5;	//In mm's
@@ -353,9 +278,9 @@ void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
 		case ButtonArray::OK:
 		case ButtonArray::ZERO:
 			if ( ! pauseModeJog ) break;
-
+			eepromLocation = 0;
 			float mms = (float)eeprom::getEeprom8(eeprom::EXTRUDE_MMS, EEPROM_DEFAULT_EXTRUDE_MMS);
-			stepsPerSecond = mms * (float)stepperAxisMMToSteps(1.0, A_AXIS);
+			stepsPerSecond = mms * stepperAxisStepsPerMM(A_AXIS);
 			interval = (int32_t)(1000000.0 / stepsPerSecond);
 
 			//Handle reverse
@@ -364,7 +289,7 @@ void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
 			if ( ! ACCELERATION_EXTRUDE_WHEN_NEGATIVE_A )	stepsPerSecond *= -1;
 
 			//Extrude for 0.5 seconds
-			position[3] += (int32_t)(0.5 * stepsPerSecond);
+			position[active_toolhead + A_AXIS] += (int32_t)(0.5 * stepsPerSecond);
 			break;
 	}
 
@@ -374,7 +299,7 @@ void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
 	if ( eepromLocation != 0 ) {
 		//60.0, because feed rate is in mm/min units, we convert to seconds
 		float feedRate = (float)eeprom::getEepromUInt32(eepromLocation, 500) / 60.0;
-		stepsPerSecond = feedRate * (float)stepperAxisMMToSteps(1.0, axisIndex);
+		stepsPerSecond = feedRate * (float)stepperAxisStepsPerMM(axisIndex);
 		interval = (int32_t)(1000000.0 / stepsPerSecond);
 	}
 
@@ -518,8 +443,7 @@ void JogMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( userViewModeChanged ) userViewMode = eeprom::getEeprom8(eeprom::JOG_MODE_SETTINGS, EEPROM_DEFAULT_JOG_MODE_SETTINGS) & 0x01;
 
 	if (forceRedraw || distanceChanged || userViewModeChanged) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(j_jog1));
 
 		switch (jogDistance) {
@@ -536,20 +460,17 @@ void JogMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			break;
 		}
 
-		lcd.setCursor(0,1);
-		if ( userViewMode )	lcd.writeFromPgmspace(LOCALIZE(j_jog2_user));
-		else			lcd.writeFromPgmspace(LOCALIZE(j_jog2));
+		lcd.setRow(1);
+		lcd.writeFromPgmspace(userViewMode ? LOCALIZE(j_jog2_user) : LOCALIZE(j_jog2));
 
-		lcd.setCursor(0,2);
-		if ( userViewMode )	lcd.writeFromPgmspace(LOCALIZE(j_jog3_user));
-		else			lcd.writeFromPgmspace(LOCALIZE(j_jog3));
+		lcd.setRow(2);
+		lcd.writeFromPgmspace(userViewMode ? LOCALIZE(j_jog3_user) : LOCALIZE(j_jog3));
 
-		lcd.setCursor(0,3);
-		if ( userViewMode )	lcd.writeFromPgmspace(LOCALIZE(j_jog4_user));
-		else			lcd.writeFromPgmspace(LOCALIZE(j_jog4));
+		lcd.setRow(3);
+		lcd.writeFromPgmspace(userViewMode ? LOCALIZE(j_jog4_user) : LOCALIZE(j_jog4));
 
 		distanceChanged = false;
-		userViewModeChanged    = false;
+		userViewModeChanged = false;
 	}
 
 	if ( jogDistance == DISTANCE_CONT ) {
@@ -584,12 +505,7 @@ void JogMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 		distanceChanged = true;
 		eeprom_write_byte((uint8_t *)eeprom::JOG_MODE_SETTINGS, userViewMode | (jogDistance << 1));
 		break;
-        case ButtonArray::YMINUS:
-        case ButtonArray::ZMINUS:
-        case ButtonArray::YPLUS:
-        case ButtonArray::ZPLUS:
-        case ButtonArray::XMINUS:
-        case ButtonArray::XPLUS:
+        default:
 		if (( lastDirectionButtonPressed ) && (lastDirectionButtonPressed != button ))
 			steppers::abort();
 		jog(button, false);
@@ -625,17 +541,16 @@ void ExtruderMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if (overrideExtrudeSeconds)	extrude((int32_t)overrideExtrudeSeconds, true);
 
 	if (forceRedraw) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(e_extrude1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(e_extrude2));
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(e_extrude3));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(e_extrude4));
 	}
 
@@ -654,7 +569,7 @@ void ExtruderMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	// Redraw tool info
 	switch (updatePhase) {
 	case 0:
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		if (extruderControl(0, SLAVE_CMD_GET_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint16_t data = responsePacket.read16(1);
 			lcd.writeInt(data,3);
@@ -697,10 +612,11 @@ void ExtruderMode::extrude(int32_t seconds, bool overrideTempCheck) {
 		}
 	}
 
-	Point position = steppers::getStepperPosition();
+	uint8_t active_toolhead;
+	Point position = steppers::getStepperPosition(&active_toolhead);
 
 	float mms = (float)eeprom::getEeprom8(eeprom::EXTRUDE_MMS, EEPROM_DEFAULT_EXTRUDE_MMS);
-	float stepsPerSecond = mms * (float)stepperAxisMMToSteps(1.0, A_AXIS);
+	float stepsPerSecond = mms * stepperAxisStepsPerMM(A_AXIS);
 	int32_t interval = (int32_t)(1000000.0 / stepsPerSecond);
 
 	//Handle 5D
@@ -709,7 +625,7 @@ void ExtruderMode::extrude(int32_t seconds, bool overrideTempCheck) {
 
 	if ( seconds == 0 )	steppers::abort();
 	else {
-		position[3] += direction * seconds * stepsPerSecond;
+		position[A_AXIS + active_toolhead] += direction * seconds * stepsPerSecond;
 		steppers::setTarget(position, interval);
 	}
 
@@ -864,14 +780,13 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		//Try once more to restart the mood light controller
 		if ( ! interface::moodLightController().start() ) {
 			if ( forceRedraw ) {
-				lcd.clear();
-				lcd.setCursor(0,0);
+				lcd.clearHomeCursor();
 				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent1));
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent2));
-				lcd.setCursor(0,2);
+				lcd.setRow(2);
 				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent3));
-				lcd.setCursor(0,3);
+				lcd.setRow(3);
 				lcd.writeFromPgmspace(LOCALIZE(ml_moodNotPresent4));
 			}
 		
@@ -880,11 +795,10 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	}
 
 	if (forceRedraw) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(ml_mood1));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(ml_msg4));
 	}
 
@@ -895,13 +809,12 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(6, 0);
 		lcd.writeFromPgmspace(LOCALIZE(ml_blank));	
 		lcd.setCursor(6, 0);
-		lcd.writeFromPgmspace(interface::moodLightController().scriptIdToStr(scriptId));	
+		lcd.writeFromPgmspace(interface::moodLightController().scriptIdToStr(scriptId));
 		break;
 
 	case 1:
-		lcd.setCursor(0, 2);
-		if ( scriptId == 1 )	lcd.writeFromPgmspace(LOCALIZE(ml_mood3_1));
-		else			lcd.writeFromPgmspace(LOCALIZE(ml_blank));	
+		lcd.setRow(2);
+		lcd.writeFromPgmspace((scriptId == 1) ? LOCALIZE(ml_mood3_1) : LOCALIZE(ml_blank));
 		break;
 	}
 
@@ -914,7 +827,8 @@ void MoodLightMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 
 void MoodLightMode::notifyButtonPressed(ButtonArray::ButtonName button) {
-	if ( ! interface::moodLightController().blinkM.blinkMIsPresent )	interface::popScreen();
+	if ( ! interface::moodLightController().blinkM.blinkMIsPresent )
+		interface::popScreen();
 
 	uint8_t i;
 
@@ -987,14 +901,12 @@ void MoodLightSetRGBScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar mlsrgb_message4[] = "Up/Dn/Ent to Set";
 
 	if ((forceRedraw) || (redrawScreen)) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		if      ( inputMode == 0 ) lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message1_red));
 		else if ( inputMode == 1 ) lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message1_green));
 		else if ( inputMode == 2 ) lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message1_blue));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(mlsrgb_message4));
 
 		redrawScreen = false;
@@ -1002,7 +914,7 @@ void MoodLightSetRGBScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 
 	// Redraw tool info
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	if      ( inputMode == 0 ) lcd.writeInt(red,  3);
 	else if ( inputMode == 1 ) lcd.writeInt(green,3);
 	else if ( inputMode == 2 ) lcd.writeInt(blue, 3);
@@ -1083,7 +995,6 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar mon_time_left_none[]     =   "   none";
 	const static PROGMEM prog_uchar mon_zpos[] 		 =   "ZPos:           ";
 	const static PROGMEM prog_uchar mon_speed[] 		 =   "Acc:            ";
-	const static PROGMEM prog_uchar mon_zpos_mm[]	 	 =   "mm";
 	const static PROGMEM prog_uchar mon_filament[]           =   "Filament:0.00m  ";
 	const static PROGMEM prog_uchar mon_copies[]		 =   "Copy:           ";
 	const static PROGMEM prog_uchar mon_of[]		 =   " of ";
@@ -1113,8 +1024,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	}
 
 	if ((forceRedraw) || (overrideForceRedraw)) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		switch(host::getHostState()) {
 		case host::HOST_STATE_READY:
 			lcd.writeString(host::getMachineName());
@@ -1122,7 +1032,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		case host::HOST_STATE_BUILDING:
 		case host::HOST_STATE_BUILDING_FROM_SD:
 			lcd.writeString(host::getBuildName());
-			lcd.setCursor(0,1);
+			lcd.setRow(1);
 			lcd.writeFromPgmspace(LOCALIZE(mon_completed_percent));
 			break;
 		case host::HOST_STATE_ERROR:
@@ -1132,15 +1042,14 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			break;
 		}
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(mon_extruder_temp));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(mon_platform_temp));
 
 		lcd.setCursor(15,3);
-		if ( command::getPauseAtZPos() == 0 )	lcd.write(' ');
-		else					lcd.write('*');
+		lcd.write((command::getPauseAtZPos() == 0) ? ' ' : '*');
 	}
 
 	overrideForceRedraw = false;
@@ -1150,11 +1059,11 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	if ( flashingTool ) {
 		lcd.setCursor(5,2);
-		lcd.write(toggleHeating?LCD_CUSTOM_CHAR_EXTRUDER_NORMAL:LCD_CUSTOM_CHAR_EXTRUDER_HEATING);
+		lcd.write(toggleHeating ? LCD_CUSTOM_CHAR_EXTRUDER_NORMAL : LCD_CUSTOM_CHAR_EXTRUDER_HEATING);
 	}
 	if ( flashingPlatform ) {
 		lcd.setCursor(5,3);
-		lcd.write(toggleHeating?LCD_CUSTOM_CHAR_PLATFORM_NORMAL:LCD_CUSTOM_CHAR_PLATFORM_HEATING);
+		lcd.write(toggleHeating ? LCD_CUSTOM_CHAR_PLATFORM_NORMAL : LCD_CUSTOM_CHAR_PLATFORM_HEATING);
 	}
 
 	OutPacket responsePacket;
@@ -1226,8 +1135,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		}
 
 		lcd.setCursor(15,3);
-		if ( command::getPauseAtZPos() == 0 )	lcd.write(' ');
-		else					lcd.write('*');
+		lcd.write((command::getPauseAtZPos() == 0) ? ' ' : '*');
 		break;
 	case UPDATE_PHASE_LAST:
 		break;
@@ -1256,42 +1164,34 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 		switch (buildTimePhase) {
 			case BUILD_TIME_PHASE_COMPLETED_PERCENT:
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_completed_percent));
 				lcd.setCursor(11,1);
-				buf[0] = '\0';
-
 				completedPercent = (float)command::getBuildPercentage();
-
-				appendUint8(buf, sizeof(buf), (uint8_t)completedPercent);
-				strcat(buf, "% ");
+				digits3(buf, (uint8_t)completedPercent);
 				lcd.writeString(buf);
+				lcd.write('%');
 				break;
 			case BUILD_TIME_PHASE_ELAPSED_TIME:
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_elapsed_time));
 				lcd.setCursor(9,1);
-				buf[0] = '\0';
-
 				if ( host::isBuildComplete() ) secs = lastElapsedSeconds; //We stop counting elapsed seconds when we are done
 				else {
 					lastElapsedSeconds = Motherboard::getBoard().getCurrentSeconds();
 					secs = lastElapsedSeconds;
 				}
-				appendTime(buf, sizeof(buf), (uint32_t)secs);
+				formatTime(buf, (uint32_t)secs);
 				lcd.writeString(buf);
 				break;
 			case BUILD_TIME_PHASE_TIME_LEFT:
 				tsecs = command::estimatedTimeLeftInSeconds();
-
 				if ( tsecs > 0 ) {
-					lcd.setCursor(0,1);
+					lcd.setRow(1);
 					lcd.writeFromPgmspace(LOCALIZE(mon_time_left));
 					lcd.setCursor(9,1);
-
-					buf[0] = '\0';
-					if 	  ((tsecs > 0 ) && (tsecs < 60) && ( host::isBuildComplete() ) ) {
-						appendUint8(buf, sizeof(buf), (uint8_t)tsecs);
+					if ((tsecs > 0 ) && (tsecs < 60) && ( host::isBuildComplete() ) ) {
+						digits3(buf, (uint8_t)tsecs);
 						lcd.writeString(buf);
 						lcd.writeFromPgmspace(LOCALIZE(mon_time_left_secs));	
 					} else if (( tsecs <= 0) || ( host::isBuildComplete()) ) {
@@ -1300,7 +1200,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 #endif
 						lcd.writeFromPgmspace(LOCALIZE(mon_time_left_none));
 					} else {
-						appendTime(buf, sizeof(buf), (uint32_t)tsecs);
+						formatTime(buf, (uint32_t)tsecs);
 						lcd.writeString(buf);
 					}
 					break;
@@ -1309,19 +1209,18 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				else	buildTimePhase = (enum BuildTimePhase)((uint8_t)buildTimePhase + 1);
 
 			case BUILD_TIME_PHASE_ZPOS:
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_zpos));
 				lcd.setCursor(6,1);
-
 				position = steppers::getStepperPosition();
 			
 				//Divide by the axis steps to mm's
 				lcd.writeFloat(stepperAxisStepsToMM(position[2], Z_AXIS), 3);
 
-				lcd.writeFromPgmspace(LOCALIZE(mon_zpos_mm));
+				lcd.writeFromPgmspace(LOCALIZE(units_mm));
 				break;
 			case BUILD_TIME_PHASE_FILAMENT:
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_filament));
 				lcd.setCursor(9,1);
 				lastFilamentUsed = stepperAxisStepsToMM(command::getLastFilamentLength(0) + command::getLastFilamentLength(1), A_AXIS);
@@ -1342,7 +1241,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			case BUILD_TIME_PHASE_COPIES_PRINTED:
 				{
 				uint8_t totalCopies = eeprom::getEeprom8(eeprom::ABP_COPIES, EEPROM_DEFAULT_ABP_COPIES);
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_copies));
 				lcd.setCursor(7,1);
 				lcd.writeFloat((float)(copiesPrinted + 1), 0);
@@ -1355,7 +1254,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			case BUILD_TIME_PHASE_ACCEL_STATS:
 				float minSpeed, avgSpeed, maxSpeed;
 				accelStatsGet(&minSpeed, &avgSpeed, &maxSpeed);
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_speed));
 				lcd.setCursor(4,1);
 				if ( minSpeed < 100.0 )	lcd.write(' ');	//If we have space, pad out a bit
@@ -1393,12 +1292,12 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		updatePhase = UPDATE_PHASE_FIRST;
 
 #ifdef DEBUG_ONSCREEN
-        lcd.setCursor(0, 0);
+        lcd.homeCursor();
         lcd.writeString((char *)"DOS1: ");
         lcd.writeFloat(debug_onscreen1, 3);
         lcd.writeString((char *)" ");
 
-        lcd.setCursor(0, 1);
+        lcd.setRow(1);
         lcd.writeString((char *)"DOS2: ");
         lcd.writeFloat(debug_onscreen2, 3);
         lcd.writeString((char *)" ");
@@ -1435,15 +1334,13 @@ void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar v_version4[] = "FreeSram: ";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(v_version1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(v_version2));
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(v_version3));
 
 		//Display the motherboard version
@@ -1472,7 +1369,7 @@ void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(12, 2);
 		lcd.writeString((char *)STR(SVN_VERSION));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(v_version4));
 		lcd.writeFloat((float)StackCount(),0);
 	} else {
@@ -1507,11 +1404,11 @@ void Menu::update(LiquidCrystal& lcd, bool forceRedraw) {
 	}
 	else {
 		// Only need to clear the previous cursor
-		lcd.setCursor(0,(lastDrawIndex%height));
+		lcd.setRow(lastDrawIndex%height);
 		lcd.write(' ');
 	}
 
-	lcd.setCursor(0,(itemIndex%height));
+	lcd.setRow(itemIndex%height);
 	lcd.write(LCD_CUSTOM_CHAR_ARROW);
 	lastDrawIndex = itemIndex;
 }
@@ -1573,11 +1470,11 @@ void Menu::notifyButtonPressed(ButtonArray::ButtonName button) {
 }
 
 
-CancelBuildMenu::CancelBuildMenu() {
+CancelBuildMenu::CancelBuildMenu() :
+	pauseDisabled(false) {
+	itemCount = 7;
 	pauseMode.autoPause = false;
-	itemCount = 6;
 	reset();
-	pauseDisabled = false;
 	if (( steppers::isHoming() ) || (sdcard::getPercentPlayed() >= 100.0))	pauseDisabled = true;
 
 	if ( host::isBuildComplete() )
@@ -1600,7 +1497,7 @@ void CancelBuildMenu::resetState() {
 		itemCount = 4;
 	} else {
 		itemIndex = 1;
-		itemCount = 6;
+		itemCount = 7;
 	}
 
 	if ( printAnotherEnabled ) {
@@ -1620,11 +1517,13 @@ void CancelBuildMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar cb_choose[]		= "Please Choose:";
 	const static PROGMEM prog_uchar cb_abort[]		= "Abort Print   ";
-	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another";
+	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another ";
 	const static PROGMEM prog_uchar cb_pauseZ[]		= "Pause at ZPos ";
 	const static PROGMEM prog_uchar cb_pause[]		= "Pause         ";
-	const static PROGMEM prog_uchar cb_pauseNoHeat[]	= "Pause No Heat ";
-	const static PROGMEM prog_uchar cb_back[]		= "Continue Build";
+	const static PROGMEM prog_uchar cb_pauseHBPHeat[]	= "Pause, HBP on ";
+	const static PROGMEM prog_uchar cb_pauseNoHeat[]	= "Pause, No Heat";
+	const static PROGMEM prog_uchar cb_cont[]		= "Continue Build";
+	const static PROGMEM prog_uchar cb_back[]               = "Return to Menu";
 
 	if (( steppers::isHoming() ) || (sdcard::getPercentPlayed() >= 100.0))	pauseDisabled = true;
 
@@ -1655,12 +1554,19 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	}
 
 	if ( ! pauseDisabled ) {
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseHBPHeat));
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
 		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseNoHeat));
 		lind ++;
 	}
 
-	if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_back));
-	lind ++;
+	if ( index == lind ) {
+		if ( printAnotherEnabled ) lcd.writeFromPgmspace(LOCALIZE(cb_back));
+		else lcd.writeFromPgmspace(LOCALIZE(cb_cont));
+	}
 }
 
 void CancelBuildMenu::handleSelect(uint8_t index) {
@@ -1671,7 +1577,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 
 	lind ++;
 
-	if ( index == lind) {
+	if ( index == lind ) {
 #ifdef HAS_FILAMENT_COUNTER
 		command::addFilamentUsed();
 #endif
@@ -1697,7 +1603,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
-			command::pause(true, false);
+			command::pause(true, PAUSE_HEAT_ON);  // pause, all heaters left on
 			pauseMode.autoPause = false;
 			interface::pushScreen(&pauseMode);
 		}
@@ -1706,7 +1612,16 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
-			command::pause(true, true);
+			command::pause(true, PAUSE_EXT_OFF);  // pause, HBP left on
+			pauseMode.autoPause = false;
+			interface::pushScreen(&pauseMode);
+		}
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind ) {
+			command::pause(true, PAUSE_EXT_OFF | PAUSE_HBP_OFF);  // pause no heat
 			pauseMode.autoPause = false;
 			interface::pushScreen(&pauseMode);
 		}
@@ -1931,14 +1846,22 @@ void MainMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 	} else lcdTypeChangeTimer = Motherboard::getBoard().getCurrentSeconds();
 }
 
-SDMenu::SDMenu() {
+SDMenu::SDMenu() : 
+	updatePhase(0),
+	drawItemLockout(false),
+	selectable(false),
+	folderStackIndex(-1) {
 	reset();
-	updatePhase = 0;
-	drawItemLockout = false;
 }
 
 void SDMenu::resetState() {
 	itemCount = countFiles();
+	if ( !itemCount ) {
+		folderStackIndex = -1;
+		itemCount  = 1;
+		selectable = false;
+	}
+	else selectable = true;
 	updatePhase = 0;
 	lastItemIndex = 0;
 	drawItemLockout = false;
@@ -1948,99 +1871,92 @@ void SDMenu::resetState() {
 uint8_t SDMenu::countFiles() {
 	uint8_t count = 0;
 
-	sdcard::SdErrorCode e;
-
 	// First, reset the directory index
-	e = sdcard::directoryReset();
-	if (e != sdcard::SD_SUCCESS) {
-		// TODO: Report error
-		return 6;
-	}
+	if ( sdcard::directoryReset() != sdcard::SD_SUCCESS )
+		// TODO: Report 
+		return 0;
 
-	const int MAX_FILE_LEN = 2;
-	char fnbuf[MAX_FILE_LEN];
+	char fnbuf[3];
 
 	// Count the files
 	do {
-		e = sdcard::directoryNextEntry(fnbuf,MAX_FILE_LEN);
-		if (fnbuf[0] == '\0') {
-			break;
-		}
-
-		// If it's a dot file, don't count it.
-		if (fnbuf[0] == '.') {
-		}
-		else {
+		bool isdir;
+		sdcard::directoryNextEntry(fnbuf,sizeof(fnbuf),&isdir);
+		if ( fnbuf[0] == 0 )
+			return count;
+		// Count .. and anyfile which doesn't begin with .
+		else if ( (fnbuf[0] != '.') ||
+			  ( isdir && fnbuf[1] == '.' && fnbuf[2] == 0) )
 			count++;
-		}
-	} while (e == sdcard::SD_SUCCESS);
+	} while (true);
 
-	// TODO: Check for error again?
-
+	// Never reached
 	return count;
 }
 
-bool SDMenu::getFilename(uint8_t index, char buffer[], uint8_t buffer_size) {
-	sdcard::SdErrorCode e;
+bool SDMenu::getFilename(uint8_t index, char buffer[], uint8_t buffer_size, bool *isdir) {
+
+	*isdir = false;
 
 	// First, reset the directory list
-	e = sdcard::directoryReset();
-	if (e != sdcard::SD_SUCCESS) {
+	if ( sdcard::directoryReset() != sdcard::SD_SUCCESS )
                 return false;
-	}
 
-
+	bool my_isdir;
 	for(uint8_t i = 0; i < index+1; i++) {
-		// Ignore dot-files
 		do {
-			e = sdcard::directoryNextEntry(buffer,buffer_size);
-			if (buffer[0] == '\0') {
-                                return false;
-			}
-		} while (e == sdcard::SD_SUCCESS && buffer[0] == '.');
-
-		if (e != sdcard::SD_SUCCESS) {
-                        return false;
-		}
+			sdcard::directoryNextEntry(buffer, buffer_size, &my_isdir);
+			if ( buffer[0] == 0 )
+				// No more files
+				return false;
+			// Count only .. and any file not beginning with .
+			if ( (buffer[0] != '.' ) ||
+			     ( my_isdir && buffer[1] == '.' && buffer[2] == 0) )
+				break;
+		} while (true);
 	}
-
+	*isdir = my_isdir;
         return true;
 }
 
 void SDMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
-	if (index > itemCount - 1) {
-		// TODO: report error
+	uint8_t idx, filenameLength;
+	uint8_t longFilenameOffset = 0;
+	uint8_t displayWidth = lcd.getDisplayWidth() - 1;
+	uint8_t offset = 1;
+	char fnbuf[SD_MAXFILELEN+2]; // extra +1 as we may precede the name with a folder indicator
+	bool isdir;
+
+	if ( !selectable || index > itemCount - 1 )
+		return;
+
+        if ( !getFilename(index, fnbuf + 1, sizeof(fnbuf) - 1, &isdir) ) {
+		selectable = false;
 		return;
 	}
 
-	const uint8_t MAX_FILE_LEN = host::MAX_FILE_LEN;
-	char fnbuf[MAX_FILE_LEN];
-
-        if ( !getFilename(index, fnbuf, MAX_FILE_LEN) ) {
-                // TODO: report error
-		return;
+	if ( isdir )
+	{
+		fnbuf[0] = ( fnbuf[1] == '.' && fnbuf[2] == '.' ) ? LCD_CUSTOM_CHAR_RETURN : LCD_CUSTOM_CHAR_FOLDER;
+		offset = 0;
 	}
 
 	//Figure out length of filename
-	uint8_t filenameLength;
-	for (filenameLength = 0; (filenameLength < MAX_FILE_LEN) && (fnbuf[filenameLength] != 0); filenameLength++) ;
-
-	uint8_t idx;
-	uint8_t longFilenameOffset = 0;
-	uint8_t displayWidth = lcd.getDisplayWidth() - 1;
+	for (filenameLength = 0; (filenameLength < sizeof(fnbuf)) && (fnbuf[offset+filenameLength] != 0); filenameLength++) ;
 
 	//Support scrolling filenames that are longer than the lcd screen
 	if (filenameLength >= displayWidth) longFilenameOffset = updatePhase % (filenameLength - displayWidth + 1);
 
-       for (idx = 0; (idx < displayWidth) && ((longFilenameOffset + idx) < MAX_FILE_LEN) &&
-                        (fnbuf[longFilenameOffset + idx] != 0); idx++)
-		lcd.write(fnbuf[longFilenameOffset + idx]);
+	for (idx = 0; (idx < displayWidth) && ((longFilenameOffset + idx) < sizeof(fnbuf)) &&
+                        (fnbuf[offset+longFilenameOffset + idx] != 0); idx++)
+		lcd.write(fnbuf[offset+longFilenameOffset + idx]);
 
 	//Clear out the rest of the line
 	while ( idx < displayWidth ) {
 		lcd.write(' ');
 		idx ++;
 	}
+	return;
 }
 
 void SDMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
@@ -2059,9 +1975,16 @@ void SDMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 		drawItem(itemIndex, lcd);
 	}
 
-	Menu::update(lcd, forceRedraw);
-
-	updatePhase ++;
+	if ( selectable ) {
+		Menu::update(lcd, forceRedraw);
+		updatePhase ++;
+	}
+	else {
+		// This was actually triggered in drawItem() but popping a screen
+		// from there is not a good idea
+		timedMessage(lcd, 0);
+		interface::popScreen();
+	}
 }
 
 void SDMenu::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -2070,27 +1993,65 @@ void SDMenu::notifyButtonPressed(ButtonArray::ButtonName button) {
 }
 
 void SDMenu::handleSelect(uint8_t index) {
-	if (host::getHostState() != host::HOST_STATE_READY) {
+
+	if (host::getHostState() != host::HOST_STATE_READY || !selectable)
 		// TODO: report error
 		return;
-	}
 
 	drawItemLockout = true;
 
-	char* buildName = host::getBuildName();
+	char fnbuf[SD_MAXFILELEN+1];
+	bool isdir;
+        if ( !getFilename(index, fnbuf, sizeof(fnbuf), &isdir) )
+		goto badness;
 
-        if ( !getFilename(index, buildName, host::MAX_FILE_LEN) ) {
-		// TODO: report error
+	if ( isdir ) {
+
+		// Attempt to change the directory
+		if ( !sdcard::changeDirectory(fnbuf) )
+			goto badness;
+
+		// Find our way around this folder
+		//  Doing a resetState() will determine the new itemCount
+		resetState();
+
+		itemIndex = 0;
+
+		// If we're not selectable, don't bother
+		if ( selectable ) {
+			// Recall last itemIndex in this folder if we popped up
+			if ( fnbuf[0] != '.' || fnbuf[1] != '.' || fnbuf[2] != 0 ) {
+				// We've moved down into a child folder
+				if ( folderStackIndex < (int8_t)(sizeof(folderStack) - 1) )
+					folderStack[++folderStackIndex] = index;
+			}
+			else {
+				// We've moved up into our parent folder
+				if ( folderStackIndex >= 0 ) {
+					itemIndex = folderStack[folderStackIndex--];
+					if (itemIndex >= itemCount) {
+						// Something is wrong; invalidate the entire stack
+						itemIndex = 0;
+						folderStackIndex = -1;
+					}
+				}
+			}
+		}
+
+		// Repaint the display
+		// Really ensure that the entire screen is wiped
+		lastDrawIndex = index; // so that the old cursor can be cleared
+		Menu::update(Motherboard::getBoard().getInterfaceBoard().lcd, true);
+
 		return;
 	}
 
-        sdcard::SdErrorCode e;
-	e = host::startBuildFromSD();
-	if (e != sdcard::SD_SUCCESS) {
-		// TODO: report error
-		interface::pushScreen(&unableToOpenFileMenu);
+	if ( host::startBuildFromSD(fnbuf) == sdcard::SD_SUCCESS )
 		return;
-	}
+
+badness:
+	// TODO: report error
+	interface::pushScreen(&unableToOpenFileMenu);
 }
 
 void ValueSetScreen::reset() {
@@ -2101,18 +2062,16 @@ void ValueSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar vs_message4[] = "Up/Dn/Ent to Set";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(message1);
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(vs_message4));
 	}
 
 
 	// Redraw tool info
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeInt(value,3);
 	if ( units )	lcd.writeFromPgmspace(units);
 }
@@ -2266,17 +2225,16 @@ void HomeAxisMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar ha_home4[] = "  Y            Z";
 
 	if (forceRedraw) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(ha_home1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(ha_home2));
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(ha_home3));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(ha_home4));
 	}
 }
@@ -2323,12 +2281,16 @@ void HomeAxisMode::home(ButtonArray::ButtonName direction) {
 
 void HomeAxisMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 	switch (button) {
+#if 0
         	case ButtonArray::YMINUS:
         	case ButtonArray::ZMINUS:
         	case ButtonArray::YPLUS:
         	case ButtonArray::ZPLUS:
         	case ButtonArray::XMINUS:
         	case ButtonArray::XPLUS:
+#else
+	        default:
+#endif
 			home(button);
 			break;
         	case ButtonArray::ZERO:
@@ -2418,17 +2380,16 @@ void TestEndStopsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar tes_strN[]  = "N";
 
 	if (forceRedraw) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(tes_test1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(tes_test2));
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(tes_test3));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(tes_test4));
 	}
 
@@ -2455,19 +2416,8 @@ void TestEndStopsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 }
 
 void TestEndStopsMode::notifyButtonPressed(ButtonArray::ButtonName button) {
-	switch (button) {
-        	case ButtonArray::YMINUS:
-        	case ButtonArray::ZMINUS:
-        	case ButtonArray::YPLUS:
-        	case ButtonArray::ZPLUS:
-        	case ButtonArray::XMINUS:
-        	case ButtonArray::XPLUS:
-        	case ButtonArray::ZERO:
-        	case ButtonArray::OK:
-        	case ButtonArray::CANCEL:
-               		interface::popScreen();
-			break;
-	}
+	// That above list is exhaustive
+	interface::popScreen();
 }
 
 void PauseMode::reset() {
@@ -2481,11 +2431,12 @@ void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar p_retractFilament[]	  = "Retract filament";
 	const static PROGMEM prog_uchar p_clearingBuild[]	  = "Clearing build..";
 	const static PROGMEM prog_uchar p_heating[]		  = "Heating...      ";
-	const static PROGMEM prog_uchar p_leavingPaused[]	  = "Leaving pause.. ";
+	const static PROGMEM prog_uchar p_leavingPaused[]	  = "Leaving pause...";
 	const static PROGMEM prog_uchar p_paused1[] 		  = "Paused(";
 	const static PROGMEM prog_uchar p_paused2[] 		  = "   Y+         Z+";
 	const static PROGMEM prog_uchar p_paused3[] 		  = "X- Rev X+  (Fwd)";
 	const static PROGMEM prog_uchar p_paused4[] 		  = "   Y-         Z-";
+	const static PROGMEM prog_uchar p_close[]                 = "):";
 
 	enum PauseState pauseState = command::pauseState();
 
@@ -2493,7 +2444,7 @@ void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	OutPacket responsePacket;
 
-	lcd.setCursor(0,0);
+	lcd.homeCursor();
 
 	switch ( pauseState ) {
 		case PAUSE_STATE_ENTER_START_PIPELINE_DRAIN:
@@ -2511,13 +2462,13 @@ void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		case PAUSE_STATE_PAUSED:
 			lcd.writeFromPgmspace(LOCALIZE(p_paused1));
 			lcd.writeFloat(stepperAxisStepsToMM(command::getPausedPosition()[Z_AXIS], Z_AXIS), 3);
-			lcd.writeString((char *)"):");
+			lcd.writeFromPgmspace(LOCALIZE(p_close));
 
-			lcd.setCursor(0,1);
+			lcd.setRow(1);
 			lcd.writeFromPgmspace(LOCALIZE(p_paused2));
-			lcd.setCursor(0,2);
+			lcd.setRow(2);
 			lcd.writeFromPgmspace(LOCALIZE(p_paused3));
-			lcd.setCursor(0,3);
+			lcd.setRow(3);
 			lcd.writeFromPgmspace(LOCALIZE(p_paused4));
 			break;
 		case PAUSE_STATE_EXIT_START_HEATERS:
@@ -2570,17 +2521,15 @@ void PauseAtZPosScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar pz_mm[]       = "mm   ";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(pz_message1));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(pz_message4));
 	}
 
 	// Redraw tool info
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeFloat((float)pauseAtZPos, 3);
 	lcd.writeFromPgmspace(LOCALIZE(pz_mm));
 }
@@ -2632,14 +2581,13 @@ void AdvanceABPMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar abp_msg3[] = "           (fwd)";
 
 	if (forceRedraw) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(abp_msg1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(abp_msg2));
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(abp_msg3));
 	}
 
@@ -2659,14 +2607,7 @@ void AdvanceABPMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 			abpForwarding = true;
 			extruderControl(0, SLAVE_CMD_TOGGLE_ABP, EXTDR_CMD_SET8, responsePacket, (uint16_t)1);
 			break;
-        	case ButtonArray::YMINUS:
-        	case ButtonArray::ZMINUS:
-        	case ButtonArray::YPLUS:
-        	case ButtonArray::ZPLUS:
-        	case ButtonArray::XMINUS:
-        	case ButtonArray::XPLUS:
-        	case ButtonArray::ZERO:
-        	case ButtonArray::CANCEL:
+	        default :
                		interface::popScreen();
 			break;
 	}
@@ -2702,32 +2643,31 @@ void CalibrateMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar c_reset[]  = "         (reset)";
 
 	if ((forceRedraw) || (calibrationState != lastCalibrationState)) {
-		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		switch(calibrationState) {
 			case CS_START1:
 				lcd.writeFromPgmspace(LOCALIZE(c_calib1));
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib2));
-				lcd.setCursor(0,2);
+				lcd.setRow(2);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib3));
-				lcd.setCursor(0,3);
+				lcd.setRow(3);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib4));
 				break;
 			case CS_START2:
 				lcd.writeFromPgmspace(LOCALIZE(c_calib5));
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib6));
-				lcd.setCursor(0,2);
+				lcd.setRow(2);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib7));
-				lcd.setCursor(0,3);
+				lcd.setRow(3);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib4));
 				break;
 			case CS_PROMPT_MOVE:
 				lcd.writeFromPgmspace(LOCALIZE(c_calib8));
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib9));
-				lcd.setCursor(0,3);
+				lcd.setRow(3);
 				lcd.writeFromPgmspace(LOCALIZE(c_calib4));
 				break;
 			case CS_HOME_Z:
@@ -2744,9 +2684,9 @@ void CalibrateMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				break;
 			case CS_PROMPT_CALIBRATED:
 				lcd.writeFromPgmspace(LOCALIZE(c_done));
-				lcd.setCursor(0,1);
+				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(c_regen));
-				lcd.setCursor(0,3);
+				lcd.setRow(3);
 				lcd.writeFromPgmspace(LOCALIZE(c_reset));
 				break;
 			default:
@@ -2840,14 +2780,7 @@ void CalibrateMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 	}
 
 	switch (button) {
-        	case ButtonArray::OK:
-        	case ButtonArray::YMINUS:
-        	case ButtonArray::ZMINUS:
-        	case ButtonArray::YPLUS:
-        	case ButtonArray::ZPLUS:
-        	case ButtonArray::XMINUS:
-        	case ButtonArray::XPLUS:
-        	case ButtonArray::ZERO:
+ 	        default:
 			if (( calibrationState == CS_START1 ) || ( calibrationState == CS_START2 ) ||
 			    (calibrationState == CS_PROMPT_MOVE ))	calibrationState = (enum calibrateState)((uint8_t)calibrationState + 1);
 			break;
@@ -2876,14 +2809,11 @@ void HomeOffsetsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar ho_message1y[] = "Y Offset:";
 	const static PROGMEM prog_uchar ho_message1z[] = "Z Offset:";
 	const static PROGMEM prog_uchar ho_message4[]  = "Up/Dn/Ent to Set";
-	const static PROGMEM prog_uchar ho_mm[]        = "mm";
 
 	if ( homeOffsetState != lastHomeOffsetState )	forceRedraw = true;
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		switch(homeOffsetState) {
 			case HOS_OFFSET_X:
 				lcd.writeFromPgmspace(LOCALIZE(ho_message1x));
@@ -2898,7 +2828,7 @@ void HomeOffsetsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				break;
 		}
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(ho_message4));
 	}
 
@@ -2918,9 +2848,9 @@ void HomeOffsetsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			break;
 	}
 
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeFloat((float)position, 3);
-	lcd.writeFromPgmspace(LOCALIZE(ho_mm));
+	lcd.writeFromPgmspace(LOCALIZE(units_mm));
 
 	lastHomeOffsetState = homeOffsetState;
 }
@@ -2985,20 +2915,18 @@ void BuzzerSetRepeatsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar bsr_times[]    = " times ";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(bsr_message1));
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFromPgmspace(LOCALIZE(bsr_message2));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(bsr_message4));
 	}
 
 	// Redraw tool info
-	lcd.setCursor(0,2);
+	lcd.setRow(2);
 	lcd.writeInt(repeats, 3);
 	lcd.writeFromPgmspace(LOCALIZE(bsr_times));
 }
@@ -3111,9 +3039,7 @@ void FilamentUsedMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar fu_but_trip[] = "(life)   (reset)";
 
 	if ((forceRedraw) || (overrideForceRedraw)) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		if ( lifetimeDisplay )	lcd.writeFromPgmspace(LOCALIZE(fu_lifetime));
 		else			lcd.writeFromPgmspace(LOCALIZE(fu_trip));
 
@@ -3132,15 +3058,15 @@ void FilamentUsedMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 		float filamentUsedMM = filamentUsedMMA + filamentUsedMMB;
 
-		lcd.setCursor(0,1);
+		lcd.setRow(1);
 		lcd.writeFloat(filamentUsedMM / 1000.0, 4);
 		lcd.write('m');
 
-		lcd.setCursor(0,2);
+		lcd.setRow(2);
 		if ( lifetimeDisplay )	lcd.writeFromPgmspace(LOCALIZE(fu_but_life));
 		else			lcd.writeFromPgmspace(LOCALIZE(fu_but_trip));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFloat(((filamentUsedMM / 25.4) / 12.0), 4);
 		lcd.writeString((char *)"ft");
 
@@ -3166,12 +3092,7 @@ void FilamentUsedMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 				interface::popScreen();
 			}
 			break;
-		case ButtonArray::ZPLUS:
-		case ButtonArray::ZMINUS:
-		case ButtonArray::YPLUS:
-		case ButtonArray::YMINUS:
-		case ButtonArray::XMINUS:
-		case ButtonArray::XPLUS:
+	        default:
 			break;
 	}
 }
@@ -3267,17 +3188,15 @@ void ABPCopiesSetScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar abp_message4[] = "Up/Dn/Ent to Set";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(abp_message1));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(abp_message4));
 	}
 
 	// Redraw tool info
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeInt(value,3);
 }
 
@@ -3317,9 +3236,7 @@ void ABPCopiesSetScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 			value -= 1;
 		}
 		break;
-
-        case ButtonArray::XMINUS:
-        case ButtonArray::XPLUS:
+        default:
 		break;
 	}
 }
@@ -3560,8 +3477,6 @@ ProfilesMenu::ProfilesMenu() {
 	//Setup defaults if required
 	//If the value is 0xff, write the profile number
 	uint8_t buf[PROFILE_NAME_LENGTH+1];
-
-	// ??????
         const static PROGMEM prog_uchar pro_defaultProfile[] = "Profile?";
 
 	//Get the home axis positions, we may need this to write the defaults
@@ -3713,16 +3628,14 @@ void ProfileChangeNameMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar pcn_blank[]    = " ";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(pcn_message1));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(pcn_message4));
 	}
 
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeString((char *)profileName);
 
 	//Draw the cursor
@@ -3842,45 +3755,39 @@ void CurrentPositionMode::reset() {
 }
 
 void CurrentPositionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar cp_msg1[] = "X:";
-	const static PROGMEM prog_uchar cp_msg2[] = "Y:";
-	const static PROGMEM prog_uchar cp_msg3[] = "Z:";
-	const static PROGMEM prog_uchar cp_msg4[] = "A:";
-	const static PROGMEM prog_uchar cp_mm[]   = "mm";
+	uint8_t active_toolhead;
+	Point position = steppers::getStepperPosition(&active_toolhead);
 
 	if (forceRedraw) {
-		lcd.clear();
+		lcd.clearHomeCursor();
+		lcd.write('X');
 
-		lcd.setCursor(0,0);
-		lcd.writeFromPgmspace(LOCALIZE(cp_msg1));
+		lcd.setRow(1);
+		lcd.write('Y');
 
-		lcd.setCursor(0,1);
-		lcd.writeFromPgmspace(LOCALIZE(cp_msg2));
+		lcd.setRow(2);
+		lcd.write('Z');
 
-		lcd.setCursor(0,2);
-		lcd.writeFromPgmspace(LOCALIZE(cp_msg3));
-
-		lcd.setCursor(0,3);
-		lcd.writeFromPgmspace(LOCALIZE(cp_msg4));
+		lcd.setRow(3);
+		lcd.write('A' + active_toolhead);
 	}
-
-	Point position = steppers::getStepperPosition();
+	lcd.write(':');
 
 	lcd.setCursor(3, 0);
 	lcd.writeFloat(stepperAxisStepsToMM(position[0], X_AXIS), 3);
-	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
+	lcd.writeFromPgmspace(LOCALIZE(units_mm));
 
 	lcd.setCursor(3, 1);
 	lcd.writeFloat(stepperAxisStepsToMM(position[1], Y_AXIS), 3);
-	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
+	lcd.writeFromPgmspace(LOCALIZE(units_mm));
 
 	lcd.setCursor(3, 2);
 	lcd.writeFloat(stepperAxisStepsToMM(position[2], Z_AXIS), 3);
-	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
+	lcd.writeFromPgmspace(LOCALIZE(units_mm));
 
 	lcd.setCursor(3, 3);
-	lcd.writeFloat(stepperAxisStepsToMM(position[3], A_AXIS), 3);
-	lcd.writeFromPgmspace(LOCALIZE(cp_mm));
+	lcd.writeFloat(stepperAxisStepsToMM(position[3 + active_toolhead], A_AXIS + active_toolhead), 3);
+	lcd.writeFromPgmspace(LOCALIZE(units_mm));
 }
 
 void CurrentPositionMode::notifyButtonPressed(ButtonArray::ButtonName button) {
@@ -3900,8 +3807,8 @@ void UnableToOpenFileMenu::resetState() {
 
 void UnableToOpenFileMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar utof_msg1[]   = "Failed to open";
-	const static PROGMEM prog_uchar utof_msg2[]   = "file.  Name too";
-	const static PROGMEM prog_uchar utof_msg3[]   = "long?";
+	const static PROGMEM prog_uchar utof_msg2[]   = "file or folder.";
+	const static PROGMEM prog_uchar utof_msg3[]   = "Name too long?";
 	const static PROGMEM prog_uchar utof_cont[]   = "Continue";
 
 	switch (index) {
@@ -3923,6 +3830,7 @@ void UnableToOpenFileMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 void UnableToOpenFileMenu::handleSelect(uint8_t index) {
 	interface::popScreen();
 }
+
 
 void AcceleratedSettingsMode::reset() {
 	cli();
@@ -3974,9 +3882,7 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( accelerateSettingsState != lastAccelerateSettingsState )	forceRedraw = true;
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		switch(accelerateSettingsState) {
                 	case AS_MAX_ACCELERATION_X:
 				lcd.writeFromPgmspace(LOCALIZE(as_message1xMaxAccelRate));
@@ -4033,7 +3939,7 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				break;
 		}
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(as_message4));
 	}
 
@@ -4043,7 +3949,7 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	value = values[currentIndex];
 
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 
 	switch(accelerateSettingsState) {
 		case AS_MAX_SPEED_CHANGE_X:
@@ -4121,8 +4027,7 @@ void AcceleratedSettingsMode::notifyButtonPressed(ButtonArray::ButtonName button
 			// decrement less
 			values[currentIndex] -= 1;
 			break;
-		case ButtonArray::XMINUS:
-		case ButtonArray::XPLUS:
+	        default:
 			break;
 	}
 
@@ -4151,17 +4056,15 @@ void EndStopConfigScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar esc_blank[]    = " ";
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(esc_message1));
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(esc_message4));
 	}
 
 	// Redraw tool info
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeFloat((float)endstops, 0);
 	lcd.writeFromPgmspace(LOCALIZE(esc_blank));
 }
@@ -4193,8 +4096,7 @@ void EndStopConfigScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 			// decrement less
 			if (endstops >= 1) endstops -= 1;
 			break;
-		case ButtonArray::XMINUS:
-		case ButtonArray::XPLUS:
+	        default:
 			break;
 	}
 }
@@ -4220,9 +4122,7 @@ void HomingFeedRatesMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( homingFeedRateState != lastHomingFeedRateState )	forceRedraw = true;
 
 	if (forceRedraw) {
-		lcd.clear();
-
-		lcd.setCursor(0,0);
+		lcd.clearHomeCursor();
 		switch(homingFeedRateState) {
 			case HFRS_OFFSET_X:
 				lcd.writeFromPgmspace(LOCALIZE(hfr_message1x));
@@ -4237,7 +4137,7 @@ void HomingFeedRatesMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				break;
 		}
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(hfr_message4));
 	}
 
@@ -4257,7 +4157,7 @@ void HomingFeedRatesMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			break;
 	}
 
-	lcd.setCursor(0,1);
+	lcd.setRow(1);
 	lcd.writeFloat((float)feedRate, 0);
 	lcd.writeFromPgmspace(LOCALIZE(hfr_mm));
 
@@ -4306,8 +4206,7 @@ void HomingFeedRatesMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 			if ( homingFeedRate[currentIndex] >= 2 )
 				homingFeedRate[currentIndex] -= 1;
 			break;
-		case ButtonArray::XMINUS:
-		case ButtonArray::XPLUS:
+	        default:
 			break;
 	}
 
@@ -4338,92 +4237,53 @@ void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 			const static PROGMEM prog_uchar eeprom_msg3[]  	= "inoperable.";
 			const static PROGMEM prog_uchar eeprom_msg4[]  	= "Press Y+ to cont";
 
-			lcd.setCursor(0,0);
+			lcd.homeCursor();
 			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg1));
 
-			lcd.setCursor(0,1);
+			lcd.setRow(1);
 			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg2));
 
-			lcd.setCursor(0,2);
+			lcd.setRow(2);
 			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg3));
 
-			lcd.setCursor(0,3);
+			lcd.setRow(3);
 			lcd.writeFromPgmspace(LOCALIZE(eeprom_msg4));
 		}
 	}
 	else {
-		if ( itemSelected != -1 ) {
-			lcd.clear();
-			lcd.setCursor(0,0);
-		}
+		if ( itemSelected != -1 )
+			lcd.clearHomeCursor();
 
 		const static PROGMEM prog_uchar eeprom_message_dump[]		= "Saving...";
 		const static PROGMEM prog_uchar eeprom_message_restore[]	= "Restoring...";
-		const static PROGMEM prog_uchar eeprom_message_erase[]		= "Erasing...";
-
-		const char dumpFilename[] = "eeprom_dump.bin";
-
-		const static PROGMEM prog_uchar eeprom_message_error[]		= "Error:";
 
 		switch ( itemSelected ) {
 			case 0:	//Dump
+				//sdcard::forceReinit(); // to force return to / directory
 				if ( ! sdcard::fileExists(dumpFilename) ) {
 					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_dump));
-					if ( ! eeprom::saveToSDFile(dumpFilename) ) {
-						const static PROGMEM prog_uchar eeprom_msg11[] = "Write Failed!";
-						lcd.clear();
-						lcd.setCursor(0,0);
-						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg11));
-						_delay_us(5000000);
-					}
-				} else {
-					const static PROGMEM prog_uchar eeprom_msg12[] = "File exists!";
-					lcd.clear();
-					lcd.setCursor(0,0);
-					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_error));
-					lcd.setCursor(0,1);
-					lcd.writeString((char *)dumpFilename);
-					lcd.setCursor(0,2);
-					lcd.writeFromPgmspace(LOCALIZE(eeprom_msg12));
-					_delay_us(5000000);
-				}
+					if ( ! eeprom::saveToSDFile(dumpFilename) )
+						timedMessage(lcd, 1);
+				} else
+					timedMessage(lcd, 2);
 				interface::popScreen();
 				break;
 
 			case 1: //Restore
+				//sdcard::forceReinit(); // to return to root
 				if ( sdcard::fileExists(dumpFilename) ) {
 					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_restore));
-					if ( ! eeprom::restoreFromSDFile(dumpFilename) ) {
-						const static PROGMEM prog_uchar eeprom_msg5[] = "Read Failed!";
-						const static PROGMEM prog_uchar eeprom_msg6[] = "EEPROM may be";
-						const static PROGMEM prog_uchar eeprom_msg7[] = "corrupt";
-						lcd.clear();
-						lcd.setCursor(0,0);
-						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg5));
-						lcd.setCursor(0,1);
-						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg6));
-						lcd.setCursor(0,2);
-						lcd.writeFromPgmspace(LOCALIZE(eeprom_msg7));
-						_delay_us(5000000);
-					}
+					if ( ! eeprom::restoreFromSDFile(dumpFilename) )
+						timedMessage(lcd, 3);
 					host::stopBuildNow();
 				} else {
-					const static PROGMEM prog_uchar eeprom_msg8[] = "File not found!";
-					lcd.clear();
-					lcd.setCursor(0,0);
-					lcd.writeFromPgmspace(LOCALIZE(eeprom_message_error));
-					lcd.setCursor(0,1);
-					lcd.writeString((char *)dumpFilename);
-					lcd.setCursor(0,2);
-					lcd.writeFromPgmspace(LOCALIZE(eeprom_msg8));
-					_delay_us(5000000);
+					timedMessage(lcd, 4);
 					interface::popScreen();
 				}
 				break;
 
 			case 2: //Erase
-				lcd.writeFromPgmspace(LOCALIZE(eeprom_message_erase));
-				_delay_us(5000000);
+				timedMessage(lcd, 5);
 				eeprom::erase();
 				interface::popScreen();
 				host::stopBuildNow();
@@ -4433,7 +4293,7 @@ void EepromMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 				break;
 		}
 
-		lcd.setCursor(0,3);
+		lcd.setRow(3);
 		if ( safetyGuard >= 1 ) {
 			const static PROGMEM prog_uchar eeprom_msg9[]  = "* Press ";
 			const static PROGMEM prog_uchar eeprom_msg10[] = "x more!";
@@ -4497,15 +4357,10 @@ void EepromMenu::handleSelect(uint8_t index) {
 
 void EepromMenu::notifyButtonPressed(ButtonArray::ButtonName button) {
 	if ( warningScreen ) {
-		switch (button) {
-			case ButtonArray::YPLUS:
-				warningScreen = false;
-				return;
-			default:
-				Menu::notifyButtonPressed(ButtonArray::CANCEL);
-				return;
-		}
-
+		if ( button == ButtonArray::YPLUS )
+			warningScreen = false;
+		else
+			Menu::notifyButtonPressed(ButtonArray::CANCEL);
 		return;
 	}
 
@@ -4519,4 +4374,74 @@ void EepromMenu::notifyButtonPressed(ButtonArray::ButtonName button) {
 
 #endif
 
+// Clear the screen, display a message, and then count down from 5 to 0 seconds
+//   with a countdown timer to let folks know what's up
+
+static void timedMessage(LiquidCrystal& lcd, uint8_t which)
+{
+	const static PROGMEM prog_uchar sderr_badcard[] = "SD card error";
+	const static PROGMEM prog_uchar sderr_nofiles[] = "No files found";
+	const static PROGMEM prog_uchar sderr_nocard[]  = "No SD card";
+	const static PROGMEM prog_uchar eeprom_msg11[]  = "Write Failed!";
+	const static PROGMEM prog_uchar eeprom_msg12[]  = "File exists!";
+	const static PROGMEM prog_uchar eeprom_msg5[]   = "Read Failed!";
+	const static PROGMEM prog_uchar eeprom_msg6[]   = "EEPROM may be";
+	const static PROGMEM prog_uchar eeprom_msg7[]   = "corrupt";
+	const static PROGMEM prog_uchar eeprom_msg8[]   = "File not found!";
+	const static PROGMEM prog_uchar eeprom_message_erase[] = "Erasing...";
+	const static PROGMEM prog_uchar eeprom_message_error[] = "Error";
+	const static PROGMEM prog_uchar timed_message_clock[]  = "00:00";
+
+	lcd.clearHomeCursor();
+
+	switch(which) {
+	case 0:
+		lcd.writeFromPgmspace(LOCALIZE(sderr_badcard));
+		lcd.setRow(1);
+		if ( sdcard::sdAvailable == sdcard::SD_SUCCESS )  lcd.writeFromPgmspace(LOCALIZE(sderr_nofiles));
+		else if ( sdcard::sdAvailable == sdcard::SD_ERR_NO_CARD_PRESENT ) lcd.writeFromPgmspace(LOCALIZE(sderr_nocard));
+		break;
+
+	case 1:
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_msg11));
+		break;
+
+	case 2:
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_message_error));
+		lcd.setRow(1);
+		lcd.writeString((char *)dumpFilename);
+		lcd.setRow(2);
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_msg12));
+		break;
+
+	case 3:
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_msg5));
+		lcd.setRow(1);
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_msg6));
+		lcd.setRow(2);
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_msg7));
+		break;
+
+	case 4:
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_message_error));
+		lcd.setRow(1);
+		lcd.writeString((char *)dumpFilename);
+		lcd.setRow(2);
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_msg8));
+		break;
+
+	case 5:
+		lcd.writeFromPgmspace(LOCALIZE(eeprom_message_erase));
+		break;
+	}
+
+	lcd.setRow(3);
+	lcd.writeFromPgmspace(timed_message_clock);
+	for (uint8_t i = 0; i < 5; i++)
+	{
+		lcd.setCursor(4, 3);
+		lcd.write('5' - (char)i);
+		_delay_us(1000000);
+	}
+}
 #endif
