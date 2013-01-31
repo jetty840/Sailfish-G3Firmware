@@ -146,6 +146,8 @@ public:
 
         /// update microsecond counter
         void UpdateMicros();
+
+	bool hasInterface() { return hasInterfaceBoard; }
 };
 
 #endif // SIMULATOR
