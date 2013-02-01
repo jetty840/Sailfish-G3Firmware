@@ -537,11 +537,7 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 	char newName[MAX_FILE_LEN];
 	switch (currentState){
 		case HOST_STATE_BUILDING_FROM_SD:
-			do {
-				newName[idx++] = buf.pop();		
-			} while ((newName[idx-1] != '\0') && (idx < sizeof(newName)));
-			if(strcmp(newName, "RepG Build"))
-				strcpy(buildName, newName);
+			while ((uint8_t)buf.pop() != 0) ;
 			break;
 		case HOST_STATE_READY:
 			currentState = HOST_STATE_BUILDING;

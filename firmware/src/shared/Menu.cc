@@ -136,7 +136,8 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar splash1[] = "  Sailfish FW   ";
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
 	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.1z";
-	const static PROGMEM prog_uchar splash4[] = " Revision: ____ "; 
+	//    static PROGMEM prog_uchar splash4[] = " Revision 00000 ";
+	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR " ";
 
 	if (forceRedraw) {
 		lcd.homeCursor();
@@ -150,8 +151,10 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(splash4));
-		lcd.setCursor(11,3);
-                lcd.writeString((char *)STR(SVN_VERSION));
+#ifdef MENU_L10N_H_
+		lcd.setCursor(9,3);
+                lcd.writeString((char *)SVN_VERSION_STR);
+#endif
 	}
 	else {
 		// The machine has started, so we're done!
