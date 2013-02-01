@@ -18,7 +18,7 @@
 splash1 "  Sailfish FW   "
 splash2 " -------------- "
 splash3 "Thing 32084 4.1z"
-splash4 " Revision: ____ "
+splash4 " Revision _____ "
 
 // User view menu
 uv_msg   "Direccion X/Y:"

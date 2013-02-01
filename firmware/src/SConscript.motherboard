@@ -146,6 +146,7 @@ flags=[
 	'-DF_CPU='+str(f_cpu),
 	'-DVERSION='+str(version),
 	'-DSVN_VERSION='+str(svn_version),
+	'-DSVN_VERSION_STR=\'"'+str(svn_version).zfill(5)+'"\'',
 	'-D__PROG_TYPES_COMPAT__',
 	'-D__DELAY_BACKWARD_COMPATIBLE__',
 	locale_def,
