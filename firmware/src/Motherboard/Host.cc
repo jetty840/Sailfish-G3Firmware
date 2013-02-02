@@ -534,7 +534,6 @@ inline void handleExtendedStop(const InPacket& from_host, OutPacket& to_host) {
 void handleBuildStartNotification(CircularBuffer& buf) {
 	
 	uint8_t idx = 0;
-	char newName[MAX_FILE_LEN];
 	switch (currentState){
 		case HOST_STATE_BUILDING_FROM_SD:
 			while ((uint8_t)buf.pop() != 0) ;

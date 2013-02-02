@@ -1317,10 +1317,10 @@ void MonitorMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 
 
 void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar v_version1[] = "Motherboard: _._";
-	const static PROGMEM prog_uchar v_version2[] = "   Extruder: _._";
-	const static PROGMEM prog_uchar v_version3[] = "   Revision:___";
-	const static PROGMEM prog_uchar v_version4[] = "FreeSram: ";
+	const static PROGMEM prog_uchar v_version1[] = "Motherboard  _._";
+	const static PROGMEM prog_uchar v_version2[] = "   Extruder  _._";
+	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR;
+	const static PROGMEM prog_uchar v_version4[] = "Free SRAM ";
 
 	if (forceRedraw) {
 		lcd.clearHomeCursor();
@@ -1354,9 +1354,6 @@ void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 			lcd.setCursor(13, 1);
 			lcd.writeString((char *)"X.X");
 		}
-
-		lcd.setCursor(12, 2);
-		lcd.writeString((char *)STR(SVN_VERSION));
 
 		lcd.setRow(3);
 		lcd.writeFromPgmspace(LOCALIZE(v_version4));
@@ -1658,167 +1655,114 @@ void MainMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 #ifdef EEPROM_MENU_ENABLE
 	const static PROGMEM prog_uchar main_eeprom[]		= "Eeprom";
 #endif
-
-	switch (index) {
-	case 0:
-		lcd.writeFromPgmspace(LOCALIZE(main_monitor));
-		break;
-	case 1:
-		lcd.writeFromPgmspace(LOCALIZE(main_build));
-		break;
-	case 2:
-		lcd.writeFromPgmspace(LOCALIZE(main_jog));
-		break;
-	case 3:
-		lcd.writeFromPgmspace(LOCALIZE(main_preheat));
-		break;
-	case 4:
-		lcd.writeFromPgmspace(LOCALIZE(main_extruder));
-		break;
-	case 5:
-		lcd.writeFromPgmspace(LOCALIZE(main_homeAxis));
-		break;
-	case 6:
-		lcd.writeFromPgmspace(LOCALIZE(main_advanceABP));
-		break;
-	case 7:
-		lcd.writeFromPgmspace(LOCALIZE(main_steppersS));
-		break;
-	case 8:
-		lcd.writeFromPgmspace(LOCALIZE(main_moodlight));
-		break;
-	case 9:
-		lcd.writeFromPgmspace(LOCALIZE(main_buzzer));
-		break;
-	case 10:
-		lcd.writeFromPgmspace(LOCALIZE(main_buildSettings));
-		break;
-	case 11:
-		lcd.writeFromPgmspace(LOCALIZE(main_profiles));
-		break;
-	case 12:
-		lcd.writeFromPgmspace(LOCALIZE(main_extruderFan));
-		break;
-	case 13:
-		lcd.writeFromPgmspace(LOCALIZE(main_calibrate));
-		break;
-	case 14:
-		lcd.writeFromPgmspace(LOCALIZE(main_homeOffsets));
-		break;
-	case 15:
-		lcd.writeFromPgmspace(LOCALIZE(main_filamentUsed));
-		break;
-	case 16:
-		lcd.writeFromPgmspace(LOCALIZE(main_currentPosition));
-		break;
-	case 17:
-		lcd.writeFromPgmspace(LOCALIZE(main_endStops));
-		break;
-	case 18:
-		lcd.writeFromPgmspace(LOCALIZE(main_homingRates));
-		break;
-	case 19:
-		lcd.writeFromPgmspace(LOCALIZE(main_versions));
-		break;
+	const static prog_uchar *messages[20
 #ifdef EEPROM_MENU_ENABLE
-	case 20:
-		lcd.writeFromPgmspace(LOCALIZE(main_eeprom));
-		break;
+					  +1
 #endif
-	}
+		] = { LOCALIZE(main_monitor),         //  0
+		      LOCALIZE(main_build),           //  1
+		      LOCALIZE(main_preheat),         //  2
+		      LOCALIZE(main_extruder),        //  3
+
+		      LOCALIZE(main_buildSettings),   //  4
+		      LOCALIZE(main_homeAxis),        //  5
+		      LOCALIZE(main_jog),             //  6
+		      LOCALIZE(main_filamentUsed),    //  7
+
+		      LOCALIZE(main_advanceABP),      //  8
+		      LOCALIZE(main_steppersS),       //  9
+		      LOCALIZE(main_moodlight),       // 10
+		      LOCALIZE(main_buzzer),          // 11
+
+		      LOCALIZE(main_profiles),        // 12
+		      LOCALIZE(main_calibrate),       // 13
+		      LOCALIZE(main_homeOffsets),     // 14
+		      LOCALIZE(main_homingRates),     // 15
+
+		      LOCALIZE(main_extruderFan),     // 16
+		      LOCALIZE(main_endStops),        // 17
+		      LOCALIZE(main_currentPosition), // 18
+		      LOCALIZE(main_versions),        // 19
+
+#ifdef EEPROM_MENU_ENABLE
+		      LOCALIZE(main_eeprom),          // 20
+#endif
+	};
+
+	if ( index < sizeof(messages)/sizeof(prog_uchar *) )
+		lcd.writeFromPgmspace(messages[index]);
 }
 
 
 void MainMenu::handleSelect(uint8_t index) {
 	switch (index) {
-		case 0:
-			// Show monitor build screen
-                        interface::pushScreen(&monitorMode);
-			break;
-		case 1:
-			// Show build from SD screen
-                        interface::pushScreen(&sdMenu);
-			break;
-		case 2:
-			// Show build from SD screen
-                        interface::pushScreen(&jogger);
-			break;
-		case 3:
-			// Show preheat menu
-			interface::pushScreen(&preheatMenu);
-			preheatMenu.fetchTargetTemps();
-			break;
-		case 4:
-			// Show extruder menu
-			interface::pushScreen(&extruderMenu);
-			break;
-		case 5:
-			// Show home axis
-			interface::pushScreen(&homeAxisMode);
-			break;
-		case 6:
-			// Show advance ABP
-			interface::pushScreen(&advanceABPMode);
-			break;
-		case 7:
-			// Show steppers menu
-			interface::pushScreen(&steppersMenu);
-			break;
-		case 8:
-			// Show Mood Light Mode
-                        interface::pushScreen(&moodLightMode);
-			break;
-		case 9: 
-			// Show Buzzer Mode
-			interface::pushScreen(&buzzerSetRepeats);
-			break;
-		case 10: 
-			// Show Build Settings Mode
-			interface::pushScreen(&buildSettingsMenu);
-			break;
-		case 11: 
-			// Show Profiles Menu
-			interface::pushScreen(&profilesMenu);
-			break;
-		case 12: 
-			// Show Extruder Fan Mode
-			interface::pushScreen(&extruderFanMenu);
-			break;
-		case 13:
-			// Show Calibrate Mode
-                        interface::pushScreen(&calibrateMode);
-			break;
-		case 14:
-			// Show Home Offsets Mode
-                        interface::pushScreen(&homeOffsetsMode);
-			break;
-		case 15:
-			// Show Filament Used Mode
-                        interface::pushScreen(&filamentUsedMode);
-			break;
-		case 16:
-			// Show Current Position Mode
-                        interface::pushScreen(&currentPositionMode);
-			break;
-		case 17:
-			// Show test end stops menu
-			interface::pushScreen(&testEndStopsMode);
-			break;
-		case 18:
-			// Show Homing Rates Menu
-			interface::pushScreen(&homingFeedRatesMode);
-			break;
-		case 19:
-			// Show build from SD screen
-                        interface::pushScreen(&versionMode);
-			break;
+	case 0:
+		interface::pushScreen(&monitorMode);
+		break;
+	case 1:
+		interface::pushScreen(&sdMenu);
+		break;
+	case 2:
+		interface::pushScreen(&preheatMenu);
+		preheatMenu.fetchTargetTemps();
+		break;
+	case 3:
+		interface::pushScreen(&extruderMenu);
+		break;
+	case 4:
+		interface::pushScreen(&buildSettingsMenu);
+		break;
+	case 5:
+		interface::pushScreen(&homeAxisMode);
+		break;
+	case 6:
+		interface::pushScreen(&jogger);
+		break;
+	case 7:
+		interface::pushScreen(&filamentUsedMode);
+		break;
+	case 8:
+		interface::pushScreen(&advanceABPMode);
+		break;
+	case 9:
+		interface::pushScreen(&steppersMenu);
+		break;
+	case 10:
+		interface::pushScreen(&moodLightMode);
+		break;
+	case 11:
+		interface::pushScreen(&buzzerSetRepeats);
+		break;
+	case 12:
+		interface::pushScreen(&profilesMenu);
+		break;
+	case 13:
+		interface::pushScreen(&calibrateMode);
+		break;
+	case 14:
+		interface::pushScreen(&homeOffsetsMode);
+		break;
+	case 15:
+		interface::pushScreen(&homingFeedRatesMode);
+		break;
+	case 16:
+		interface::pushScreen(&extruderFanMenu);
+		break;
+	case 17:
+		interface::pushScreen(&testEndStopsMode);
+		break;
+	case 18:
+		interface::pushScreen(&currentPositionMode);
+		break;
+	case 19:
+		interface::pushScreen(&versionMode);
+		break;
 #ifdef EEPROM_MENU_ENABLE
-		case 20:
-			//Eeprom Menu
-			interface::pushScreen(&eepromMenu);
-			break;
+	case 20:
+		interface::pushScreen(&eepromMenu);
+		break;
 #endif
-		}
+	}
 }
 
 void MainMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
