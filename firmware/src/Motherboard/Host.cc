@@ -684,19 +684,28 @@ bool processQueryPacket(const InPacket& from_host, OutPacket& to_host) {
 char* getMachineName() {
 	// If the machine name hasn't been loaded, load it
 	if (machineName[0] == 0) {
+		// WARNING: Owing to a bug in SanguinoDriver.java and
+		//    MightyBoard.java, all versions of RepG up to and
+		//    including RepG 0040 would NOT NUL terminate the
+		//    string they sent to the bot's EEPROM if it had
+		//    length >= 16.  As such this string can NOT be assumed
+		//    to be NUL terminated.
+		//
+		//  This was fixed in RepG 40r4 Sailfish on 1 Feb 2013
 		for(uint8_t i = 0; i < MAX_MACHINE_NAME_LEN; i++) {
 			machineName[i] = eeprom::getEeprom8(eeprom::MACHINE_NAME+i, EEPROM_DEFAULT_MACHINE_NAME);
 		}
+		machineName[MAX_MACHINE_NAME_LEN] = 0;
 	}
 
 	// If it's still zero, load in a default.
-	const static PROGMEM prog_uchar defaultMachineName[] =  "Thing-O-Matic";
+	const static PROGMEM prog_uchar defaultMachineName[] = "Thing-O-Matic";
 
 	if (machineName[0] == 0) {
-		for(uint8_t i = 0; i < 14; i++) {
+		for(uint8_t i = 0; i < 13; i++) {
 			machineName[i] = pgm_read_byte_near(defaultMachineName+i);
 		}
-		machineName[14] = '\0';
+		machineName[13] = '\0';
 	}
 
 	return machineName;
