@@ -263,7 +263,7 @@ void loadToleranceOffsets() {
 
 #ifndef SIMULATOR
 	// get toolhead offsets for dual extruder units
-	if ( !eeprom::isSingleTool() ) {
+	if ( eeprom::getEeprom8(eeprom::TOOL_COUNT, 1) == 2 ) {
 
 		// ~4 mm expressed in units of steps
 		int32_t fourMM = ((int32_t)stepperAxisStepsPerMM(0)) << 2;
