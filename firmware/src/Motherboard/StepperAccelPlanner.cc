@@ -66,6 +66,7 @@
 #include "Configuration.hh"
 #include "StepperAccel.hh"
 #include "StepperAccelPlanner.hh"
+#include "Steppers.hh"
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
@@ -1212,7 +1213,7 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 			if ( moves_queued < slowdown_limit && (! disable_slowdown ) && moves_queued > 1) {
 				FPTYPE slowdownScaling = FPDIV(ITOFP(moves_queued), ITOFP((int32_t)slowdown_limit));
 				feed_rate = FPMULT2(feed_rate, slowdownScaling);
-				block->nominal_rate = (uint32_t)FPTOI(FPMULT2( ITOFP((int32_t)block->nominal_rate), slowdownScaling));
+				block->nominal_rate = (uint32_t)FPTOI(FPMULT2(ITOFP((int32_t)block->nominal_rate), slowdownScaling));
 			}
 		}
 
@@ -1220,7 +1221,7 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 	#endif
 
 	FPTYPE current_speed[STEPPER_COUNT];
-	FPTYPE inverse_millimeters = 0, inverse_second;
+	FPTYPE inverse_millimeters = 0;
 
 	//If we have a feed_rate, we calculate some stuff early, because it's also needed for non-accelerated blocks
 	if ( feed_rate != 0 ) {
@@ -1230,12 +1231,27 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 		inverse_millimeters = FPDIV(KCONSTANT_1, block->millimeters);  // Inverse millimeters to remove multiple divides 
 
 		// Calculate speed in mm/second for each axis. No divide by zero due to previous checks.
-		inverse_second = FPMULT2(feed_rate, inverse_millimeters);
+		FPTYPE inverse_second = FPMULT2(feed_rate, inverse_millimeters);
 
 		// Calculate speed in mm/sec for each axis
-		for(unsigned char i=0; i < STEPPER_COUNT; i++) {
+		for (unsigned char i=0; i < STEPPER_COUNT; i++)
 			current_speed[i] = FPMULT2(delta_mm[i], inverse_second);
+#ifdef HAS_INTERFACE_BOARD
+		// If the user has changed the print speed dynamically, then ensure that
+		//   the maximum feedrate limits are observed 
+		if ( block->use_accel && steppers::alterSpeed ) {
+			FPTYPE speed_factor = KCONSTANT_1;
+			for (unsigned char i=0; i < STEPPER_COUNT; i++)
+				if ( FPABS(current_speed[i]) > stepperAxis[i].max_feedrate )
+					speed_factor = min(speed_factor, FPDIV(stepperAxis[i].max_feedrate, FPABS(current_speed[i])));
+			if ( speed_factor < KCONSTANT_1 ) {
+				for (unsigned char i=0; i < STEPPER_COUNT; i++)
+					current_speed[i] = FPMULT2(current_speed[i], speed_factor);
+				feed_rate = FPMULT2(feed_rate, speed_factor);
+				block->nominal_rate = FPMULT2(block->nominal_rate, speed_factor);
+			}
 		}
+#endif
 	}
 
 	//For code clarity purposes, we add to the buffer and drop out here for accelerated blocks
