@@ -1236,7 +1236,7 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 		// Calculate speed in mm/sec for each axis
 		for (unsigned char i=0; i < STEPPER_COUNT; i++)
 			current_speed[i] = FPMULT2(delta_mm[i], inverse_second);
-#ifdef HAS_INTERFACE_BOARD
+#if defined(HAS_INTERFACE_BOARD) && defined(SPEED_CONTROL)
 		// If the user has changed the print speed dynamically, then ensure that
 		//   the maximum feedrate limits are observed 
 		if ( block->use_accel && steppers::alterSpeed ) {

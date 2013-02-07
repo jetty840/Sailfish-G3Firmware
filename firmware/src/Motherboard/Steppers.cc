@@ -71,8 +71,11 @@ volatile bool is_homing;
 bool acceleration = true;
 uint8_t plannerMaxBufferSize;
 FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
+
+#ifdef SPEED_CONTROL
 FPTYPE speedFactor = KCONSTANT_1;
 uint8_t alterSpeed = 0x00;
+#endif
 
 // Some gcode is loaded with enable/disable extruder commands. E.g., before each travel-only move.
 // This seems okay for 1.75 mm filament extruders.  However, it is problematic for 3mm filament
@@ -519,8 +522,10 @@ void reset() {
 	plannerMaxBufferSize = BLOCK_BUFFER_SIZE - 1;
 #endif
 
+#ifdef SPEED_CONTROL
 	alterSpeed  = 0x00;
 	speedFactor = KCONSTANT_1;
+#endif
 
 	plan_init(advanceK, advanceK2, holdZ);		//Initialize planner
 	st_init();					//Initialize stepper accel
@@ -803,7 +808,8 @@ void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, fl
 #else
 		feedrate /= 64.0;
 #endif
-#ifdef HAS_INTERFACE_BOARD
+
+#if defined(HAS_INTERFACE_BOARD) && defined(SPEED_CONTROL)
 		if ( relative & 0x80 ) {
 			feedrate = FPMULT2(feedrate, speedFactor);
 			dda_rate = (int32_t)((float)dda_rate * FPTOF(speedFactor));

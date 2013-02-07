@@ -8,7 +8,10 @@
 #include "CircularBuffer.hh"
 #include "Timeout.hh"
 #include "Command.hh"
+
+#ifdef SPEED_CONTROL
 #include "StepperAccelPlanner.hh"
+#endif
 
 /// The screen class defines a standard interface for anything that should
 /// be displayed on the LCD.
@@ -249,6 +252,8 @@ public:
 };
 
 
+#ifdef SPEED_CONTROL
+
 class ChangeSpeedScreen: public Screen {
 private:
 	uint8_t alterSpeed;
@@ -264,6 +269,7 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
+#endif
 
 class CancelBuildMenu: public Menu {
 public:
@@ -281,7 +287,9 @@ private:
 	PauseMode		pauseMode;
 	bool			pauseDisabled;
 	PauseAtZPosScreen	pauseAtZPosScreen;
+#ifdef SPEED_CONTROL
 	ChangeSpeedScreen       changeSpeedScreen;
+#endif
 	bool			printAnotherEnabled;
 };
 
