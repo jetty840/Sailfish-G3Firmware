@@ -8,6 +8,7 @@
 #include "CircularBuffer.hh"
 #include "Timeout.hh"
 #include "Command.hh"
+#include "StepperAccelPlanner.hh"
 
 /// The screen class defines a standard interface for anything that should
 /// be displayed on the LCD.
@@ -248,6 +249,22 @@ public:
 };
 
 
+class ChangeSpeedScreen: public Screen {
+private:
+	uint8_t alterSpeed;
+	FPTYPE  speedFactor;
+
+public:
+	micros_t getUpdateRate() {return 50L * 1000L;}
+
+	void update(LiquidCrystal& lcd, bool forceRedraw);
+
+	void reset();
+
+        void notifyButtonPressed(ButtonArray::ButtonName button);
+};
+
+
 class CancelBuildMenu: public Menu {
 public:
 	CancelBuildMenu();
@@ -264,6 +281,7 @@ private:
 	PauseMode		pauseMode;
 	bool			pauseDisabled;
 	PauseAtZPosScreen	pauseAtZPosScreen;
+	ChangeSpeedScreen       changeSpeedScreen;
 	bool			printAnotherEnabled;
 };
 

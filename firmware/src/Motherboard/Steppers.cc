@@ -71,6 +71,8 @@ volatile bool is_homing;
 bool acceleration = true;
 uint8_t plannerMaxBufferSize;
 FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
+FPTYPE speedFactor = KCONSTANT_1;
+uint8_t alterSpeed = 0x00;
 
 // Some gcode is loaded with enable/disable extruder commands. E.g., before each travel-only move.
 // This seems okay for 1.75 mm filament extruders.  However, it is problematic for 3mm filament
@@ -481,9 +483,9 @@ void reset() {
 	//The values are obtained via the RepG xml and are updated on connection
 	//with RepG if they're different than stored.  These values are in mm per
 	//min, we divide by 60 here to get mm / sec.
-	extruder_only_max_feedrate[0] = stepperAxis[A_AXIS].max_feedrate;
+	extruder_only_max_feedrate[0] = FPTOF(stepperAxis[A_AXIS].max_feedrate);
 	#if EXTRUDERS > 1
-	extruder_only_max_feedrate[1] = stepperAxis[B_AXIS].max_feedrate;
+	extruder_only_max_feedrate[1] = FPTOF(stepperAxis[B_AXIS].max_feedrate);
 	#endif
 
 	// Some gcode is loaded with enable/disable extruder commands. E.g., before each travel-only move.
@@ -516,6 +518,9 @@ void reset() {
 #else
 	plannerMaxBufferSize = BLOCK_BUFFER_SIZE - 1;
 #endif
+
+	alterSpeed  = 0x00;
+	speedFactor = KCONSTANT_1;
 
 	plan_init(advanceK, advanceK2, holdZ);		//Initialize planner
 	st_init();					//Initialize stepper accel
@@ -550,14 +555,14 @@ void abort() {
 }
 
 /// Define current position as given point
-void definePosition(const Point& position_in) {
+void definePosition(const Point& position_in, bool home) {
 	Point position_offset = position_in;
 
 	for ( uint8_t i = 0; i < STEPPER_COUNT; i ++ ) {
 		stepperAxis[i].hasDefinePosition = true;
 
 		//Add the toolhead offset
-		position_offset[i] += (*tool_offsets)[i];
+		if ( !home ) position_offset[i] += (*tool_offsets)[i];
 	}
 
 	plan_set_position(position_offset[X_AXIS], position_offset[Y_AXIS], position_offset[Z_AXIS], position_offset[A_AXIS], position_offset[B_AXIS]);
@@ -736,6 +741,7 @@ void setTargetNew(const Point& target, int32_t us, uint8_t relative) {
 //Dda_rate is the number of dda steps per second for the master axis
 
 void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, float distance, int16_t feedrateMult64) {
+
 	//Add on the tool offsets and convert relative moves into absolute moves
 	for ( uint8_t i = 0; i < STEPPER_COUNT; i ++ ) {
 		planner_target[i] = target[i] + (*tool_offsets)[i];
@@ -793,9 +799,15 @@ void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, fl
 
 		//Feed rate was multiplied by 64 before it was sent, undo
 #ifdef FIXED
-			feedrate >>= 6;
+		feedrate >>= 6;
 #else
-			feedrate /= 64.0;
+		feedrate /= 64.0;
+#endif
+#ifdef HAS_INTERFACE_BOARD
+		if ( relative & 0x80 ) {
+			feedrate = FPMULT2(feedrate, speedFactor);
+			dda_rate = (int32_t)((float)dda_rate * FPTOF(speedFactor));
+		}
 #endif
 	}
 
@@ -912,7 +924,7 @@ void runSteppersSlice() {
 	//Indicate acceleration on/off
         INTERFACE_BAR_PIN.setValue(segmentAccelState && acceleration);
 #endif
-
+			
 #ifdef INTERFACE_FOO_PIN
 	//Indicate near empty acceleration pipeline
 	INTERFACE_FOO_PIN.setValue((movesplanned() >= 3));

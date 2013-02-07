@@ -1505,6 +1505,7 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar cb_abort[]		= "Abort Print   ";
 	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another ";
 	const static PROGMEM prog_uchar cb_pauseZ[]		= "Pause at ZPos ";
+	const static PROGMEM prog_uchar cb_speed[]              = "Change Speed";
 	const static PROGMEM prog_uchar cb_pause[]		= "Pause         ";
 	const static PROGMEM prog_uchar cb_pauseHBPHeat[]	= "Pause, HBP on ";
 	const static PROGMEM prog_uchar cb_pauseNoHeat[]	= "Pause, No Heat";
@@ -1531,6 +1532,11 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseZ));
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_speed));
 		lind ++;
 	}
 
@@ -1571,6 +1577,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 		// TODO: Cancel build.
 		interface::popScreen();
 		host::stopBuild();
+		return;
 	}
 	lind ++;
 
@@ -1578,12 +1585,25 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 		if ( index == lind ) {
 			command::buildAnotherCopy();
 			interface::popScreen();
+			return;
 		}
 		lind ++;
 	}
 
 	if ( ! pauseDisabled ) {
-		if ( index == lind )	interface::pushScreen(&pauseAtZPosScreen);
+		if ( index == lind ) {
+			interface::pushScreen(&pauseAtZPosScreen);
+			return;
+		}
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind )
+		{
+			interface::pushScreen(&changeSpeedScreen);
+			return;
+		}
 		lind ++;
 	}
 
@@ -1592,6 +1612,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 			command::pause(true, PAUSE_HEAT_ON);  // pause, all heaters left on
 			pauseMode.autoPause = false;
 			interface::pushScreen(&pauseMode);
+			return;
 		}
 		lind ++;
 	}
@@ -1601,6 +1622,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 			command::pause(true, PAUSE_EXT_OFF);  // pause, HBP left on
 			pauseMode.autoPause = false;
 			interface::pushScreen(&pauseMode);
+			return;
 		}
 		lind ++;
 	}
@@ -1618,7 +1640,6 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 		// Don't cancel print, just close dialog.
                 interface::popScreen();
 	}
-	lind ++;
 }
 
 MainMenu::MainMenu() {
@@ -2469,39 +2490,104 @@ void PauseAtZPosScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 void PauseAtZPosScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 	switch (button) {
-		case ButtonArray::ZERO:
-			break;
-		case ButtonArray::OK:
-			//Set the pause
-			command::pauseAtZPos(stepperAxisMMToSteps(pauseAtZPos, Z_AXIS));
-		case ButtonArray::CANCEL:
-			interface::popScreen();
-			interface::popScreen();
-			break;
-		case ButtonArray::ZPLUS:
-			// increment more
-			if (pauseAtZPos <= 250) pauseAtZPos += 1.0;
-			break;
-		case ButtonArray::ZMINUS:
-			// decrement more
-			if (pauseAtZPos >= 1.0) pauseAtZPos -= 1.0;
-			else			pauseAtZPos = 0.0;
-			break;
-		case ButtonArray::YPLUS:
-			// increment less
-			if (pauseAtZPos <= 254) pauseAtZPos += 0.05;
-			break;
-		case ButtonArray::YMINUS:
-			// decrement less
-			if (pauseAtZPos >= 0.05) pauseAtZPos -= 0.05;
-			else			 pauseAtZPos = 0.0;
-			break;
-		case ButtonArray::XMINUS:
-		case ButtonArray::XPLUS:
-			break;
+	default :
+		return;
+	case ButtonArray::OK:
+		//Set the pause
+		command::pauseAtZPos(stepperAxisMMToSteps(pauseAtZPos, Z_AXIS));
+		// FALL THROUGH
+	case ButtonArray::CANCEL:
+		interface::popScreen();
+		interface::popScreen();
+		break;
+	case ButtonArray::ZPLUS:
+		// increment more
+		if (pauseAtZPos <= 250) pauseAtZPos += 1.0;
+		break;
+	case ButtonArray::ZMINUS:
+		// decrement more
+		if (pauseAtZPos >= 1.0) pauseAtZPos -= 1.0;
+		else			pauseAtZPos = 0.0;
+		break;
+	case ButtonArray::YPLUS:
+		// increment less
+		if (pauseAtZPos <= 254) pauseAtZPos += 0.05;
+		break;
+	case ButtonArray::YMINUS:
+		// decrement less
+		if (pauseAtZPos >= 0.05) pauseAtZPos -= 0.05;
+		else			 pauseAtZPos = 0.0;
+		break;
 	}
 
 	if ( pauseAtZPos < 0.001 )	pauseAtZPos = 0.0;
+}
+
+void ChangeSpeedScreen::reset() {
+	// So that we can restore the speed in case of a CANCEL
+	speedFactor = steppers::speedFactor;
+	alterSpeed  = steppers::alterSpeed;
+}
+
+void ChangeSpeedScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
+	const static PROGMEM prog_uchar cs_message1[] = "Increase speed:";
+	const static PROGMEM prog_uchar cs_message2[] = "Up/Dn/Ent to Set";
+
+	if (forceRedraw) {
+		lcd.clearHomeCursor();
+		lcd.writeFromPgmspace(LOCALIZE(cs_message1));
+
+		lcd.setRow(3);
+		lcd.writeFromPgmspace(LOCALIZE(cs_message2));
+	}
+
+	// Redraw tool info
+	lcd.setRow(1);
+	lcd.write('x');
+	lcd.writeFloat(FPTOF(steppers::speedFactor), 2);
+}
+
+void ChangeSpeedScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
+	// We change the actual steppers::speedFactor so that
+	//   the user can see the change dynamically (after making it through
+	//   the queue of planned blocks)
+	FPTYPE sf = steppers::speedFactor;
+	switch (button) {
+	case ButtonArray::CANCEL:
+		// restore the original
+		steppers::alterSpeed  = alterSpeed;
+		steppers::speedFactor = speedFactor;
+		// FALL THROUGH
+	case ButtonArray::OK:
+		interface::popScreen();
+		interface::popScreen();
+		return;
+	case ButtonArray::ZPLUS:
+		// increment more
+		sf += KCONSTANT_0_25;
+		break;
+	case ButtonArray::ZMINUS:
+		// decrement more
+		sf -= KCONSTANT_0_25;
+		break;
+	case ButtonArray::YPLUS:
+		// increment less
+		sf += KCONSTANT_0_05;
+		break;
+	case ButtonArray::YMINUS:
+		// decrement less
+		sf -= KCONSTANT_0_05;
+		break;
+	default :
+		return;
+	}
+
+	if ( sf > KCONSTANT_5 ) sf = KCONSTANT_5;
+	else if ( sf < KCONSTANT_0_1 ) sf = KCONSTANT_0_1;
+
+	// If sf == 1 then disable speedup
+	steppers::alterSpeed  = (sf == KCONSTANT_1) ? 0x00 : 0x80;
+	steppers::speedFactor = sf;
 }
 
 void AdvanceABPMode::reset() {
@@ -2643,7 +2729,7 @@ void CalibrateMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	switch(calibrationState) {
 		case CS_HOME_Z:
 			//Declare current position to be x=0, y=0, z=0, a=0, b=0
-			steppers::definePosition(Point(0,0,0,0,0));
+			steppers::definePosition(Point(0,0,0,0,0), false);
 			interval *= stepperAxisStepsToMM((int32_t)200.0, Z_AXIS); //Use ToM as baseline
 			if ( endstops & 0x20 )	maximums = true;
 			if ( endstops & 0x10 )	maximums = false;
