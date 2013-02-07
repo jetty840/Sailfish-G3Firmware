@@ -410,7 +410,9 @@ void platformAccess(bool clearPlatform) {
 	else				targetPosition[A_AXIS] = targetPosition[B_AXIS];
    }
 #endif
-
+#ifdef SPEED_CONTROL
+   steppers::alterSpeed = 0;
+#endif
    steppers::setTargetNewExt(targetPosition, dda_rate, (uint8_t)0, distance, FPTOI16(stepperAxis[Z_AXIS].max_feedrate << 6));
 }
 
@@ -719,7 +721,12 @@ static void handleMovementCommand(const uint8_t &command) {
 #endif
 
 			line_number++;
-			steppers::setTargetNewExt(Point(x,y,z,a,b), dda_rate, relative | steppers::alterSpeed,
+			steppers::setTargetNewExt(Point(x,y,z,a,b), dda_rate,
+#ifdef SPEED_CONTROL
+						  relative | steppers::alterSpeed,
+#else
+						  relative,
+#endif
 						  *distance, feedrateMult64);
 		}
 	}

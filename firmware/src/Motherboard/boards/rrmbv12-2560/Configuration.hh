@@ -291,4 +291,7 @@
 // Our software variant id for the advanced version command
 #define SOFTWARE_VARIANT_ID 0x80
 
+// Enable speed control menu (requires an LCD interface)
+//#define SPEED_CONTROL
+
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_

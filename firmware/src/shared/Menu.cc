@@ -1483,7 +1483,11 @@ void CancelBuildMenu::resetState() {
 		itemCount = 4;
 	} else {
 		itemIndex = 1;
+#ifdef SPEED_CONTROL
+		itemCount = 8;
+#else
 		itemCount = 7;
+#endif
 	}
 
 	if ( printAnotherEnabled ) {
@@ -1505,7 +1509,9 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar cb_abort[]		= "Abort Print   ";
 	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another ";
 	const static PROGMEM prog_uchar cb_pauseZ[]		= "Pause at ZPos ";
+#ifdef SPEED_CONTROL
 	const static PROGMEM prog_uchar cb_speed[]              = "Change Speed";
+#endif
 	const static PROGMEM prog_uchar cb_pause[]		= "Pause         ";
 	const static PROGMEM prog_uchar cb_pauseHBPHeat[]	= "Pause, HBP on ";
 	const static PROGMEM prog_uchar cb_pauseNoHeat[]	= "Pause, No Heat";
@@ -1535,10 +1541,12 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 		lind ++;
 	}
 
+#ifdef SPEED_CONTROL
 	if ( ! pauseDisabled ) {
 		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_speed));
 		lind ++;
 	}
+#endif
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pause));
@@ -1598,6 +1606,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 		lind ++;
 	}
 
+#ifdef SPEED_CONTROL
 	if ( ! pauseDisabled ) {
 		if ( index == lind )
 		{
@@ -1606,6 +1615,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 		}
 		lind ++;
 	}
+#endif
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
@@ -2523,6 +2533,7 @@ void PauseAtZPosScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 	if ( pauseAtZPos < 0.001 )	pauseAtZPos = 0.0;
 }
 
+#ifdef SPEED_CONTROL
 void ChangeSpeedScreen::reset() {
 	// So that we can restore the speed in case of a CANCEL
 	speedFactor = steppers::speedFactor;
@@ -2589,6 +2600,8 @@ void ChangeSpeedScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 	steppers::alterSpeed  = (sf == KCONSTANT_1) ? 0x00 : 0x80;
 	steppers::speedFactor = sf;
 }
+
+#endif // SPEED_CONTROL
 
 void AdvanceABPMode::reset() {
 	abpForwarding = false;
