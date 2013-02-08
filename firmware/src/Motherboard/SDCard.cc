@@ -124,27 +124,32 @@ static SdErrorCode changeWorkingDir(struct fat_dir_entry_struct *newDir)
 }
 
 static SdErrorCode initCard() {
+	SdErrorCode sderr;
+
 	reset();
 	if ( sd_raw_init() ) {
 		if ( openPartition() ) {
 			if ( openFilesys() ) {
 				if ( changeWorkingDir(0) == SD_SUCCESS ) {
 					mustReinit = false;
-					sdAvailable = SD_SUCCESS;
+					sderr = SD_SUCCESS;
 					return SD_SUCCESS;
 				}
-				else sdAvailable = SD_ERR_NO_ROOT;
+				else sderr = SD_ERR_NO_ROOT;
 			}
-			else sdAvailable = SD_ERR_OPEN_FILESYSTEM;
+			else sderr = SD_ERR_OPEN_FILESYSTEM;
 		}
-		else sdAvailable = SD_ERR_PARTITION_READ;
+		else sderr = SD_ERR_PARTITION_READ;
 	}
-	else sdAvailable = sd_raw_available() ? SD_ERR_NO_CARD_PRESENT : SD_ERR_INIT_FAILED;
+	else sderr = sd_raw_available() ? SD_ERR_NO_CARD_PRESENT : SD_ERR_INIT_FAILED;
 
 	// Close the partition, file system, etc.
 	reset();
 
-	return sdAvailable;
+	// reset() call initializes sdAvailable
+	sdAvailable = sderr;
+
+	return sderr;
 }
 
 SdErrorCode directoryReset() {

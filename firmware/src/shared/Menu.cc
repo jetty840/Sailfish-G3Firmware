@@ -137,7 +137,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
 	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.1z";
 	//    static PROGMEM prog_uchar splash4[] = " Revision 00000 ";
-	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR " ";
+	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR SPEED_VERSION;
 
 	if (forceRedraw) {
 		lcd.homeCursor();

@@ -287,4 +287,11 @@
 // Enable speed control menu  (Requires an LCD interface)
 //#define SPEED_CONTROL
 
+// Note that speed control may have been defined on the build command line
+#ifdef SPEED_CONTROL
+#define SPEED_VERSION "s"
+#else
+#define SPEED_VERSION " "
+#endif
+
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
