@@ -153,7 +153,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.writeFromPgmspace(LOCALIZE(splash4));
 #ifdef MENU_L10N_H_
 		lcd.setCursor(9,3);
-                lcd.writeString((char *)SVN_VERSION_STR);
+                lcd.writeString((char *)SVN_VERSION_STR SPEED_VERSION);
 #endif
 	}
 	else {
