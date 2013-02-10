@@ -50,7 +50,12 @@ void lcdfoo(char c)
 }
 #endif
 
+#ifndef BROKEN_SD
 volatile bool mustReinit = true;
+#else
+static bool mustReinit = false;
+#endif
+
 SdErrorCode sdAvailable = SD_ERR_NO_CARD_PRESENT;
 
 static struct partition_struct* partition = 0;
@@ -59,18 +64,10 @@ static struct fat_dir_struct* cwd = 0; // current working directory
 static struct fat_file_struct* file = 0;
 
 void forceReinit() {
+#ifndef BROKEN_SD
 	mustReinit = true;
-}
-
-#if 0
-void checkReinit() {
-	if ( !mustReinit && !sd_raw_available() ) {
-		lcdfoo('@');
-		mustReinit = true;
-		sdAvailable = SD_ERR_NO_CARD_PRESENT;
-	}
-}
 #endif
+}
 
 static bool openPartition()
 {
@@ -126,7 +123,9 @@ static SdErrorCode changeWorkingDir(struct fat_dir_entry_struct *newDir)
 static SdErrorCode initCard() {
 	SdErrorCode sderr;
 
+#ifndef BROKEN_SD
 	reset();
+#endif
 	if ( sd_raw_init() ) {
 		if ( openPartition() ) {
 			if ( openFilesys() ) {
@@ -153,13 +152,20 @@ static SdErrorCode initCard() {
 }
 
 SdErrorCode directoryReset() {
-  if ( mustReinit ) {
-	  SdErrorCode rsp = initCard();
-	  if ( rsp != SD_SUCCESS )
-		  return rsp;
-  }
-  fat_reset_dir(cwd);
-  return SD_SUCCESS;
+#ifdef BROKEN_SD
+    reset();
+    SdErrorCode rsp = initCard();
+    if ( rsp != SD_SUCCESS && rsp != SD_ERR_CARD_LOCKED )
+	return rsp;
+#else
+    if ( mustReinit ) {
+	SdErrorCode rsp = initCard();
+	if ( rsp != SD_SUCCESS )
+	    return rsp;
+    }
+#endif
+    fat_reset_dir(cwd);
+    return SD_SUCCESS;
 }
 
 void directoryNextEntry(char* buffer, uint8_t bufsize, bool *isDir) {
@@ -291,27 +297,33 @@ bool isCapturing() {
 
 SdErrorCode startCapture(char* filename)
 {
-  if ( mustReinit ) {
-	  SdErrorCode rsp = initCard();
-	  if ( rsp != SD_SUCCESS ) return rsp;
-  }
+#ifndef BROKEN_SD
+    if ( mustReinit ) {
+	SdErrorCode rsp = initCard();
+	if ( rsp != SD_SUCCESS ) return rsp;
+    }
+#else
+    reset();
+    SdErrorCode result = initCard();
+    if ( result != SD_SUCCESS )
+	return result;
+#endif
 
-  if ( sd_raw_locked() ) return SD_ERR_CARD_LOCKED;
+    if ( sd_raw_locked() ) return SD_ERR_CARD_LOCKED;
 
-  capturedBytes = 0L;
-  playedBytes = 0L;
+    capturedBytes = 0L;
+    playedBytes = 0L;
 
-  // Always operate in truncation mode.
-  deleteFile(filename);
-  if (!createFile(filename)) {
-    return SD_ERR_FILE_NOT_FOUND;
-  }
+    // Always operate in truncation mode.
+    deleteFile(filename);
+    if ( !createFile(filename) )
+	return SD_ERR_FILE_NOT_FOUND;
+    
+    if ( openFile(filename) != 1 )
+	return SD_ERR_GENERIC;
 
-  if (openFile(filename) != 1)
-    return SD_ERR_GENERIC;
-
-  capturing = true;
-  return SD_SUCCESS;
+    capturing = true;
+    return SD_SUCCESS;
 }
 
 void capturePacket(const Packet& packet)
@@ -361,34 +373,40 @@ uint8_t playbackNext() {
 }
 
 SdErrorCode startPlayback(char* filename) {
+#ifndef BROKEN_SD
+    if ( mustReinit ) {
+	SdErrorCode rsp = initCard();
+	if ( rsp != SD_SUCCESS ) return rsp;
+    }
+#else
+    reset();
+    SdErrorCode result = initCard(); 
+    if ( result != SD_SUCCESS && result != SD_ERR_CARD_LOCKED )
+	return result;
+#endif
 
-  if ( mustReinit ) {
-	  SdErrorCode rsp = initCard();
-	  if ( rsp != SD_SUCCESS ) return rsp;
-  }
+    capturedBytes = 0L;
+    playedBytes = 0L;
 
-  capturedBytes = 0L;
-  playedBytes = 0L;
+    int8_t res = openFile(filename);
+    if ( res == 0 )
+	return SD_ERR_FILE_NOT_FOUND;
+    else if ( res == -1 )
+	// The file was a directory and we successfully moved into it
+	return SD_CWD;
 
-  int8_t res = openFile(filename);
-  if ( res == 0 )
-	  return SD_ERR_FILE_NOT_FOUND;
-  else if ( res == -1 )
-	  // The file was a directory and we successfully moved into it
-	  return SD_CWD;
+    playing = true;
 
-  playing = true;
+    int32_t off = 0L;
+    fat_seek_file(file, &off, FAT_SEEK_END);
+    fileSizeBytes = off;
+    off = 0L;
+    fat_seek_file(file, &off, FAT_SEEK_SET);
 
-  int32_t off = 0L;
-  fat_seek_file(file, &off, FAT_SEEK_END);
-  fileSizeBytes = off;
-  off = 0L;
-  fat_seek_file(file, &off, FAT_SEEK_SET);
+    Motherboard::getBoard().resetCurrentSeconds();
 
-  Motherboard::getBoard().resetCurrentSeconds();
-
-  fetchNextByte();
-  return SD_SUCCESS;
+    fetchNextByte();
+    return SD_SUCCESS;
 }
 
 void playbackRestart() {
@@ -435,7 +453,9 @@ void reset() {
 		partition_close(partition);
 		partition = 0;
 	}
+#ifndef BROKEN_SD
 	mustReinit = true;
+#endif
 	sdAvailable = SD_ERR_NO_CARD_PRESENT;
 }
 

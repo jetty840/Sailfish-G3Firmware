@@ -1319,7 +1319,7 @@ void MonitorMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar v_version1[] = "Motherboard  _._";
 	const static PROGMEM prog_uchar v_version2[] = "   Extruder  _._";
-	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR;
+	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR SPEED_VERSION;
 	const static PROGMEM prog_uchar v_version4[] = "Free SRAM ";
 
 	if (forceRedraw) {
