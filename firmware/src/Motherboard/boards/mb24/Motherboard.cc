@@ -145,6 +145,7 @@ void Motherboard::initClocks(){
 
         // Timer 5 (unused unless DEBUG_TIMER is defined in StepperAccel.hh)
 
+#ifndef BROKEN_SD
 	// External Interrupt 1 (PD1) is tied to the SD card's card-detect switch.
 	// That switch is wired to go HIGH when no card is inserted and LOW when
 	// a card is present.
@@ -159,6 +160,8 @@ void Motherboard::initClocks(){
 	EICRA |=  ( 1 << ISC10 ); //     ISC11 = 0; ISC10 = 1
 	EIFR  |=  ( 1 << PD1 );   // Clear the INT1 flag
 	EIMSK |=  ( 1 << INT1 );  // Re-enable INT1
+#endif
+
 }
 
 
@@ -481,9 +484,13 @@ ISR(TIMER4_COMPA_vect) {
 	Motherboard::getBoard().UpdateMicros();
 }
 
+#ifndef BROKEN_SD
+
 ISR(INT1_vect) {
 	sdcard::mustReinit = true;
 }
+
+#endif
 
 /// Timer2 overflow cycles that the LED remains on while blinking
 #define OVFS_ON 18

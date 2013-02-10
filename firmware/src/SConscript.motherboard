@@ -38,8 +38,26 @@
 import os
 import re
 from os.path import dirname
+
 # Parameters
 platform = ARGUMENTS.get('platform','mb24')
+
+# Speed control
+speed_def = ''
+speed_str = ''
+speed_control = ARGUMENTS.get('speed_control','0')
+if speed_control == '1':
+   speed_def = '-DSPEED_CONTROL'
+   speed_str = 's'
+
+# Broken SD
+broken_def = ''
+broken_str = ''
+broken_sd = ARGUMENTS.get('broken_sd','0')
+if broken_sd == '1':
+   broken_def = '-DBROKEN_SD'
+   broken_str = 'b'
+
 # Locale
 locale = ARGUMENTS.get('locale','')
 # fived only applicable for rrmbv12
@@ -78,7 +96,7 @@ vstr = ARGUMENTS.get('version',vstr)
 
 version = parse_version(vstr)
 
-target_name = "MB-"+platform+locale_tname+"-v"+str(version//100)+"."+str(version%100)
+target_name = "MB-"+platform+locale_tname+"-v"+str(version//100)+"."+str(version%100)+speed_str+broken_str
 
 if (platform == 'rrmbv12'):
 	default_baud = '38400'
@@ -150,6 +168,8 @@ flags=[
 	'-D__PROG_TYPES_COMPAT__',
 	'-D__DELAY_BACKWARD_COMPATIBLE__',
 	locale_def,
+	speed_def,
+	broken_def,
 	'-mmcu='+mcu,
 	'-g',
 	'-Os',

@@ -137,7 +137,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
 	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.1z";
 	//    static PROGMEM prog_uchar splash4[] = " Revision 00000 ";
-	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR " ";
+	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR SPEED_VERSION;
 
 	if (forceRedraw) {
 		lcd.homeCursor();
@@ -153,7 +153,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.writeFromPgmspace(LOCALIZE(splash4));
 #ifdef MENU_L10N_H_
 		lcd.setCursor(9,3);
-                lcd.writeString((char *)SVN_VERSION_STR);
+                lcd.writeString((char *)SVN_VERSION_STR SPEED_VERSION);
 #endif
 	}
 	else {
@@ -1319,7 +1319,7 @@ void MonitorMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar v_version1[] = "Motherboard  _._";
 	const static PROGMEM prog_uchar v_version2[] = "   Extruder  _._";
-	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR;
+	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR SPEED_VERSION;
 	const static PROGMEM prog_uchar v_version4[] = "Free SRAM ";
 
 	if (forceRedraw) {

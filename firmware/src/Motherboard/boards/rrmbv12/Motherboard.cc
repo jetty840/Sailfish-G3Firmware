@@ -108,6 +108,7 @@ void Motherboard::initClocks(){
         OCR2A = 25;     //Generate interrupts 16MHz / 64 / 25 = 10KHz
         TIMSK2 = 0x02; // turn on OCR2A match interrupt
 
+#ifndef BROKEN_SD
 	// Pin Change Interrupt 3 (PB3) is tied to the SD card's card-detect switch.
 	// That switch is wired to go HIGH when no card is inserted and LOW when
 	// a card is present.
@@ -119,6 +120,7 @@ void Motherboard::initClocks(){
 	DDRB   &= ~( 1 << PB3 );     // Port B3 is read
 	PCICR  |=  ( 1 << PCIE0 );   // Enable PCIE0 (PC interrupts 0 - 7)
 	PCMSK0 |=  ( 1 << PCINT3 );  // Re-enable PCINT3
+#endif
 }
 
 /// Reset the motherboard to its initial state.
@@ -228,9 +230,11 @@ ISR(STEPPER_TIMERn_COMPA_vect) {
 	Motherboard::getBoard().doStepperInterrupt();
 }
 
+#ifndef BROKEN_SD
 ISR(PCINT3_vect) {
 	sdcard::mustReinit = true;
 }
+#endif
 
 /// Number of times to blink the debug LED on each cycle
 volatile uint8_t blink_count = 0;
