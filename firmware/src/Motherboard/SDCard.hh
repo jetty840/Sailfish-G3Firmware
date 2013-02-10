@@ -44,7 +44,9 @@ namespace sdcard {
 
 
     extern SdErrorCode sdAvailable;
+#ifndef BROKEN_SD
     extern volatile bool mustReinit;
+#endif
 
     /// Reset the SD card subsystem.
     void reset();
