@@ -109,17 +109,17 @@ void Motherboard::initClocks(){
         TIMSK2 = 0x02; // turn on OCR2A match interrupt
 
 #ifndef BROKEN_SD
-	// Pin Change Interrupt 3 (PB3) is tied to the SD card's card-detect switch.
+	// Pin Change Interrupt 11 (PB3) is tied to the SD card's card-detect switch.
 	// That switch is wired to go HIGH when no card is inserted and LOW when
 	// a card is present.
 
 	// We wish to note when the card is inserted and removed so that we
 	// know when the SD card reading state needs to be reinitialized
 
-	PCMSK0 &= ~( 1 << PCINT3 );  // Disable PCINT3 temporarily
-	DDRB   &= ~( 1 << PB3 );     // Port B3 is read
-	PCICR  |=  ( 1 << PCIE0 );   // Enable PCIE0 (PC interrupts 0 - 7)
-	PCMSK0 |=  ( 1 << PCINT3 );  // Re-enable PCINT3
+	PCMSK1 &= ~( 1 << PCINT11 );  // Disable PCINT11 temporarily
+	DDRB   &= ~( 1 << PB3 );      // Port B3 is read
+	PCICR  |=  ( 1 << PCIE1 );    // Enable PCIE1 (PC interrupts 8 - 15)
+	PCMSK1 |=  ( 1 << PCINT11 );  // Re-enable PCINT11
 #endif
 }
 
@@ -231,7 +231,7 @@ ISR(STEPPER_TIMERn_COMPA_vect) {
 }
 
 #ifndef BROKEN_SD
-ISR(PCINT3_vect) {
+ISR(PCINT11_vect) {
 	sdcard::mustReinit = true;
 }
 #endif
