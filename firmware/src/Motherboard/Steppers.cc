@@ -570,7 +570,15 @@ void definePosition(const Point& position_in, bool home) {
 		if ( !home ) position_offset[i] += (*tool_offsets)[i];
 	}
 
-	plan_set_position(position_offset[X_AXIS], position_offset[Y_AXIS], position_offset[Z_AXIS], position_offset[A_AXIS], position_offset[B_AXIS]);
+	plan_set_position(position_offset[X_AXIS],
+			  position_offset[Y_AXIS],
+			  position_offset[Z_AXIS],
+			  position_offset[A_AXIS],
+#if EXTRUDERS > 1
+			  position_offset[B_AXIS]);
+#else
+	                  0);
+#endif
 }
 
 
@@ -606,8 +614,18 @@ const Point getPlannerPosition() {
 const Point getStepperPosition(uint8_t *toolhead) {
 	uint8_t active_toolhead;
 	int32_t position[STEPPER_COUNT];
+#if EXTRUDERS <= 1
+	int32_t dummy;
+#endif
 
-	st_get_position(&position[X_AXIS], &position[Y_AXIS], &position[Z_AXIS], &position[A_AXIS], &position[B_AXIS], &active_toolhead);
+	st_get_position(&position[X_AXIS], &position[Y_AXIS],
+			&position[Z_AXIS], &position[A_AXIS],
+#if EXTRUDERS > 1
+			&position[B_AXIS],
+#else
+			&dummy,
+#endif
+			&active_toolhead);
 
 	active_toolhead %= 2;	//Safeguard, shouldn't be needed
 
