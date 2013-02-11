@@ -1593,8 +1593,15 @@ void plan_set_position(const int32_t &x, const int32_t &y, const int32_t &z, con
 
 		//If the buffer is empty, we set the stepper position to match
 		if ( movesplanned() == 0 ) {
-			st_set_position( planner_position[X_AXIS], planner_position[Y_AXIS], planner_position[Z_AXIS],
-					 planner_position[A_AXIS], planner_position[B_AXIS] );
+			st_set_position( planner_position[X_AXIS],
+					 planner_position[Y_AXIS],
+					 planner_position[Z_AXIS],
+					 planner_position[A_AXIS],
+#if EXTRUDERS > 1
+					 planner_position[B_AXIS] );
+#else
+			                 0 );
+#endif
 		}
 
 	CRITICAL_SECTION_END;  // Fill variables used by the stepper in a critical section
@@ -1612,7 +1619,12 @@ void plan_set_e_position(const int32_t &a, const int32_t &b)
 
 		//If the buffer is empty, we set the stepper position to match
 		if ( movesplanned() == 0 ) {
-			st_set_e_position( planner_position[A_AXIS], planner_position[B_AXIS] );
+			st_set_e_position( planner_position[A_AXIS], 
+#if EXTRUDERS > 1
+					   planner_position[B_AXIS] );
+#else
+			                   0 );
+#endif
 		}
 
 	CRITICAL_SECTION_END;  // Fill variables used by the stepper in a critical section
