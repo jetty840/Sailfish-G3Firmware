@@ -105,7 +105,6 @@ if (platform == 'rrmbv12'):
 	has_queue = 1
 	has_psu = 1
 	fived = 'true'
-	broken_def = '-DBROKEN_SD'  # SD library needs constant re-init on gen3
 elif (platform == 'rrmbv12-2560'):
 	default_baud = '115200'
 	default_programmer = 'stk500v2'
