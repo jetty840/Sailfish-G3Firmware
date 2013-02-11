@@ -105,6 +105,7 @@ if (platform == 'rrmbv12'):
 	has_queue = 1
 	has_psu = 1
 	fived = 'true'
+	broken_def = '-DBROKEN_SD'  # SD library needs constant re-init on gen3
 elif (platform == 'rrmbv12-2560'):
 	default_baud = '115200'
 	default_programmer = 'stk500v2'
@@ -202,7 +203,8 @@ else:
 
 if (fived == 'true'):
 	flags.append('-DFOURTH_STEPPER=1')
-	flags.append('-mcall-prologues')	# This saves about 4K of flash space at the expense of speed
+	flags.append('-mcall-prologues')  # This saves about 4K of flash space at the expense of speed
+	flags.append('-fshort-enums')
 
 env=Environment(tools=['g++', 'gcc'],
         CC=avr_tools_path+"/avr-g++",

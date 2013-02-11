@@ -3086,7 +3086,11 @@ void FilamentUsedMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		}
 
 		float filamentUsedMMA = stepperAxisStepsToMM(filamentUsedA, A_AXIS);
+#if EXTRUDERS > 1
 		float filamentUsedMMB = stepperAxisStepsToMM(filamentUsedB, B_AXIS);
+#else
+		float filamentUsedMMB = 0.0f;
+#endif
 
 		float filamentUsedMM = filamentUsedMMA + filamentUsedMMB;
 
