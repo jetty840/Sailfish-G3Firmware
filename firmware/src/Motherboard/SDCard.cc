@@ -412,19 +412,38 @@ SdErrorCode startPlayback(char* filename) {
 
     Motherboard::getBoard().resetCurrentSeconds();
 
+    // ensure that sdAvailable shows success, although fetchNext may change it
+    sdAvailable = SD_SUCCESS;
+
     fetchNextByte();
+
     return SD_SUCCESS;
 }
 
 void playbackRestart() {
-	int32_t offset = 0;	
-	fat_seek_file(file, &offset, FAT_SEEK_SET);
+	int32_t offset = 0;
 
+#if 0
+	if ( !fat_seek_file(file, &offset, FAT_SEEK_SET) ) {
+	    if ( !sd_raw_available() ) {
+		mustReinit = true;
+		sdAvailable = SD_ERR_NO_CARD_PRESENT;
+	    }
+	    else
+		sdAvailable = ( fat_errno == FAT_ERR_CRC ) ? SD_ERR_CRC : SD_ERR_READ;
+	    return sdAvailable;
+	}
+#endif
 	capturedBytes = 0L;
 	playedBytes = 0L;
 	playing = true;
 
+	// ensure that sdAvailable shows success, although fetchNext may change it
+	sdAvailable = SD_SUCCESS;
+
 	fetchNextByte();
+
+	return; //sdAvailable;
 }
 
 float getPercentPlayed() {
