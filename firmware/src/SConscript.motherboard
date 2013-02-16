@@ -178,6 +178,7 @@ flags=[
 	'-fno-exceptions',
 	'-ffunction-sections',
 	'-fdata-sections',
+	'-fshort-enums',
 	'-DMULKD',
 	'-DSQRT',
 	'-DCORDICHK',

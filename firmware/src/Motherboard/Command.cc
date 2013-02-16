@@ -49,6 +49,9 @@ uint32_t line_number;
 bool outstanding_tool_command = false;
 
 enum PauseState paused = PAUSE_STATE_NONE;
+#ifdef HAS_INTERFACE_BOARD
+static const prog_uchar *pauseErrorMessage = 0;
+#endif
 uint32_t sd_count = 0;
 
 uint16_t statusDivisor = 0;
@@ -120,6 +123,18 @@ bool isPaused() {
 	if ( paused == PAUSE_STATE_NONE || paused & PAUSE_STATE_EXIT_COMMAND )
 		return false;
 	return true;
+}
+
+const prog_uchar *pauseGetErrorMessage() {
+    return pauseErrorMessage;
+}
+
+void pauseClearError() {
+    if ( paused == PAUSE_STATE_ERROR )
+	paused = PAUSE_STATE_NONE;
+#ifdef HAS_INTERFACE_BOARD
+    pauseErrorMessage = 0;
+#endif
 }
 
 // Returns the paused state
@@ -275,6 +290,9 @@ void reset() {
 	command_buffer.reset();
 	line_number = 0;
 	paused = PAUSE_STATE_NONE;
+#ifdef HAS_INTERFACE_BOARD
+	pauseErrorMessage = 0;
+#endif
 	sd_count = 0;
 #ifdef HAS_FILAMENT_COUNTER
         filamentLength[0] = filamentLength[1] = 0;
@@ -846,113 +864,120 @@ bool processExtruderCommandPacket(bool deleteAfterUse, int8_t overrideToolIndex)
 //Handle the pause state
 
 void handlePauseState(void) {
-   OutPacket responsePacket;
+    OutPacket responsePacket;
 
-   switch ( paused ) {
-	case PAUSE_STATE_ENTER_START_PIPELINE_DRAIN:
-		//We've entered a pause, start draining the pipeline
-		paused = PAUSE_STATE_ENTER_WAIT_PIPELINE_DRAIN;
-		break;	
+    switch ( paused ) {
 
-	case PAUSE_STATE_ENTER_WAIT_PIPELINE_DRAIN:
-		//Wait for the pipeline to drain
-		if (movesplanned() == 0) {
-			paused = PAUSE_STATE_ENTER_START_RETRACT_FILAMENT;
-		}
-		break;
+    case PAUSE_STATE_ENTER_START_PIPELINE_DRAIN:
+	//We've entered a pause, start draining the pipeline
+	paused = PAUSE_STATE_ENTER_WAIT_PIPELINE_DRAIN;
+	break;
 
-	case PAUSE_STATE_ENTER_START_RETRACT_FILAMENT:
-		//Store the current position so we can return later
-		pausedPosition = steppers::getPlannerPosition();
+    case PAUSE_STATE_ENTER_WAIT_PIPELINE_DRAIN:
+	//Wait for the pipeline to drain
+	if ( movesplanned() == 0 )
+	    paused = PAUSE_STATE_ENTER_START_RETRACT_FILAMENT;
+	break;
 
-		//Retract the filament by 1mm to prevent blobbing
-		retractFilament(true);
-		paused = PAUSE_STATE_ENTER_WAIT_RETRACT_FILAMENT;
-		break;
+    case PAUSE_STATE_ENTER_START_RETRACT_FILAMENT:
+	//Store the current position so we can return later
+	pausedPosition = steppers::getPlannerPosition();
 
-	case PAUSE_STATE_ENTER_WAIT_RETRACT_FILAMENT:
-		//Wait for the filament retraction to complete
-		if (movesplanned() == 0) {
-			paused = PAUSE_STATE_ENTER_START_CLEARING_PLATFORM;
-		}
-		break;
+	//Retract the filament by 1mm to prevent blobbing
+	retractFilament(true);
+	paused = PAUSE_STATE_ENTER_WAIT_RETRACT_FILAMENT;
+	break;
 
-	case PAUSE_STATE_ENTER_START_CLEARING_PLATFORM:
-		{	//Bracket to stop compiler complaining
-		//Clear the platform
-		platformAccess(true);
-		paused = PAUSE_STATE_ENTER_WAIT_CLEARING_PLATFORM;
-		bool cancelling = false;
-		if ( host::getBuildState() == host::BUILD_CANCELLING || host::getBuildState() == host::BUILD_CANCELED )
-			cancelling = true;
+    case PAUSE_STATE_ENTER_WAIT_RETRACT_FILAMENT:
+	//Wait for the filament retraction to complete
+	if ( movesplanned() == 0 )
+	    paused = PAUSE_STATE_ENTER_START_CLEARING_PLATFORM;
+	break;
 
-		//Store the current heater temperatures for restoring later
-		if ( pauseNoHeat != PAUSE_HEAT_ON )	storeHeaterTemperatures();
+    case PAUSE_STATE_ENTER_START_CLEARING_PLATFORM:
+    {
+	//Bracket to stop compiler complaining
+	//Clear the platform
+	platformAccess(true);
+	paused = PAUSE_STATE_ENTER_WAIT_CLEARING_PLATFORM;
+	bool cancelling = false;
+	if ( host::getBuildState() == host::BUILD_CANCELLING || host::getBuildState() == host::BUILD_CANCELED )
+	    cancelling = true;
 
-		//If we're pausing, and we have HEAT_DURING_PAUSE switched off, switch off the heaters
-		if (( ! cancelling ) && ( pauseNoHeat != PAUSE_HEAT_ON ))
-			pauseHeaters(pauseNoHeat);
+	//Store the current heater temperatures for restoring later
+	if ( pauseNoHeat != PAUSE_HEAT_ON )
+	    storeHeaterTemperatures();
 
-			//Switch off the extruder fan
-			extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 0);
-		}
-		break;
+	//If we're pausing, and we have HEAT_DURING_PAUSE switched off, switch off the heaters
+	if ( ( ! cancelling ) && ( pauseNoHeat != PAUSE_HEAT_ON ) )
+	    pauseHeaters(pauseNoHeat);
 
-	case PAUSE_STATE_ENTER_WAIT_CLEARING_PLATFORM:
-		//We finished the last command, now we wait for the platform to reach the bottom
-		//before entering the pause
-		if (movesplanned() == 0) {
-			paused = PAUSE_STATE_PAUSED;
-		}
-		break;
+       //Switch off the extruder fan
+	extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 0);
+    }
+    break;
 
-	case PAUSE_STATE_EXIT_START_HEATERS:
-		//We've begun to exit the pause, instruct the heaters to resume their set points
-		if ( pauseNoHeat != PAUSE_HEAT_ON )	unPauseHeaters();
+    case PAUSE_STATE_ENTER_WAIT_CLEARING_PLATFORM:
+	//We finished the last command, now we wait for the platform to reach the bottom
+	//before entering the pause
+	if ( movesplanned() == 0 ) {
+	    paused = ( pauseErrorMessage ) ? PAUSE_STATE_ERROR : PAUSE_STATE_PAUSED;
+	}
+	break;
 
-		//Switch on the extruder fan if we're noheat pausing
-		if ( pauseNoHeat != PAUSE_HEAT_ON )	extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 1);
+    case PAUSE_STATE_EXIT_START_HEATERS:
+	//We've begun to exit the pause, instruct the heaters to resume their set points
+	if ( pauseNoHeat != PAUSE_HEAT_ON )
+	    unPauseHeaters();
 
-		paused = PAUSE_STATE_EXIT_WAIT_FOR_HEATERS;
-		break;
+	//Switch on the extruder fan if we're noheat pausing
+	if ( pauseNoHeat != PAUSE_HEAT_ON )
+	    extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, 1);
+      
+	paused = PAUSE_STATE_EXIT_WAIT_FOR_HEATERS;
+	break;
 
-	case PAUSE_STATE_EXIT_WAIT_FOR_HEATERS:
-		//Waiting for the heaters to reach their set points
-		if (( pauseNoHeat != PAUSE_HEAT_ON ) && ( ! areHeatersAtTemperature() ))	break;
-		paused = PAUSE_STATE_EXIT_START_RETURNING_PLATFORM;
-		break;
+    case PAUSE_STATE_EXIT_WAIT_FOR_HEATERS:
+	//Waiting for the heaters to reach their set points
+	if ( ( pauseNoHeat != PAUSE_HEAT_ON ) && ( ! areHeatersAtTemperature() ) )
+	    break;
+	paused = PAUSE_STATE_EXIT_START_RETURNING_PLATFORM;
+	break;
 
-	case PAUSE_STATE_EXIT_START_RETURNING_PLATFORM:
-		//Instruct the platform to return to it's pre pause position
-		platformAccess(false);
-		paused = PAUSE_STATE_EXIT_WAIT_RETURNING_PLATFORM;
-		break;
+   case PAUSE_STATE_EXIT_START_RETURNING_PLATFORM:
+       //Instruct the platform to return to it's pre pause position
+       platformAccess(false);
+       paused = PAUSE_STATE_EXIT_WAIT_RETURNING_PLATFORM;
+       break;
 
-	case PAUSE_STATE_EXIT_WAIT_RETURNING_PLATFORM:
-		//Wait for the platform to finish moving to it's prepause position
-		if (movesplanned() == 0) {
-			paused = PAUSE_STATE_EXIT_START_UNRETRACT_FILAMENT;
-		}
-		break;
-	
-	case PAUSE_STATE_EXIT_START_UNRETRACT_FILAMENT:
-		retractFilament(false);
-		paused = PAUSE_STATE_EXIT_WAIT_UNRETRACT_FILAMENT;
-		break;
+   case PAUSE_STATE_EXIT_WAIT_RETURNING_PLATFORM:
+       //Wait for the platform to finish moving to it's prepause position
+       if ( movesplanned() == 0 ) {
+	   paused = PAUSE_STATE_EXIT_START_UNRETRACT_FILAMENT;
+       }
+       break;
 
-	case PAUSE_STATE_EXIT_WAIT_UNRETRACT_FILAMENT:
-		//Wait for the filament unretraction to finish
-		//then resume processing commands
-		if (movesplanned() == 0) {
-			paused = PAUSE_STATE_NONE;
-		}
-		break;
+    case PAUSE_STATE_EXIT_START_UNRETRACT_FILAMENT:
+	retractFilament(false);
+	paused = PAUSE_STATE_EXIT_WAIT_UNRETRACT_FILAMENT;
+	break;
 
-	default:
-		break;
-   }
+    case PAUSE_STATE_EXIT_WAIT_UNRETRACT_FILAMENT:
+	//Wait for the filament unretraction to finish
+	//then resume processing commands
+	if ( movesplanned() == 0 ) {
+	    paused = PAUSE_STATE_NONE;
+#ifdef HAS_INTERFACE_BOARD
+	    pauseErrorMessage = 0;
+#endif
+	}
+	break;
+
+    case PAUSE_STATE_ERROR:
+    default:
+	break;
+    }
 }
-
 
 
 
@@ -964,20 +989,66 @@ void runCommandSlice() {
 	updateMoodStatus();
 #endif
 
-    // get command from SD card if building from SD
-	if (sdcard::isPlaying()) {
-		while (command_buffer.getRemainingCapacity() > 0 && sdcard::playbackHasNext()) {
-			sd_count++;
-			command_buffer.push(sdcard::playbackNext());
-		}
-#ifdef HAS_INTERFACE_BOARD
-		if ( !sdcard::playbackHasNext() && !hasInterfaceBoard )
-#else
-		if ( !sdcard::playbackHasNext() )
+	// get command from SD card if building from SD
+	if ( sdcard::isPlaying() ) {
+
+	    while (command_buffer.getRemainingCapacity() > 0 && sdcard::playbackHasNext()) {
+		sd_count++;
+		command_buffer.push(sdcard::playbackNext());
+	    }
+
+	    // Deal with any end of file conditions
+	    if ( !sdcard::playbackHasNext() ) {
+
+		// SD card file is finished.  Was it a normal finish or an error?
+		//  Check the pause state; otherwise, we can hit this code once
+		//  and start a pause with host::stopBuild() and then re-enter
+		//  this code again at which point host::stopBuild() will then
+		//  do an immediate cancel.  Alternatively, call finishPlayback()
+		//  so that sdcard::isPlaying() is then false.
+
+		if ( sdcard::sdAvailable != sdcard::SD_SUCCESS && paused == PAUSE_STATE_NONE ) {
+
+		    // SD card error of some sort
+
+		    // Do a DEBUG light blink pattern
+		    int err;
+		    if ( sdcard::sdAvailable == sdcard::SD_ERR_CRC ) err = ERR_SD_CRC;
+		    else if (sdcard::sdAvailable == sdcard::SD_ERR_NO_CARD_PRESENT ) err = ERR_SD_NOCARD;
+		    else err = ERR_SD_READ;
+		    Motherboard::getBoard().indicateError(err);
+#ifdef HAS_FILAMENT_COUNTER
+		    // Save the used filament info
+		    addFilamentUsed();
 #endif
-			// sdcard::isPlaying() will continue to return true
-			//   until we finish the playback
+		    pauseHeaters(0xff);
+		    steppers::abort();
+		    command_buffer.reset();
+
+#ifdef HAS_INTERFACE_BOARD
+		    // Establish an error message to display while cancelling the build
+		    if ( hasInterfaceBoard ) {
+			const static PROGMEM prog_uchar crc_err[]    = "SD CRC error";
+			const static PROGMEM prog_uchar nocard_err[] = "SD card removed";
+			const static PROGMEM prog_uchar read_err[]   = "SD read error";
+			if ( sdcard::sdAvailable == sdcard::SD_ERR_CRC ) pauseErrorMessage = crc_err;
+			else if (sdcard::sdAvailable == sdcard::SD_ERR_NO_CARD_PRESENT ) pauseErrorMessage = nocard_err;
+			else pauseErrorMessage = read_err;
+		    }
+#endif
+		    // And cancel the build
+		    host::stopBuild();
+		    
+		}
+		else {
+#ifdef HAS_INTERFACE_BOARD
+		    if ( !hasInterfaceBoard )
+#endif
+			// sdcard::isPlaying() will continue to return true until we finish the playback
+			//   so finish the playback so that RepG will be told that the build is done
 			sdcard::finishPlayback();
+		}
+	    }
 	}
 
 #ifdef PAUSEATZPOS
@@ -1225,7 +1296,11 @@ void runCommandSlice() {
 							} else {
 								button_wait_timeout = Timeout();
 							}
-							button_mask = (1 << ButtonArray::OK);  // ok button
+							button_mask =  (1 << ButtonArray::ZERO) | (1 << ButtonArray::ZMINUS) |
+							    (1 << ButtonArray::ZPLUS) | (1 << ButtonArray::YMINUS) |
+							    (1 << ButtonArray::YPLUS) | (1 << ButtonArray::XMINUS) |
+							    (1 << ButtonArray::XPLUS) | (1 << ButtonArray::CANCEL) |
+							    (1 << ButtonArray::OK);
 							button_timeout_behavior = 1 << BUTTON_CLEAR_SCREEN;
 							//Motherboard::getBoard().interfaceBlink(25,15);
 							InterfaceBoard& ib = Motherboard::getBoard().getInterfaceBoard();

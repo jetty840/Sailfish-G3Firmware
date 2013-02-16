@@ -24,6 +24,9 @@
 #include "lib_sd/sd_raw.h"
 #include "lib_sd/partition.h"
 #include "Motherboard.hh"
+#include "Eeprom.hh"
+#include "EepromMap.hh"
+#include "EepromDefaults.hh"
 
 #ifndef USE_DYNAMIC_MEMORY
 #error Dynamic memory should be explicitly disabled in the G3 mobo.
@@ -35,21 +38,6 @@
 
 namespace sdcard {
 
-#if 0
-#include "LiquidCrystal.hh"
-void lcdfoo(char c)
-{
-	static uint8_t lcdpos = 0;
-
-	if (!c) return;
-
-	LiquidCrystal &lcd = Motherboard::getBoard().getInterfaceBoard().lcd;
-	lcd.setCursor(lcdpos % 20, lcdpos / 20);
-	lcd.write(c);
-	lcdpos++;
-}
-#endif
-
 #ifndef BROKEN_SD
 volatile bool mustReinit = true;
 #else
@@ -58,10 +46,10 @@ static bool mustReinit = false;
 
 SdErrorCode sdAvailable = SD_ERR_NO_CARD_PRESENT;
 
-static struct partition_struct* partition = 0;
-static struct fat_fs_struct* fs = 0;
-static struct fat_dir_struct* cwd = 0; // current working directory
-static struct fat_file_struct* file = 0;
+static struct partition_struct *partition = 0;
+static struct fat_fs_struct *fs = 0;
+static struct fat_dir_struct *cwd = 0; // current working directory
+static struct fat_file_struct *file = 0;
 
 void forceReinit() {
 #ifndef BROKEN_SD
@@ -121,17 +109,19 @@ static SdErrorCode changeWorkingDir(struct fat_dir_entry_struct *newDir)
 }
 
 static SdErrorCode initCard() {
+        uint8_t err;
 	SdErrorCode sderr;
 
 #ifndef BROKEN_SD
 	reset();
 #endif
-	if ( sd_raw_init() ) {
+	if ( (err = sd_raw_init(eeprom::getEeprom8(eeprom::SD_USE_CRC,
+							EEPROM_DEFAULT_SD_USE_CRC) != 0)) ) {
 		if ( openPartition() ) {
 			if ( openFilesys() ) {
 				if ( changeWorkingDir(0) == SD_SUCCESS ) {
 					mustReinit = false;
-					sderr = SD_SUCCESS;
+					sdAvailable = SD_SUCCESS;
 					return SD_SUCCESS;
 				}
 				else sderr = SD_ERR_NO_ROOT;
@@ -140,7 +130,12 @@ static SdErrorCode initCard() {
 		}
 		else sderr = SD_ERR_PARTITION_READ;
 	}
-	else sderr = sd_raw_available() ? SD_ERR_NO_CARD_PRESENT : SD_ERR_INIT_FAILED;
+	else {
+	    if ( sd_errno == SDR_ERR_CRC )
+		sderr = SD_ERR_CRC;
+	    else
+		sderr = sd_raw_available() ? SD_ERR_INIT_FAILED : SD_ERR_NO_CARD_PRESENT;
+	}
 
 	// Close the partition, file system, etc.
 	reset();
@@ -357,19 +352,31 @@ static uint8_t next_byte;
 static bool has_more = false;
 
 void fetchNextByte() {
-  int16_t read = fat_read_file(file, &next_byte, 1);
-  has_more = read > 0;
-  playedBytes++;
+    int16_t read = fat_read_file(file, &next_byte, 1);
+    playedBytes++;
+    if ( read > 0 )
+	has_more = true;
+    else {
+	has_more = false;
+	if ( read < 0 ) {
+	    if ( !sd_raw_available() ) {
+		mustReinit = true;
+		sdAvailable = SD_ERR_NO_CARD_PRESENT;
+	    }
+	    else if ( read < 0 )
+		sdAvailable = ( fat_errno == FAT_ERR_CRC ) ? SD_ERR_CRC : SD_ERR_READ;
+	}
+    }
 }
 
 bool playbackHasNext() {
-  return has_more;
+    return has_more;
 }
 
 uint8_t playbackNext() {
-  uint8_t rv = next_byte;
-  fetchNextByte();
-  return rv;
+    uint8_t rv = next_byte;
+    fetchNextByte();
+    return rv;
 }
 
 SdErrorCode startPlayback(char* filename) {
