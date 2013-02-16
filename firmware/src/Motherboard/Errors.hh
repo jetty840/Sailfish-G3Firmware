@@ -38,5 +38,8 @@
 #endif
 #define ERR_CANCEL_BUILD		10
 #define ERR_RESET_DURING_BUILD		11
+#define ERR_SD_READ                     12
+#define ERR_SD_CRC                      13
+#define ERR_SD_NOCARD                   14
 
 #endif /* ERRORS_HH_ */

@@ -779,15 +779,15 @@ void stopBuildNow() {
 // print.  The purpose of the pause is to move the build away from the tool head.
 void stopBuild() {
 	buildState = BUILD_CANCELLING;
-	
+
 	steppers::abort();
 
 	//If we're already paused, we stop the print now, otherwise we pause
 	//The runSlice picks up this pause later when completed, then calls stopBuildNow
 	if (( command::isPaused() ) || ( command::pauseIntermediateState() )) {
-		stopBuildNow();
+	    stopBuildNow();
 	} else {
-		command::pause(true, false);
+	    command::pause(true, false);
 	}
 }
 
