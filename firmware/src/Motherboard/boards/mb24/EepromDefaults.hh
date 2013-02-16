@@ -102,3 +102,5 @@
 #define EEPROM_DEFAULT_EXTRUDER_HOLD			0
 
 #define EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM           1
+
+#define EEPROM_DEFAULT_SD_USE_CRC                       0

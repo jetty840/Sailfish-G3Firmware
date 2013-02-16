@@ -81,6 +81,10 @@ void setJettyFirmwareDefaults() {
     eeprom_write_byte((uint8_t*)eeprom::OVERRIDE_GCODE_TEMP,		EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP);
 #endif
 
+#ifdef EEPROM_DEFAULT_SD_USE_CRC
+    eeprom_write_byte((uint8_t*)eeprom::SD_USE_CRC,                     EEPROM_DEFAULT_SD_USE_CRC);
+#endif
+
     eeprom_write_byte((uint8_t*)eeprom::ACCELERATION_ON,		EEPROM_DEFAULT_ACCELERATION_ON);
     putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_X,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_X);
     putEepromUInt32(eeprom::ACCEL_MAX_FEEDRATE_Y,			EEPROM_DEFAULT_ACCEL_MAX_FEEDRATE_Y);

@@ -179,6 +179,17 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
+class GenericOnOffMenu: public Menu {
+public:
+	GenericOnOffMenu();
+
+	void resetState();
+protected:
+	void drawItem(uint8_t index, LiquidCrystal& lcd);
+
+	void handleSelect(uint8_t index);
+};
+
 class UnableToOpenFileMenu: public Menu {
 public:
 	UnableToOpenFileMenu();
@@ -227,7 +238,7 @@ private:
 	enum PauseState lastPauseState;
 
 public:
-	bool autoPause;
+	uint8_t autoPause;
 
 	void update(LiquidCrystal& lcd, bool forceRedraw);
 
@@ -540,6 +551,15 @@ private:
 	void setupTitle();
 };
 
+class ExtruderFanMenu: public EnabledDisabledMenu {
+private:
+	void enable(bool enabled);
+	
+	bool isEnabled();
+
+	void setupTitle();
+};
+
 class TestEndStopsMode: public Screen {
 private:
 
@@ -630,15 +650,6 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
-class ExtruderFanMenu: public EnabledDisabledMenu {
-private:
-	void enable(bool enabled);
-	
-	bool isEnabled();
-
-	void setupTitle();
-};
-
 class FilamentUsedResetMenu: public Menu {
 public:
 	FilamentUsedResetMenu();
@@ -680,48 +691,6 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
-class OverrideGCodeTempMenu: public EnabledDisabledMenu {
-private:
-	void enable(bool enabled);
-	
-	bool isEnabled();
-
-	void setupTitle();
-};
-
-class AccelerationOnOffMenu: public Menu {
-public:
-	AccelerationOnOffMenu();
-
-	void resetState();
-protected:
-	void drawItem(uint8_t index, LiquidCrystal& lcd);
-
-	void handleSelect(uint8_t index);
-};
-
-class ExtruderHoldOnOffMenu: public Menu {
-public:
-	ExtruderHoldOnOffMenu();
-
-	void resetState();
-protected:
-	void drawItem(uint8_t index, LiquidCrystal& lcd);
-
-	void handleSelect(uint8_t index);
-};
-
-class ToolheadSystemOnOffMenu: public Menu {
-public:
-	ToolheadSystemOnOffMenu();
-
-	void resetState();
-protected:
-	void drawItem(uint8_t index, LiquidCrystal& lcd);
-
-	void handleSelect(uint8_t index);
-};
-
 class AcceleratedSettingsMode: public Screen {
 private:
 	enum accelerateSettingsState {
@@ -760,26 +729,13 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
-class DittoPrintMenu: public EnabledDisabledMenu {
-private:
-	void enable(bool enabled);
-	
-	bool isEnabled();
-
-	void setupTitle();
-};
-
 class BuildSettingsMenu: public Menu {
 private:
-	OverrideGCodeTempMenu		overrideGCodeTempMenu;
+        GenericOnOffMenu                genericOnOffMenu;
 	ABPCopiesSetScreen		abpCopiesSetScreen;
-	DittoPrintMenu			dittoPrintMenu;
-	AccelerationOnOffMenu		accelerationOnOffMenu;
 	AcceleratedSettingsMode		acceleratedSettingsMode;
-	ExtruderHoldOnOffMenu		extruderHoldOnOffMenu;
-	ToolheadSystemOnOffMenu		toolheadSystemOnOffMenu;
-
 	bool acceleration;
+
 public:
 	BuildSettingsMenu();
 

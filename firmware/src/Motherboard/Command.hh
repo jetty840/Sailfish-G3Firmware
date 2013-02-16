@@ -19,6 +19,11 @@
 #define COMMAND_HH_
 
 #include <stdint.h>
+#ifndef SIMULATOR
+#include <avr/pgmspace.h>
+#else
+typedef unsigned char prog_uchar;
+#endif
 #include "Configuration.hh"
 #include "Point.hh"
 
@@ -31,6 +36,7 @@
 #define PAUSE_STATE_OTHER_COMMAND	0x00
 #define PAUSE_STATE_ENTER_COMMAND	0x40
 #define PAUSE_STATE_EXIT_COMMAND	0x80
+#define PAUSE_STATE_ERROR_COMMAND       0x20
 
 #define PAUSE_HEAT_ON (uint8_t)0x00
 #define PAUSE_EXT_OFF (uint8_t)0x01
@@ -56,6 +62,9 @@ enum PauseState {
 	PAUSE_STATE_EXIT_WAIT_RETURNING_PLATFORM	= PAUSE_STATE_EXIT_COMMAND  + 3,
 	PAUSE_STATE_EXIT_START_UNRETRACT_FILAMENT	= PAUSE_STATE_EXIT_COMMAND  + 4,
 	PAUSE_STATE_EXIT_WAIT_UNRETRACT_FILAMENT	= PAUSE_STATE_EXIT_COMMAND  + 5,
+
+	//Error display state
+	PAUSE_STATE_ERROR                               = PAUSE_STATE_ERROR_COMMAND
 };
 
 
@@ -162,6 +171,9 @@ void clearLineNumber();
 /// if we update the line_counter  to allow overflow, we'll need to update the BuildStats Screen implementation
 const static uint32_t MAX_LINE_COUNT = 1000000000;
 
+const prog_uchar *pauseGetErrorMessage();
+
+void pauseClearError();
 }
 
 #endif // COMMAND_HH_

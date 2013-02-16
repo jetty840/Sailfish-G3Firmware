@@ -371,6 +371,10 @@ const static uint16_t EXTRUDER_HOLD		 = 0x1E9;
 //$type:B
 const static uint16_t TOOLHEAD_OFFSET_SYSTEM	 = 0x1EA;
 
+//Use SD card CRC checks (1 byte)
+//$BEGIN_ENTRY
+//$type:B
+const static uint16_t SD_USE_CRC	         = 0x1EB;
 
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
