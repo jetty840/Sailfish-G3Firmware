@@ -1,6 +1,6 @@
-
 /*
  * Copyright (c) 2006-2010 by Roland Riegel <feedback@roland-riegel.de>
+ * Modifications Copyright (c) 2013 by Dan Newman <dan.newman@mtbaldy.us>
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of either the GNU General Public License version 2
@@ -11,6 +11,14 @@
 #include <string.h>
 #include <avr/io.h>
 #include "sd_raw.h"
+
+#if !SD_RAW_SAVE_RAM
+#include "sd_crc.h"
+static bool sd_use_crc = false;
+static uint16_t sd_crc_soft_errors = 0;
+#endif
+
+uint8_t sd_errno;
 
 /**
  * \addtogroup sd_raw MMC/SD/SDHC card raw access
@@ -169,8 +177,16 @@ static uint8_t sd_raw_send_command(uint8_t command, uint32_t arg);
  *
  * \returns 0 on failure, 1 on success.
  */
-uint8_t sd_raw_init()
+uint8_t sd_raw_init(bool use_crc)
 {
+#if !SD_RAW_SAVE_RAM
+    sd_use_crc = use_crc;
+#else
+    (void)use_crc;
+#endif
+
+    sd_errno = 0;
+
     /* enable inputs for reading card status */
     configure_pin_available();
     configure_pin_locked();
@@ -198,7 +214,10 @@ uint8_t sd_raw_init()
     sd_raw_card_type = 0;
     
     if(!sd_raw_available())
+    {
+	sd_errno = SDR_ERR_NOCARD;
         return 0;
+    }
 
     /* card needs 74 cycles minimum to start up */
     for(uint8_t i = 0; i < 10; ++i)
@@ -221,9 +240,20 @@ uint8_t sd_raw_init()
         if(i == 0x1ff)
         {
             unselect_card();
+	    sd_errno = SDR_ERR_COMMS;
             return 0;
         }
     }
+
+#if !SD_RAW_SAVE_RAM
+    if ( sd_use_crc ) {
+	if ( sd_raw_send_command(CMD_CRC_ON_OFF, 1) != (1 << R1_IDLE_STATE) ) {
+	    unselect_card();
+	    sd_errno = SDR_ERR_CRC;
+	    return 0;
+	}
+    }
+#endif
 
 #if SD_RAW_SDHC
     /* check for version of SD card specification */
@@ -233,9 +263,15 @@ uint8_t sd_raw_init()
         sd_raw_rec_byte();
         sd_raw_rec_byte();
         if((sd_raw_rec_byte() & 0x01) == 0)
+	{
+	    sd_errno = SDR_ERR_VOLTAGE;
             return 0; /* card operation voltage range doesn't match */
+	}
         if(sd_raw_rec_byte() != 0xaa)
+	{
+	    sd_errno = SDR_ERR_PATTERN;
             return 0; /* wrong test pattern */
+	}
 
         /* card conforms to SD 2 card specification */
         sd_raw_card_type |= (1 << SD_RAW_SPEC_2);
@@ -281,6 +317,7 @@ uint8_t sd_raw_init()
         if(i == 0x7fff)
         {
             unselect_card();
+	    sd_errno = SDR_ERR_COMMS;
             return 0;
         }
     }
@@ -291,6 +328,7 @@ uint8_t sd_raw_init()
         if(sd_raw_send_command(CMD_READ_OCR, 0))
         {
             unselect_card();
+	    sd_errno = SDR_ERR_BADRESPONSE;
             return 0;
         }
 
@@ -307,6 +345,7 @@ uint8_t sd_raw_init()
     if(sd_raw_send_command(CMD_SET_BLOCKLEN, 512))
     {
         unselect_card();
+	sd_errno = SDR_ERR_BADRESPONSE;
         return 0;
     }
 
@@ -395,28 +434,40 @@ uint8_t sd_raw_rec_byte()
 uint8_t sd_raw_send_command(uint8_t command, uint32_t arg)
 {
     uint8_t response;
+    uint8_t *args = reinterpret_cast<uint8_t *>(&arg);
 
     /* wait some clock cycles */
     sd_raw_rec_byte();
 
-    /* send command via SPI */
-    sd_raw_send_byte(0x40 | command);
-    sd_raw_send_byte((arg >> 24) & 0xff);
-    sd_raw_send_byte((arg >> 16) & 0xff);
-    sd_raw_send_byte((arg >> 8) & 0xff);
-    sd_raw_send_byte((arg >> 0) & 0xff);
-    switch(command)
-    {
-        case CMD_GO_IDLE_STATE:
-           sd_raw_send_byte(0x95);
-           break;
-        case CMD_SEND_IF_COND:
-           sd_raw_send_byte(0x87);
-           break;
-        default:
-           sd_raw_send_byte(0xff);
-           break;
+#if !SD_RAW_SAVE_RAM
+    if ( sd_use_crc ) {
+	uint8_t crc[6] = { command | 0x40, args[3], args[2], args[1], args[0] };
+	crc[5] = sd_crc7(crc, 5);
+	for (uint8_t i = 0; i < 6; i++)
+	    sd_raw_send_byte(crc[i]);
     }
+    else {
+#endif
+	/* send command via SPI */
+	sd_raw_send_byte(0x40 | command);
+	for (int8_t i = 3; i >= 0; i--)
+	    sd_raw_send_byte(args[i]);
+
+	switch(command)
+	{
+        case CMD_GO_IDLE_STATE:
+	    sd_raw_send_byte(0x95);
+	    break;
+        case CMD_SEND_IF_COND:
+	    sd_raw_send_byte(0x87);
+	    break;
+        default:
+	    sd_raw_send_byte(0xff);
+	    break;
+	}
+#if !SD_RAW_SAVE_RAM
+    }
+#endif
     
     /* receive response */
     for(uint8_t i = 0; i < 10; ++i)
@@ -441,6 +492,9 @@ uint8_t sd_raw_send_command(uint8_t command, uint32_t arg)
  */
 uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
 {
+#if !SD_RAW_SAVE_RAM
+    uint8_t attempts = 0;
+#endif
     offset_t block_address;
     uint16_t block_offset;
     uint16_t read_length;
@@ -463,6 +517,7 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
                 return 0;
 #endif
 
+	read_block:
             /* address card */
             select_card();
 
@@ -474,11 +529,20 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
 #endif
             {
                 unselect_card();
+		sd_errno = SDR_ERR_BADRESPONSE;
                 return 0;
             }
 
             /* wait for data block (start byte 0xfe) */
-            while(sd_raw_rec_byte() != 0xfe);
+            uint16_t tries = 0;
+            while(sd_raw_rec_byte() != 0xfe) {
+		if(tries >= 0x7FFF){
+		    unselect_card();
+		    sd_errno = SDR_ERR_COMMS;
+		    return 0;
+		}
+		tries++;
+	    }
 
 #if SD_RAW_SAVE_RAM
             /* read byte block */
@@ -489,6 +553,10 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
                 if(i >= block_offset && i < read_to)
                     *buffer++ = b;
             }
+
+	    /* ignore crc bytes */
+	    sd_raw_rec_byte();
+	    sd_raw_rec_byte();
 #else
             /* read byte block */
             uint8_t* cache = raw_block;
@@ -496,14 +564,32 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
                 *cache++ = sd_raw_rec_byte();
             raw_block_address = block_address;
 
+            /* read crc16 */
+	    if ( sd_use_crc ) {
+		uint16_t crc = sd_raw_rec_byte() << 8;
+		crc |= sd_raw_rec_byte();
+		if ( crc != sd_crc16(raw_block, (uint16_t)512) ) {
+		    unselect_card();
+		    if ( ++attempts < 5 ) {
+			if ( attempts == 1 ) sd_crc_soft_errors++;
+			sd_raw_rec_byte(); // pause a little
+			goto read_block;
+		    }
+		    sd_errno = SDR_ERR_CRC;
+		    return 0;
+		}
+	    }
+	    else
+	    {
+		/* ignore crc bytes */
+		sd_raw_rec_byte();
+		sd_raw_rec_byte();
+	    }
+
             memcpy(buffer, raw_block + block_offset, read_length);
             buffer += read_length;
 #endif
-            
-            /* read crc16 */
-            sd_raw_rec_byte();
-            sd_raw_rec_byte();
-            
+
             /* deaddress card */
             unselect_card();
 
@@ -666,7 +752,10 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
 uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
 {
     if(sd_raw_locked())
+    {
+	sd_errno = SDR_ERR_LOCKED;
         return 0;
+    }
 
     offset_t block_address;
     uint16_t block_offset;
@@ -687,6 +776,7 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
         {
 #if SD_RAW_WRITE_BUFFERING
             if(!sd_raw_sync())
+		// sd_raw_sync() calls us back...
                 return 0;
 #endif
 
@@ -721,6 +811,7 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
 #endif
         {
             unselect_card();
+	    sd_errno = SDR_ERR_BADRESPONSE;
             return 0;
         }
 
@@ -732,12 +823,21 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
         for(uint16_t i = 0; i < 512; ++i)
             sd_raw_send_byte(*cache++);
 
-        /* write dummy crc16 */
-        sd_raw_send_byte(0xff);
-        sd_raw_send_byte(0xff);
+	uint16_t crc;
+	crc = ( sd_use_crc ) ? sd_crc16(raw_block, (uint16_t)512) : 0xffff;
+	sd_raw_send_byte(crc >> 8);
+	sd_raw_send_byte(crc & 0xff);
 
         /* wait while card is busy */
-        while(sd_raw_rec_byte() != 0xff);
+	uint16_t tries = 0;
+        while(sd_raw_rec_byte() != 0xff) {
+	    if(tries >= 0x7FFF) {
+		unselect_card();
+		sd_errno = SDR_ERR_COMMS;
+		return 0;
+	    }
+	    tries++;
+	}
         sd_raw_rec_byte();
 
         /* deaddress card */
@@ -991,4 +1091,3 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
 
     return 1;
 }
-

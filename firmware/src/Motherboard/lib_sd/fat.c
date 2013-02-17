@@ -1,6 +1,7 @@
 
 /* 
  * Copyright (c) 2006-2010 by Roland Riegel <feedback@roland-riegel.de>
+ * Modifications Copyright (c) 2013 by Dan Newman <dan.newman@mtbaldy.us>
  *
  * This file is free software; you can redistribute it and/or modify
  * it under the terms of either the GNU General Public License version 2
@@ -17,6 +18,8 @@
 #include "sd-reader_config.h"
 
 #include <string.h>
+
+uint8_t fat_errno;
 
 #if USE_DYNAMIC_MEMORY
     #include <stdlib.h>
@@ -329,7 +332,10 @@ uint8_t fat_read_header(struct fat_fs_struct* fs)
 #endif
     offset_t partition_offset = (offset_t) partition->offset * 512;
     if(!partition->device_read(partition_offset + 0x0b, buffer, sizeof(buffer)))
-        return 0;
+    {
+	fat_errno = sd_errno;
+	return 0;
+    }
 
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
@@ -449,7 +455,10 @@ uint8_t fat_read_header(struct fat_fs_struct* fs)
 cluster_t fat_get_next_cluster(const struct fat_fs_struct* fs, cluster_t cluster_num)
 {
     if(!fs || cluster_num < 2)
+    {
+	fat_errno = FAT_ERR_BAD;
         return 0;
+    }
 
 #if FAT_FAT32_SUPPORT
     if(fs->partition->type == PARTITION_TYPE_FAT32)
@@ -457,7 +466,10 @@ cluster_t fat_get_next_cluster(const struct fat_fs_struct* fs, cluster_t cluster
         /* read appropriate fat entry */
         uint32_t fat_entry;
         if(!fs->partition->device_read(fs->header.fat_offset + cluster_num * sizeof(fat_entry), (uint8_t*) &fat_entry, sizeof(fat_entry)))
+	{
+	    fat_errno = sd_errno;
             return 0;
+	}
 
         /* determine next cluster from fat */
         cluster_num = ltoh32(fat_entry);
@@ -466,7 +478,10 @@ cluster_t fat_get_next_cluster(const struct fat_fs_struct* fs, cluster_t cluster
            cluster_num == FAT32_CLUSTER_BAD ||
            (cluster_num >= FAT32_CLUSTER_RESERVED_MIN && cluster_num <= FAT32_CLUSTER_RESERVED_MAX) ||
            (cluster_num >= FAT32_CLUSTER_LAST_MIN && cluster_num <= FAT32_CLUSTER_LAST_MAX))
+	{
+	    fat_errno = FAT_ERR_BAD;
             return 0;
+	}
     }
     else
 #endif
@@ -474,7 +489,10 @@ cluster_t fat_get_next_cluster(const struct fat_fs_struct* fs, cluster_t cluster
         /* read appropriate fat entry */
         uint16_t fat_entry;
         if(!fs->partition->device_read(fs->header.fat_offset + cluster_num * sizeof(fat_entry), (uint8_t*) &fat_entry, sizeof(fat_entry)))
+	{
+	    fat_errno = sd_errno;
             return 0;
+	}
 
         /* determine next cluster from fat */
         cluster_num = ltoh16(fat_entry);
@@ -483,7 +501,10 @@ cluster_t fat_get_next_cluster(const struct fat_fs_struct* fs, cluster_t cluster
            cluster_num == FAT16_CLUSTER_BAD ||
            (cluster_num >= FAT16_CLUSTER_RESERVED_MIN && cluster_num <= FAT16_CLUSTER_RESERVED_MAX) ||
            (cluster_num >= FAT16_CLUSTER_LAST_MIN && cluster_num <= FAT16_CLUSTER_LAST_MAX))
+	{
+	    fat_errno = FAT_ERR_BAD;
             return 0;
+	}
     }
 
     return cluster_num;
@@ -534,12 +555,14 @@ cluster_t fat_append_clusters(struct fat_fs_struct* fs, cluster_t cluster_num, c
         if(is_fat32)
         {
             if(!device_read(fat_offset + cluster_current * sizeof(fat_entry32), (uint8_t*) &fat_entry32, sizeof(fat_entry32)))
+		fat_errno = sd_errno;
                 return 0;
         }
         else
 #endif
         {
             if(!device_read(fat_offset + cluster_current * sizeof(fat_entry16), (uint8_t*) &fat_entry16, sizeof(fat_entry16)))
+		fat_errno = sd_errno;
                 return 0;
         }
 
@@ -672,7 +695,10 @@ uint8_t fat_free_clusters(struct fat_fs_struct* fs, cluster_t cluster_num)
         while(cluster_num)
         {
             if(!fs->partition->device_read(fat_offset + cluster_num * sizeof(fat_entry), (uint8_t*) &fat_entry, sizeof(fat_entry)))
+	    {
+		fat_errno = sd_errno;
                 return 0;
+	    }
 
             /* get next cluster of current cluster before freeing current cluster */
             uint32_t cluster_num_next = ltoh32(fat_entry);
@@ -712,7 +738,10 @@ uint8_t fat_free_clusters(struct fat_fs_struct* fs, cluster_t cluster_num)
         while(cluster_num)
         {
             if(!fs->partition->device_read(fat_offset + cluster_num * sizeof(fat_entry), (uint8_t*) &fat_entry, sizeof(fat_entry)))
+	    {
+		fat_errno = sd_errno;
                 return 0;
+	    }
 
             /* get next cluster of current cluster before freeing current cluster */
             uint16_t cluster_num_next = ltoh16(fat_entry);
@@ -1008,7 +1037,12 @@ intptr_t fat_read_file(struct fat_file_struct* fd, uint8_t* buffer, uintptr_t bu
 {
     /* check arguments */
     if(!fd || !buffer || buffer_len < 1)
+    {
+	fat_errno = FAT_ERR_EINVAL;
         return -1;
+    }
+    fat_errno = 0;
+    sd_errno = 0;
 
     /* determine number of bytes to read */
     if(fd->pos + buffer_len > fd->dir_entry.file_size)
@@ -1031,7 +1065,10 @@ intptr_t fat_read_file(struct fat_file_struct* fd, uint8_t* buffer, uintptr_t bu
             if(!fd->pos)
                 return 0;
             else
+	    {
+		fat_errno = FAT_ERR_BAD;
                 return -1;
+	    }
         }
 
         if(fd->pos)
@@ -1042,6 +1079,7 @@ intptr_t fat_read_file(struct fat_file_struct* fd, uint8_t* buffer, uintptr_t bu
                 pos -= cluster_size;
                 cluster_num = fat_get_next_cluster(fd->fs, cluster_num);
                 if(!cluster_num)
+		    // fd_errno handled by fat_get_next_cluster()
                     return -1;
             }
         }
@@ -1058,7 +1096,17 @@ intptr_t fat_read_file(struct fat_file_struct* fd, uint8_t* buffer, uintptr_t bu
 
         /* read data */
         if(!fd->fs->partition->device_read(cluster_offset, buffer, copy_length))
-            return buffer_len - buffer_left;
+	{
+	    // Original fat.c code did
+            //   return buffer_len - buffer_left;
+	    // and thus failed to alert to a read error in the event that the first
+	    // data read failed.  On the first data read, buffer_len == buffer_left
+	    // and so a failure then would indicate EOF...  Sigh.
+	    if ( sd_errno == 0 )
+		return buffer_len - buffer_left;
+	    fat_errno = sd_errno;
+	    return -1;
+	}
 
         /* calculate new file position */
         buffer += copy_length;
@@ -1102,10 +1150,11 @@ intptr_t fat_read_file(struct fat_file_struct* fd, uint8_t* buffer, uintptr_t bu
 intptr_t fat_write_file(struct fat_file_struct* fd, const uint8_t* buffer, uintptr_t buffer_len)
 {
     /* check arguments */
-    if(!fd || !buffer || buffer_len < 1)
+    if(!fd || !buffer || buffer_len < 1 || fd->pos > fd->dir_entry.file_size)
+    {
+	fat_errno = FAT_ERR_EINVAL;
         return -1;
-    if(fd->pos > fd->dir_entry.file_size)
-        return -1;
+    }
 
     uint16_t cluster_size = fd->fs->header.cluster_size;
     cluster_t cluster_num = fd->pos_cluster;
@@ -1124,10 +1173,14 @@ intptr_t fat_write_file(struct fat_file_struct* fd, const uint8_t* buffer, uintp
                 /* empty file */
                 fd->dir_entry.cluster = cluster_num = fat_append_clusters(fd->fs, 0, 1);
                 if(!cluster_num)
+		{
+		    fat_errno = FAT_ERR_BAD;
                     return -1;
+		}
             }
             else
             {
+		fat_errno = FAT_ERR_BAD;
                 return -1;
             }
         }
@@ -1144,7 +1197,10 @@ intptr_t fat_write_file(struct fat_file_struct* fd, const uint8_t* buffer, uintp
                     /* the file exactly ends on a cluster boundary, and we append to it */
                     cluster_num_next = fat_append_clusters(fd->fs, cluster_num, 1);
                 if(!cluster_num_next)
+		{
+		    fat_errno = FAT_ERR_BAD;
                     return -1;
+		}
 
                 cluster_num = cluster_num_next;
             }
