@@ -116,7 +116,7 @@ static SdErrorCode initCard() {
 	reset();
 #endif
 	if ( (err = sd_raw_init(eeprom::getEeprom8(eeprom::SD_USE_CRC,
-							EEPROM_DEFAULT_SD_USE_CRC) != 0)) ) {
+						   EEPROM_DEFAULT_SD_USE_CRC) != 0)) ) {
 		if ( openPartition() ) {
 			if ( openFilesys() ) {
 				if ( changeWorkingDir(0) == SD_SUCCESS ) {
@@ -352,6 +352,11 @@ static uint8_t next_byte;
 static bool has_more = false;
 
 void fetchNextByte() {
+
+    // BE WARNED: fat_read_file() only returns an error on the first
+    //   call which encounters the error.  The next call after the error
+    //   return will merely return 0 (no bytes read).
+
     int16_t read = fat_read_file(file, &next_byte, 1);
     playedBytes++;
     if ( read > 0 )
@@ -359,11 +364,9 @@ void fetchNextByte() {
     else {
 	has_more = false;
 	if ( read < 0 ) {
-	    if ( !sd_raw_available() ) {
-		mustReinit = true;
+	    if ( !sd_raw_available() )
 		sdAvailable = SD_ERR_NO_CARD_PRESENT;
-	    }
-	    else if ( read < 0 )
+	    else
 		sdAvailable = ( fat_errno == FAT_ERR_CRC ) ? SD_ERR_CRC : SD_ERR_READ;
 	}
     }

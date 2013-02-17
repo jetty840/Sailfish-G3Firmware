@@ -523,13 +523,13 @@ void buildAnotherCopy() {
 	recentCommandClock = 0;
 	recentCommandTime  = 0;
 	command_buffer.reset();
-	sdcard::playbackRestart();
 
 #ifdef HAS_FILAMENT_COUNTER
 	addFilamentUsed();
 	lastFilamentLength[0] = 0;
 	lastFilamentLength[1] = 0;
 #endif
+	sdcard::playbackRestart();
 }
 
 
@@ -1017,12 +1017,22 @@ void runCommandSlice() {
 		    else if (sdcard::sdAvailable == sdcard::SD_ERR_NO_CARD_PRESENT ) err = ERR_SD_NOCARD;
 		    else err = ERR_SD_READ;
 		    Motherboard::getBoard().indicateError(err);
+
 #ifdef HAS_FILAMENT_COUNTER
 		    // Save the used filament info
 		    addFilamentUsed();
 #endif
+		    // Ensure that the heaters are turned off
 		    pauseHeaters(0xff);
+
+		    // Wind down the steppers
 		    steppers::abort();
+		    for ( uint8_t j = 0; j < STEPPER_COUNT; j++ )
+			steppers::enableAxis(j, false);
+
+		    // There's likely some command data still in the command buffer
+		    // If we don't flush it, it'll get executed causing the build
+		    // platform to "unclear" itself.
 		    command_buffer.reset();
 
 #ifdef HAS_INTERFACE_BOARD
@@ -1036,9 +1046,8 @@ void runCommandSlice() {
 			else pauseErrorMessage = read_err;
 		    }
 #endif
-		    // And cancel the build
+		    // And finally cancel the build
 		    host::stopBuild();
-		    
 		}
 		else {
 #ifdef HAS_INTERFACE_BOARD
