@@ -1027,6 +1027,8 @@ void runCommandSlice() {
 
 		    // Wind down the steppers
 		    steppers::abort();
+		    for ( uint8_t j = 0; j < STEPPER_COUNT; j++ )
+			steppers::enableAxis(j, false);
 
 		    // There's likely some command data still in the command buffer
 		    // If we don't flush it, it'll get executed causing the build
