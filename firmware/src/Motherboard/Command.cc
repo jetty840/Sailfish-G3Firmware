@@ -32,6 +32,7 @@
 #include "SDCard.hh"
 #include "ExtruderControl.hh"
 #include "StepperAccel.hh"
+#include "Errors.hh"
 
 namespace command {
 
@@ -125,9 +126,11 @@ bool isPaused() {
 	return true;
 }
 
+#ifdef HAS_INTERFACE_BOARD
 const prog_uchar *pauseGetErrorMessage() {
     return pauseErrorMessage;
 }
+#endif
 
 void pauseClearError() {
     if ( paused == PAUSE_STATE_ERROR )
@@ -921,7 +924,11 @@ void handlePauseState(void) {
 	//We finished the last command, now we wait for the platform to reach the bottom
 	//before entering the pause
 	if ( movesplanned() == 0 ) {
-	    paused = ( pauseErrorMessage ) ? PAUSE_STATE_ERROR : PAUSE_STATE_PAUSED;
+#ifdef HAS_INTERFACE_BOARD
+	    paused = ( pauseErrorMessage && hasInterfaceBoard ) ? PAUSE_STATE_ERROR : PAUSE_STATE_PAUSED;
+#else
+	    paused = PAUSE_STATE_PAUSED;
+#endif
 	}
 	break;
 
