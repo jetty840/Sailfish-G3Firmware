@@ -72,6 +72,10 @@ enum PauseState {
 /// queue, for both SD and serial jobs.
 namespace command {
 
+#ifdef HAS_INTERFACE_BOARD
+extern uint16_t altTemp[EXTRUDERS];
+#endif
+
 /// Reset the entire command queue.  Clears out any remaining queued
 /// commands.
 void reset();

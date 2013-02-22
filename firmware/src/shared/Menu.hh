@@ -1,6 +1,7 @@
 #ifndef MENU_HH_
 #define MENU_HH_
 
+#include "EepromDefaults.hh"
 #include "Types.hh"
 #include "ButtonArray.hh"
 #include "LiquidCrystal.hh"
@@ -8,10 +9,7 @@
 #include "CircularBuffer.hh"
 #include "Timeout.hh"
 #include "Command.hh"
-
-#ifdef SPEED_CONTROL
 #include "StepperAccelPlanner.hh"
-#endif
 
 /// The screen class defines a standard interface for anything that should
 /// be displayed on the LCD.
@@ -262,8 +260,22 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
+class ChangeTempScreen: public Screen {
+private:
+        uint8_t activeToolhead;
+        uint16_t altTemp;
 
-#ifdef SPEED_CONTROL
+        void getTemp();
+
+public:
+	micros_t getUpdateRate() {return 50L * 1000L;}
+
+	void update(LiquidCrystal& lcd, bool forceRedraw);
+
+	void reset();
+
+        void notifyButtonPressed(ButtonArray::ButtonName button);
+};
 
 class ChangeSpeedScreen: public Screen {
 private:
@@ -280,8 +292,6 @@ public:
         void notifyButtonPressed(ButtonArray::ButtonName button);
 };
 
-#endif
-
 class CancelBuildMenu: public Menu {
 public:
 	CancelBuildMenu();
@@ -294,14 +304,14 @@ protected:
 	void drawItem(uint8_t index, LiquidCrystal& lcd);
 
 	void handleSelect(uint8_t index);
+
 private:
-	PauseMode		pauseMode;
 	bool			pauseDisabled;
-	PauseAtZPosScreen	pauseAtZPosScreen;
-#ifdef SPEED_CONTROL
-	ChangeSpeedScreen       changeSpeedScreen;
-#endif
 	bool			printAnotherEnabled;
+	PauseMode		pauseMode;
+	PauseAtZPosScreen	pauseAtZPosScreen;
+	ChangeSpeedScreen       changeSpeedScreen;
+        ChangeTempScreen        changeTempScreen;
 };
 
 class MonitorMode: public Screen {

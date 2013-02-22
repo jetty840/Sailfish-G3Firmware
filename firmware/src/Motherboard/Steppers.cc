@@ -72,7 +72,7 @@ bool acceleration = true;
 uint8_t plannerMaxBufferSize;
 FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
 
-#ifdef SPEED_CONTROL
+#ifdef HAS_INTERFACE_BOARD
 FPTYPE speedFactor = KCONSTANT_1;
 uint8_t alterSpeed = 0x00;
 #endif
@@ -522,7 +522,7 @@ void reset() {
 	plannerMaxBufferSize = BLOCK_BUFFER_SIZE - 1;
 #endif
 
-#ifdef SPEED_CONTROL
+#ifdef HAS_INTERFACE_BOARD
 	alterSpeed  = 0x00;
 	speedFactor = KCONSTANT_1;
 #endif
@@ -827,7 +827,7 @@ void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, fl
 		feedrate /= 64.0;
 #endif
 
-#if defined(HAS_INTERFACE_BOARD) && defined(SPEED_CONTROL)
+#ifdef HAS_INTERFACE_BOARD
 		if ( relative & 0x80 ) {
 			feedrate = FPMULT2(feedrate, speedFactor);
 			dda_rate = (int32_t)((float)dda_rate * FPTOF(speedFactor));
