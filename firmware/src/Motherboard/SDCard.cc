@@ -304,7 +304,8 @@ SdErrorCode startCapture(char* filename)
 	return result;
 #endif
 
-    if ( sd_raw_locked() ) return SD_ERR_CARD_LOCKED;
+    if ( sd_raw_locked() )
+	return SD_ERR_CARD_LOCKED;
 
     capturedBytes = 0L;
     playedBytes = 0L;
@@ -360,7 +361,7 @@ void fetchNextByte() {
     int16_t read = fat_read_file(file, &next_byte, 1);
     playedBytes++;
     if ( read > 0 )
-	has_more = true;
+	return;
     else {
 	has_more = false;
 	if ( read < 0 ) {
@@ -414,7 +415,7 @@ SdErrorCode startPlayback(char* filename) {
     fat_seek_file(file, &off, FAT_SEEK_SET);
 
     Motherboard::getBoard().resetCurrentSeconds();
-
+    has_more = true;
     fetchNextByte();
     return SD_SUCCESS;
 }

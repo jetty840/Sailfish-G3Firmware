@@ -84,9 +84,13 @@ uint8_t startingBuildTimePercentage;
 float elapsedSecondsSinceBuildStart;
 
 #ifdef DITTO_PRINT
-        bool dittoPrinting = false;
+bool dittoPrinting = false;
 #endif
 bool deleteAfterUse = true;
+
+#ifdef HAS_INTERFACE_BOARD
+uint16_t altTemp[EXTRUDERS];
+#endif
 
 uint16_t getRemainingCapacity() {
 	uint16_t sz;
@@ -310,6 +314,13 @@ void reset() {
 #endif
 
 #ifdef HAS_INTERFACE_BOARD
+	altTemp[0] = 0;
+#if EXTRUDERS > 1
+	altTemp[1] = 0;
+#endif
+#endif
+
+#ifdef HAS_INTERFACE_BOARD
 	hasInterfaceBoard = Motherboard::getBoard().hasInterface();
 #endif
 
@@ -432,7 +443,7 @@ void platformAccess(bool clearPlatform) {
    }
 #endif
 
-#ifdef SPEED_CONTROL
+#ifdef HAS_INTERFACE_BOARD
    // Don't let the platform clearing be sped up, otherwise Z steps may be skipped
    //   and then the resume after pause will be at the wrong height
    uint8_t as = steppers::alterSpeed;
@@ -441,7 +452,7 @@ void platformAccess(bool clearPlatform) {
 
    steppers::setTargetNewExt(targetPosition, dda_rate, (uint8_t)0, distance, FPTOI16(stepperAxis[Z_AXIS].max_feedrate << 6));
 
-#ifdef SPEED_CONTROL
+#ifdef HAS_INTERFACE_BOARD
    // Restore use of speed control
    steppers::alterSpeed = as;
 #endif
@@ -586,7 +597,7 @@ void unPauseHeaters(void) {
 }
 
 
-//Returns true if the heaters are at the correct temperature (near their set poins),
+//Returns true if the heaters are at the correct temperature (near their set points),
 //false if not
 bool areHeatersAtTemperature(void) {
 	uint8_t ready;
@@ -753,7 +764,7 @@ static void handleMovementCommand(const uint8_t &command) {
 
 			line_number++;
 			steppers::setTargetNewExt(Point(x,y,z,a,b), dda_rate,
-#ifdef SPEED_CONTROL
+#ifdef HAS_INTERFACE_BOARD
 						  relative | steppers::alterSpeed,
 #else
 						  relative,
@@ -823,21 +834,29 @@ bool processExtruderCommandPacket(bool deleteAfterUse, int8_t overrideToolIndex)
 		//Override the gcode temperature if set for an extruder or platform
 		if (( commandCode == SLAVE_CMD_SET_TEMP ) || ( commandCode == SLAVE_CMD_SET_PLATFORM_TEMP )) {
 			uint16_t *temp = (uint16_t *)&command_buffer[4];
-			if (( *temp != 0 ) && ( eeprom::getEeprom8(eeprom::OVERRIDE_GCODE_TEMP, EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP))) {
+			if ( (*temp != 0) && (
+#ifdef HAS_INTERFACE_BOARD
+				 (altTemp[toolIndex] != 0) ||
+#endif
+				 (eeprom::getEeprom8(eeprom::OVERRIDE_GCODE_TEMP, EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP))) ) {
 				uint16_t overrideTemp = 0;
 
 				switch ( commandCode ) {
-					case SLAVE_CMD_SET_TEMP:
-						overrideTemp = (uint16_t)eeprom::getEeprom8((toolIndex == 0 ) ? eeprom::TOOL0_TEMP : eeprom::TOOL1_TEMP,
-											    (toolIndex == 0 ) ? EEPROM_DEFAULT_TOOL0_TEMP : EEPROM_DEFAULT_TOOL1_TEMP);
-						break;
-					case SLAVE_CMD_SET_PLATFORM_TEMP:
-						overrideTemp = (uint16_t)eeprom::getEeprom8(eeprom::PLATFORM_TEMP, EEPROM_DEFAULT_PLATFORM_TEMP);
-						break;
-					default:
-						break;
+				case SLAVE_CMD_SET_TEMP:
+				    overrideTemp =
+#ifdef HAS_INTERFACE_BOARD
+					(altTemp[toolIndex] > 0) ? altTemp[toolIndex] :
+#endif
+					(uint16_t)eeprom::getEeprom8((toolIndex == 0 ) ? eeprom::TOOL0_TEMP : eeprom::TOOL1_TEMP,
+								     (toolIndex == 0 ) ? EEPROM_DEFAULT_TOOL0_TEMP : EEPROM_DEFAULT_TOOL1_TEMP);
+				    break;
+				case SLAVE_CMD_SET_PLATFORM_TEMP:
+				    overrideTemp = (uint16_t)eeprom::getEeprom8(eeprom::PLATFORM_TEMP, EEPROM_DEFAULT_PLATFORM_TEMP);
+				    break;
+				default:
+				    break;
 				}
-
+				if (overrideTemp > MAX_TEMP) overrideTemp = MAX_TEMP;
 				*temp = overrideTemp;
 			}
 		}

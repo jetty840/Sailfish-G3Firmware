@@ -7,8 +7,8 @@
 // BuzzerSetRepeatsMode
 // ABPCopiesSetScreen
 
-#include "Menu.hh"
 #include "Configuration.hh"
+#include "Menu.hh"
 
 // TODO: Kill this, should be hanlded by build system.
 #ifdef HAS_INTERFACE_BOARD
@@ -59,10 +59,11 @@ static const prog_uchar *genericOnOff_msg2;
 static const prog_uchar *genericOnOff_msg3;
 static const prog_uchar *genericOnOff_msg4;
 
-static const PROGMEM prog_uchar eof_msg1[]    = "Extruder Hold:";
-static const PROGMEM prog_uchar generic_off[] = "Off";
-static const PROGMEM prog_uchar generic_on[]  = "On";
-static const PROGMEM prog_uchar updnset_msg[] = "Up/Dn/Ent to Set";
+static const PROGMEM prog_uchar eof_msg1[]     = "Extruder Hold:";
+static const PROGMEM prog_uchar generic_off[]  = "Off";
+static const PROGMEM prog_uchar generic_on[]   = "On";
+static const PROGMEM prog_uchar updnset_msg[]  = "Up/Dn/Ent to Set";
+static const PROGMEM prog_uchar unknown_temp[] = "XXX";
 
 static const PROGMEM prog_uchar aof_msg1[] = "Accelerated";
 static const PROGMEM prog_uchar aof_msg2[] = "Printing:";
@@ -162,7 +163,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
 	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.1z";
 	//    static PROGMEM prog_uchar splash4[] = " Revision 00000 ";
-	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR SPEED_VERSION;
+	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR;
 
 	if (forceRedraw) {
 		lcd.homeCursor();
@@ -178,7 +179,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.writeFromPgmspace(LOCALIZE(splash4));
 #ifdef MENU_L10N_H_
 		lcd.setCursor(9,3);
-                lcd.writeString((char *)SVN_VERSION_STR SPEED_VERSION);
+                lcd.writeString((char *)SVN_VERSION_STR);
 #endif
 	}
 	else {
@@ -249,11 +250,9 @@ void UserViewMenu::handleSelect(uint8_t index) {
 }
 
 void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
-	uint8_t active_toolhead;
-	Point position = steppers::getStepperPosition(&active_toolhead);
 	int32_t interval = 1000;
 
-	float	speed = 1.5;	//In mm's
+	float speed = 1.5;	//In mm's
 
 	if ( pauseModeJog ) 	jogDistance = DISTANCE_CONT;
 	else {
@@ -278,6 +277,9 @@ void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
 	float stepsPerSecond;
 	enum AxisEnum axisIndex = X_AXIS;
 	uint16_t eepromLocation = eeprom::HOMING_FEED_RATE_X;
+
+	uint8_t activeToolhead;
+	Point position = steppers::getStepperPosition(&activeToolhead);
 
 	switch(direction) {
         	case ButtonArray::XMINUS:
@@ -320,7 +322,7 @@ void JoggerMenu::jog(ButtonArray::ButtonName direction, bool pauseModeJog) {
 			if ( ! ACCELERATION_EXTRUDE_WHEN_NEGATIVE_A )	stepsPerSecond *= -1;
 
 			//Extrude for 0.5 seconds
-			position[active_toolhead + A_AXIS] += (int32_t)(0.5 * stepsPerSecond);
+			position[activeToolhead + A_AXIS] += (int32_t)(0.5 * stepsPerSecond);
 			break;
 	}
 
@@ -580,26 +582,28 @@ void ExtruderMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 	OutPacket responsePacket;
 	Point position;
+	uint8_t activeToolhead;
 
 	// Redraw tool info
 	switch (updatePhase) {
 	case 0:
+	        steppers::getStepperPosition(&activeToolhead);
 		lcd.setRow(3);
-		if (extruderControl(0, SLAVE_CMD_GET_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
+		if (extruderControl(activeToolhead, SLAVE_CMD_GET_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint16_t data = responsePacket.read16(1);
-			lcd.writeInt(data,3);
+			lcd.writeInt(data, 3);
 		} else {
-			lcd.writeString((char *)"XXX");
+			lcd.writeFromPgmspace(unknown_temp);
 		}
 		break;
 
 	case 1:
 		lcd.setCursor(4,3);
-		if (extruderControl(0, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0)) {
+		if (extruderControl(activeToolhead, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint16_t data = responsePacket.read16(1);
-			lcd.writeInt(data,3);
+			lcd.writeInt(data, 3);
 		} else {
-			lcd.writeString((char *)"XXX");
+			lcd.writeFromPgmspace(unknown_temp);
 		}
 		break;
 	}
@@ -611,13 +615,15 @@ void ExtruderMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 }
 
 void ExtruderMode::extrude(int32_t seconds, bool overrideTempCheck) {
+	uint8_t activeToolhead;
+	Point position = steppers::getStepperPosition(&activeToolhead);
+
 	//Check we're hot enough
 	if ( ! overrideTempCheck )
 	{
 		OutPacket responsePacket;
-		if (extruderControl(0, SLAVE_CMD_IS_TOOL_READY, EXTDR_CMD_GET, responsePacket, 0)) {
+		if (extruderControl(activeToolhead, SLAVE_CMD_IS_TOOL_READY, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint8_t data = responsePacket.read8(1);
-		
 			if ( ! data )
 			{
 				overrideExtrudeSeconds = seconds;
@@ -626,9 +632,6 @@ void ExtruderMode::extrude(int32_t seconds, bool overrideTempCheck) {
 			}
 		}
 	}
-
-	uint8_t active_toolhead;
-	Point position = steppers::getStepperPosition(&active_toolhead);
 
 	float mms = (float)eeprom::getEeprom8(eeprom::EXTRUDE_MMS, EEPROM_DEFAULT_EXTRUDE_MMS);
 	float stepsPerSecond = mms * stepperAxisStepsPerMM(A_AXIS);
@@ -640,7 +643,7 @@ void ExtruderMode::extrude(int32_t seconds, bool overrideTempCheck) {
 
 	if ( seconds == 0 )	steppers::abort();
 	else {
-		position[A_AXIS + active_toolhead] += direction * seconds * stepsPerSecond;
+		position[A_AXIS + activeToolhead] += direction * seconds * stepsPerSecond;
 		steppers::setTarget(position, interval);
 	}
 
@@ -1079,16 +1082,18 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	}
 
 	OutPacket responsePacket;
+	uint8_t activeToolhead;
+	steppers::getStepperPosition(&activeToolhead);
 
 	// Redraw tool info
 	switch (updatePhase) {
 	case UPDATE_PHASE_TOOL_TEMP:
 		lcd.setCursor(7,2);
-		if (extruderControl(0, SLAVE_CMD_GET_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
+		if (extruderControl(activeToolhead, SLAVE_CMD_GET_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint16_t data = responsePacket.read16(1);
-			lcd.writeInt(data,3);
+			lcd.writeInt(data, 3);
 		} else {
-			lcd.writeString((char *)"XXX");
+			lcd.writeFromPgmspace(unknown_temp);
 		}
 		break;
 
@@ -1096,15 +1101,15 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(11,2);
 		uint16_t data;
 		data = 0;
-		if (extruderControl(0, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0)) {
+		if (extruderControl(activeToolhead, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0)) {
 			data = responsePacket.read16(1);
-			lcd.writeInt(data,3);
+			lcd.writeInt(data, 3);
 		} else {
-			lcd.writeString((char *)"XXX");
+			lcd.writeFromPgmspace(unknown_temp);
 		}
 
 		lcd.setCursor(5,2);
-		if (extruderControl(0, SLAVE_CMD_IS_TOOL_READY, EXTDR_CMD_GET, responsePacket, 0)) {
+		if (extruderControl(activeToolhead, SLAVE_CMD_IS_TOOL_READY, EXTDR_CMD_GET, responsePacket, 0)) {
 			flashingTool = false;
 			uint8_t ready = responsePacket.read8(1);
 			if ( data != 0 ) {
@@ -1119,9 +1124,9 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		lcd.setCursor(7,3);
 		if (extruderControl(0, SLAVE_CMD_GET_PLATFORM_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint16_t data = responsePacket.read16(1);
-			lcd.writeInt(data,3);
+			lcd.writeInt(data, 3);
 		} else {
-			lcd.writeString((char *)"XXX");
+			lcd.writeFromPgmspace(unknown_temp);
 		}
 		break;
 
@@ -1130,9 +1135,9 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		data = 0;
 		if (extruderControl(0, SLAVE_CMD_GET_PLATFORM_SP, EXTDR_CMD_GET, responsePacket, 0)) {
 			data = responsePacket.read16(1);
-			lcd.writeInt(data,3);
+			lcd.writeInt(data, 3);
 		} else {
-			lcd.writeString((char *)"XXX");
+			lcd.writeFromPgmspace(unknown_temp);
 		}
 
 		lcd.setCursor(5,3);
@@ -1342,7 +1347,7 @@ void MonitorMode::notifyButtonPressed(ButtonArray::ButtonName button) {
 void VersionMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar v_version1[] = "Motherboard  _._";
 	const static PROGMEM prog_uchar v_version2[] = "   Extruder  _._";
-	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR SPEED_VERSION;
+	const static PROGMEM prog_uchar v_version3[] = " Revision " SVN_VERSION_STR;
 	const static PROGMEM prog_uchar v_version4[] = "Free SRAM ";
 
 	if (forceRedraw) {
@@ -1503,19 +1508,18 @@ void CancelBuildMenu::resetState() {
 
 	if ( pauseDisabled )	{
 		itemIndex = 2;
-		itemCount = 4;
+		itemCount = 3;
 	} else {
 		itemIndex = 1;
-#ifdef SPEED_CONTROL
-		itemCount = 8;
-#else
-		itemCount = 7;
-#endif
+		itemCount = 9;
 	}
-
+	if ( printAnotherEnabled )
+	    itemCount++;
+#if 0
 	if ( printAnotherEnabled ) {
 		itemIndex = 1;
 	}
+#endif
 
 	firstItemIndex = itemIndex;
 }
@@ -1528,16 +1532,20 @@ void CancelBuildMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 
 
 void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
+        // --- first screen ---
 	const static PROGMEM prog_uchar cb_choose[]		= "Please Choose:";
-	const static PROGMEM prog_uchar cb_abort[]		= "Abort Print   ";
-	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another ";
-	const static PROGMEM prog_uchar cb_pauseZ[]		= "Pause at ZPos ";
-#ifdef SPEED_CONTROL
-	const static PROGMEM prog_uchar cb_speed[]              = "Change Speed";
-#endif
-	const static PROGMEM prog_uchar cb_pause[]		= "Pause         ";
-	const static PROGMEM prog_uchar cb_pauseHBPHeat[]	= "Pause, HBP on ";
+	const static PROGMEM prog_uchar cb_abort[]		= "Abort Print";
+	const static PROGMEM prog_uchar cb_pause[]		= "Pause";
+	const static PROGMEM prog_uchar cb_pauseZ[]		= "Pause at ZPos";
+
+        // --- second screen ---
+	const static PROGMEM prog_uchar cb_pauseHBPHeat[]	= "Pause, HBP on";
 	const static PROGMEM prog_uchar cb_pauseNoHeat[]	= "Pause, No Heat";
+	const static PROGMEM prog_uchar cb_speed[]              = "Change Speed";
+	const static PROGMEM prog_uchar cb_temp[]               = "Change Temp";
+
+	// --- third screen ---
+	const static PROGMEM prog_uchar cb_printAnother[]	= "Print Another";
 	const static PROGMEM prog_uchar cb_cont[]		= "Continue Build";
 	const static PROGMEM prog_uchar cb_back[]               = "Return to Menu";
 
@@ -1546,16 +1554,19 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	//Implement variable length menu
 	uint8_t lind = 0;
 
+	// ---- first screen ----
+
 	if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_choose));
 	lind ++;
 
+	// skip abort if paused...
 	if (( pauseDisabled ) && ( ! printAnotherEnabled )) lind ++;
 
 	if ( index == lind)	lcd.writeFromPgmspace(LOCALIZE(cb_abort));
 	lind ++;
 
-	if ( printAnotherEnabled ) {
-		if ( index == lind ) lcd.writeFromPgmspace(LOCALIZE(cb_printAnother));
+	if ( ! pauseDisabled ) {
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pause));
 		lind ++;
 	}
 
@@ -1564,17 +1575,7 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 		lind ++;
 	}
 
-#ifdef SPEED_CONTROL
-	if ( ! pauseDisabled ) {
-		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_speed));
-		lind ++;
-	}
-#endif
-
-	if ( ! pauseDisabled ) {
-		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pause));
-		lind ++;
-	}
+	// ---- second screen ----
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseHBPHeat));
@@ -1583,6 +1584,23 @@ void CancelBuildMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_pauseNoHeat));
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_speed));
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind )	lcd.writeFromPgmspace(LOCALIZE(cb_temp));
+		lind ++;	    
+	}
+
+	// ---- third screen ----
+
+	if ( printAnotherEnabled ) {
+		if ( index == lind ) lcd.writeFromPgmspace(LOCALIZE(cb_printAnother));
 		lind ++;
 	}
 
@@ -1612,10 +1630,11 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 	}
 	lind ++;
 
-	if ( printAnotherEnabled ) {
+	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
-			command::buildAnotherCopy();
-			interface::popScreen();
+			command::pause(true, PAUSE_HEAT_ON);  // pause, all heaters left on
+			pauseMode.autoPause = 0;
+			interface::pushScreen(&pauseMode);
 			return;
 		}
 		lind ++;
@@ -1629,26 +1648,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 		lind ++;
 	}
 
-#ifdef SPEED_CONTROL
-	if ( ! pauseDisabled ) {
-		if ( index == lind )
-		{
-			interface::pushScreen(&changeSpeedScreen);
-			return;
-		}
-		lind ++;
-	}
-#endif
-
-	if ( ! pauseDisabled ) {
-		if ( index == lind ) {
-			command::pause(true, PAUSE_HEAT_ON);  // pause, all heaters left on
-			pauseMode.autoPause = 0;
-			interface::pushScreen(&pauseMode);
-			return;
-		}
-		lind ++;
-	}
+	// ---- second screen ----
 
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
@@ -1665,6 +1665,34 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 			command::pause(true, PAUSE_EXT_OFF | PAUSE_HBP_OFF);  // pause no heat
 			pauseMode.autoPause = 0;
 			interface::pushScreen(&pauseMode);
+		}
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind )
+		{
+			interface::pushScreen(&changeSpeedScreen);
+			return;
+		}
+		lind ++;
+	}
+
+	if ( ! pauseDisabled ) {
+		if ( index == lind )
+		{
+			interface::pushScreen(&changeTempScreen);
+			return;
+		}
+		lind ++;
+	}
+
+	// ---- third screen ----
+	if ( printAnotherEnabled ) {
+		if ( index == lind ) {
+			command::buildAnotherCopy();
+			interface::popScreen();
+			return;
 		}
 		lind ++;
 	}
@@ -2109,10 +2137,12 @@ PreheatMenu::PreheatMenu() {
 
 void PreheatMenu::fetchTargetTemps() {
 	OutPacket responsePacket;
-	if (extruderControl(0, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0)) {
+	uint8_t activeToolhead;
+	steppers::getStepperPosition(&activeToolhead);
+	if (extruderControl(activeToolhead, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0)) {
 		tool0Temp = responsePacket.read16(1);
 	}
-	if (extruderControl(0, SLAVE_CMD_GET_PLATFORM_SP, EXTDR_CMD_GET, responsePacket, 0)) {
+	if (extruderControl(activeToolhead, SLAVE_CMD_GET_PLATFORM_SP, EXTDR_CMD_GET, responsePacket, 0)) {
 		platformTemp = responsePacket.read16(1);
 	}
 }
@@ -2155,16 +2185,18 @@ void PreheatMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 void PreheatMenu::handleSelect(uint8_t index) {
 	static const PROGMEM prog_uchar ph_message1[] = "Tool0 Targ Temp:";
 	const static PROGMEM prog_uchar ph_message2[] = "Bed Target Temp:";
+	uint8_t activeToolhead;
+	steppers::getStepperPosition(&activeToolhead);
 
 	OutPacket responsePacket;
 	switch (index) {
 		case 0:
 			// Toggle Extruder heater on/off
 			if (tool0Temp > 0) {
-				extruderControl(0, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, 0);
+				extruderControl(activeToolhead, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, 0);
 			} else {
 				uint8_t value = eeprom::getEeprom8(eeprom::TOOL0_TEMP, EEPROM_DEFAULT_TOOL0_TEMP);
-				extruderControl(0, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)value);
+				extruderControl(activeToolhead, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)value);
 			}
 			fetchTargetTemps();
 			lastDrawIndex = 255; // forces redraw.
@@ -2175,7 +2207,7 @@ void PreheatMenu::handleSelect(uint8_t index) {
 				extruderControl(0, SLAVE_CMD_SET_PLATFORM_TEMP, EXTDR_CMD_SET, responsePacket, 0);
 			} else {
 				uint8_t value = eeprom::getEeprom8(eeprom::PLATFORM_TEMP, EEPROM_DEFAULT_PLATFORM_TEMP);
-				extruderControl(0, SLAVE_CMD_SET_PLATFORM_TEMP, EXTDR_CMD_SET, responsePacket, value);
+				extruderControl(0, SLAVE_CMD_SET_PLATFORM_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)value);
 			}
 			fetchTargetTemps();
 			lastDrawIndex = 255; // forces redraw.
@@ -2575,7 +2607,105 @@ void PauseAtZPosScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 	if ( pauseAtZPos < 0.001 )	pauseAtZPos = 0.0;
 }
 
-#ifdef SPEED_CONTROL
+void ChangeTempScreen::reset() {
+    // Make getTemp() think that a toolhead change has occurred
+    activeToolhead = 255;
+    altTemp = 0;
+    getTemp();
+}
+
+void ChangeTempScreen::getTemp() {
+    uint8_t at;
+    steppers::getStepperPosition(&at);
+    if ( at != activeToolhead ) {
+	activeToolhead = at;
+	altTemp = command::altTemp[activeToolhead];
+	if ( altTemp == 0 ) {
+	    // Get the current set point
+	    OutPacket responsePacket;
+	    if ( extruderControl(activeToolhead, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0) ) {
+		altTemp = responsePacket.read16(1);
+	    }
+	    else {
+		// Cannot get the current set point....  Use pre-heat temp?
+		if ( activeToolhead == 0 )
+		    altTemp = (uint16_t)eeprom::getEeprom8(eeprom::TOOL0_TEMP, EEPROM_DEFAULT_TOOL0_TEMP);
+		else
+		    altTemp = (uint16_t)eeprom::getEeprom8(eeprom::TOOL1_TEMP, EEPROM_DEFAULT_TOOL1_TEMP);
+	    }
+	}
+	if ( altTemp > (uint16_t)MAX_TEMP ) altTemp = MAX_TEMP;
+    }
+}
+
+void ChangeTempScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
+    const static PROGMEM prog_uchar ct_message1[] = "Extruder temp:";
+
+    if (forceRedraw) {
+	lcd.clearHomeCursor();
+	lcd.writeFromPgmspace(LOCALIZE(ct_message1));
+
+	lcd.setRow(3);
+	lcd.writeFromPgmspace(LOCALIZE(updnset_msg));
+    }
+
+    // Since the print is still running, the active tool head may have changed
+    getTemp();
+
+    // Redraw tool info
+    lcd.setRow(1);
+    lcd.writeInt(altTemp, 3);
+    lcd.write('C');
+}
+
+void ChangeTempScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
+    // We change the actual steppers::speedFactor so that
+    //   the user can see the change dynamically (after making it through
+    //   the queue of planned blocks)
+    int16_t temp = (int16_t)(0x7fff & altTemp);
+    switch (button) {
+    case ButtonArray::OK:
+    {
+	OutPacket responsePacket;
+	// Set the temp
+	command::altTemp[activeToolhead] = altTemp;
+	// Only set the temp if the heater is active
+	if ( extruderControl(activeToolhead, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0) ) {
+	    uint16_t data = responsePacket.read16(1);
+	    if ( data != 0 )
+		extruderControl(activeToolhead, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)altTemp);
+	}
+    }
+        // FALL THROUGH
+    case ButtonArray::CANCEL:
+	interface::popScreen();
+	interface::popScreen();
+	return;
+    case ButtonArray::ZPLUS:
+	// increment more
+	temp += 5;
+	break;
+    case ButtonArray::ZMINUS:
+	// decrement more
+	temp -= 5;
+	break;
+    case ButtonArray::YPLUS:
+	// increment less
+	temp += 1;
+	break;
+    case ButtonArray::YMINUS:
+	// decrement less
+	temp -= 1;
+	break;
+    default :
+	return;
+    }
+
+    if (temp > MAX_TEMP ) altTemp = MAX_TEMP;
+    else if ( temp < 0 ) altTemp = 0;
+    else altTemp = (uint16_t)(0x7fff & temp);
+}
+
 void ChangeSpeedScreen::reset() {
 	// So that we can restore the speed in case of a CANCEL
 	speedFactor = steppers::speedFactor;
@@ -2641,8 +2771,6 @@ void ChangeSpeedScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 	steppers::alterSpeed  = (sf == KCONSTANT_1) ? 0x00 : 0x80;
 	steppers::speedFactor = sf;
 }
-
-#endif // SPEED_CONTROL
 
 void AdvanceABPMode::reset() {
 	abpForwarding = false;
@@ -3043,7 +3171,7 @@ bool ExtruderFanMenu::isEnabled() {
 void ExtruderFanMenu::enable(bool enabled) {
 	OutPacket responsePacket;
 
-	extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, (enabled)?1:0);
+	extruderControl(0, SLAVE_CMD_TOGGLE_FAN, EXTDR_CMD_SET, responsePacket, (uint16_t)((enabled)?1:0));
 }
 
 void ExtruderFanMenu::setupTitle() {
@@ -3232,6 +3360,9 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 	OutPacket responsePacket;
 
 	if ( !acceleration && index > 2 ) ++index;
+
+	genericOnOff_msg3 = LOCALIZE(generic_off);
+	genericOnOff_msg4 = LOCALIZE(generic_on);
 
 	switch (index) {
 	case 0:

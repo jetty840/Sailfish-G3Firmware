@@ -45,7 +45,7 @@ namespace steppers {
     extern bool acceleration;
     extern FPTYPE axis_steps_per_unit_inverse[STEPPER_COUNT];
     extern bool extruder_hold[EXTRUDERS];
-#ifdef SPEED_CONTROL
+#ifdef HAS_INTERFACE_BOARD
     extern uint8_t alterSpeed;
     extern FPTYPE speedFactor;
 #endif
