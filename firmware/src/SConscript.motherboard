@@ -42,14 +42,6 @@ from os.path import dirname
 # Parameters
 platform = ARGUMENTS.get('platform','mb24')
 
-# Speed control
-speed_def = ''
-speed_str = ''
-speed_control = ARGUMENTS.get('speed_control','0')
-if speed_control == '1':
-   speed_def = '-DSPEED_CONTROL'
-   speed_str = 's'
-
 # Broken SD
 broken_def = ''
 broken_str = ''
@@ -96,7 +88,7 @@ vstr = ARGUMENTS.get('version',vstr)
 
 version = parse_version(vstr)
 
-target_name = "MB-"+platform+locale_tname+"-v"+str(version//100)+"."+str(version%100)+speed_str+broken_str
+target_name = "MB-"+platform+locale_tname+"-v"+str(version//100)+"."+str(version%100)+broken_str
 
 if (platform == 'rrmbv12'):
 	default_baud = '38400'
@@ -168,7 +160,6 @@ flags=[
 	'-D__PROG_TYPES_COMPAT__',
 	'-D__DELAY_BACKWARD_COMPATIBLE__',
 	locale_def,
-	speed_def,
 	broken_def,
 	'-mmcu='+mcu,
 	'-g',
