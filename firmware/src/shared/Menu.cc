@@ -3543,7 +3543,12 @@ void GenericOnOffMenu::handleSelect(uint8_t index) {
 	eeprom_write_byte((uint8_t*)genericOnOff_offset, newValue);
 	sei();
 	//Reset
-	host::stopBuildNow();
+#ifndef BROKEN_SD
+	if ( genericOnOff_offset == eeprom::SD_USE_CRC )
+	    sdcard::mustReinit = true;
+	else
+#endif
+	    host::stopBuildNow();
     }
 }
 
