@@ -3496,8 +3496,10 @@ GenericOnOffMenu::GenericOnOffMenu() {
 }
 
 void GenericOnOffMenu::resetState() {
-    itemIndex = eeprom::getEeprom8(genericOnOff_offset, genericOnOff_default) ? 3 : 2; 
-    firstItemIndex = 2;
+	uint8_t val = eeprom::getEeprom8(genericOnOff_offset, genericOnOff_default);
+	bool state = (genericOnOff_offset == eeprom::SD_USE_CRC)  ? (val == 1) : (val != 0);
+	itemIndex = state ? 3 : 2; 
+	firstItemIndex = 2;
 }
 
 void GenericOnOffMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
