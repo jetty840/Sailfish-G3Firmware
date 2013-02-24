@@ -1052,7 +1052,6 @@ void runCommandSlice() {
 		    pauseHeaters(0xff);
 
 		    // Wind down the steppers
-		    steppers::abort();
 		    for ( uint8_t j = 0; j < STEPPER_COUNT; j++ )
 			steppers::enableAxis(j, false);
 
