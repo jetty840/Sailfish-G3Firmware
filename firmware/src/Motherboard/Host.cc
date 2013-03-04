@@ -243,8 +243,11 @@ bool processCommandPacket(const InPacket& from_host, OutPacket& to_host) {
 // puts fw version into a reply packet, and send it back
 inline void handleVersion(const InPacket& from_host, OutPacket& to_host) {
 
-    // Case to give an error on Replicator G versions older than 0039
-    if(from_host.read16(1) < 39) {
+    // Give an error on Replicator G versions older than 0039
+    //   HOWEVER, allow RepG 29 for purposes of setting up a second
+    //   extruders tool head index
+    int16_t rv = from_host.read16(1);
+    if( (rv != 29) && (rv < 39) ) {
         to_host.append8(RC_OK);
         to_host.append16(0x0000);
     }
