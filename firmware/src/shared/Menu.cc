@@ -1521,7 +1521,7 @@ void CancelBuildMenu::resetState() {
 	}
 #endif
 
-	firstItemIndex = itemIndex;
+	firstItemIndex = 1;
 }
 
 
