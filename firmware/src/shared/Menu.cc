@@ -34,6 +34,7 @@
 #include "ExtruderControl.hh"
 #include "Main.hh"
 #include "locale.h"
+#include "lib_sd/sd_raw_err.h"
 
 // Maximum length of an SD card file
 #define SD_MAXFILELEN 64
@@ -4553,6 +4554,7 @@ static void timedMessage(LiquidCrystal& lcd, uint8_t which)
 	const static PROGMEM prog_uchar sderr_fnf[]       = "File not found";
 	const static PROGMEM prog_uchar sderr_toobig[]    = "Too big";
 	const static PROGMEM prog_uchar sderr_crcerr[]    = "CRC error";
+	const static PROGMEM prog_uchar sderr_comms[]     = "Comms failure";
 
 	const static PROGMEM prog_uchar eeprom_msg11[]  = "Write Failed!";
 	const static PROGMEM prog_uchar eeprom_msg12[]  = "File exists!";
@@ -4571,20 +4573,27 @@ static void timedMessage(LiquidCrystal& lcd, uint8_t which)
 	{
 	    lcd.writeFromPgmspace(LOCALIZE(sderr_badcard));
 	    const prog_uchar *msg = 0;
-	    switch (sdcard::sdAvailable) {
-	    case sdcard::SD_SUCCESS:             msg = LOCALIZE(sderr_nofiles); break;
-	    case sdcard::SD_ERR_NO_CARD_PRESENT: msg = LOCALIZE(sderr_nocard); break;
-	    case sdcard::SD_ERR_INIT_FAILED:     msg = LOCALIZE(sderr_initfail); break;
-	    case sdcard::SD_ERR_PARTITION_READ:  msg = LOCALIZE(sderr_partition); break;
-	    case sdcard::SD_ERR_OPEN_FILESYSTEM: msg = LOCALIZE(sderr_filesys); break;
-	    case sdcard::SD_ERR_NO_ROOT:         msg = LOCALIZE(sderr_noroot); break;
-	    case sdcard::SD_ERR_CARD_LOCKED:     msg = LOCALIZE(sderr_locked); break;
-	    case sdcard::SD_ERR_FILE_NOT_FOUND:  msg = LOCALIZE(sderr_fnf); break;
-	    case sdcard::SD_ERR_VOLUME_TOO_BIG:  msg = LOCALIZE(sderr_toobig); break;
-	    case sdcard::SD_ERR_CRC:             msg = LOCALIZE(sderr_crcerr); break;
-	    default:
-	    case sdcard::SD_ERR_GENERIC:
-		break;
+	    if ( sdcard::sdErrno == SDR_ERR_BADRESPONSE ||
+		 sdcard::sdErrno == SDR_ERR_COMMS ||
+		 sdcard::sdErrno == SDR_ERR_PATTERN ||
+		 sdcard::sdErrno == SDR_ERR_VOLTAGE )
+		    msg = LOCALIZE(sderr_comms);
+	    else {
+		    switch (sdcard::sdAvailable) {
+		    case sdcard::SD_SUCCESS:             msg = LOCALIZE(sderr_nofiles); break;
+		    case sdcard::SD_ERR_NO_CARD_PRESENT: msg = LOCALIZE(sderr_nocard); break;
+		    case sdcard::SD_ERR_INIT_FAILED:     msg = LOCALIZE(sderr_initfail); break;
+		    case sdcard::SD_ERR_PARTITION_READ:  msg = LOCALIZE(sderr_partition); break;
+		    case sdcard::SD_ERR_OPEN_FILESYSTEM: msg = LOCALIZE(sderr_filesys); break;
+		    case sdcard::SD_ERR_NO_ROOT:         msg = LOCALIZE(sderr_noroot); break;
+		    case sdcard::SD_ERR_CARD_LOCKED:     msg = LOCALIZE(sderr_locked); break;
+		    case sdcard::SD_ERR_FILE_NOT_FOUND:  msg = LOCALIZE(sderr_fnf); break;
+		    case sdcard::SD_ERR_VOLUME_TOO_BIG:  msg = LOCALIZE(sderr_toobig); break;
+		    case sdcard::SD_ERR_CRC:             msg = LOCALIZE(sderr_crcerr); break;
+		    default:
+		    case sdcard::SD_ERR_GENERIC:
+			    break;
+		    }
 	    }
 	    if ( msg ) {
 		lcd.setRow(1);

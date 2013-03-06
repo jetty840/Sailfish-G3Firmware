@@ -20,6 +20,15 @@ splash2 " -------------- "
 splash3 "Thing 32084 4.1z"
 splash4 " Revision _____ "
 
+// Generic strings
+updnset_msg "Arriba/Abajo  OK"
+eof_msg1    "Extruder Hold:"
+generic_off "Apagado"
+generic_on  "On"
+sdcrc_msg1  "Perform SD card"
+sdcrc_msg2  "error checking:"
+units_mm    "mm"
+
 // User view menu
 uv_msg   "Direccion X/Y:"
 uv_model "Vista normal"
@@ -56,7 +65,6 @@ etc_override "Ignorar"
 // Mood Light Mode menu
 ml_mood1   "Modo: "
 ml_mood3_1 "(definir)"
-ml_msg4    "Arriba/Abajo  OK"
 ml_blank   "          "
 ml_moodNotPresent1 "No hay control"
 ml_moodNotPresent2 "de luces"
@@ -67,7 +75,6 @@ ml_moodNotPresent4 "   thing:15347"
 mlsrgb_message1_red   "Rojo:"
 mlsrgb_message1_green "Verde:"
 mlsrgb_message1_blue  "Azul:"
-mlsrgb_message4       "Arriba/Abajo  OK"
 
 // Monitor menu
 mon_extruder_temp     "Extr:  ---/---\\001"
@@ -79,7 +86,6 @@ mon_time_left_secs    "segs"
 mon_time_left_none    "   n/a "
 mon_zpos              "Altura:         "
 mon_speed             "Vel:            "
-mon_zpos_mm           " mm"
 mon_filament          "Material:0.00m  "
 mon_copies            "Copia:          "
 mon_of                " de "
@@ -96,9 +102,11 @@ cb_choose       "Opciones:"
 cb_abort        "Detener proceso"
 cb_printAnother "Imprimir otro"
 cb_pauseZ       "Programar pausa"
-cb_pause        "Pausar         "
-cb_pauseHBPHeat "Pausar/HBP     "
-cb_pauseNoHeat  "Pausar/enfriar "
+cb_speed        "Change Speed"
+cb_temp         "Change Temp"
+cb_pause        "Pausar"
+cb_pauseHBPHeat "Pausar/HBP"
+cb_pauseNoHeat  "Pausar/enfriar"
 cb_back         "Continuar"
 
 // Main menu
@@ -124,9 +132,6 @@ main_homingRates     "Velocidades"
 main_versions        "Acerca de"
 main_eeprom          "EEPROM"
 
-// Value Set screen
-vs_message4 "Arriba/Abajo  OK"
-
 // Preheat menu
 ph_heat     "Calentar "
 ph_cool     "Enfriar "
@@ -142,10 +147,6 @@ ha_home1 "Mover al inicio:"
 ha_home2 "  Y            Z"
 ha_home3 "X   X (sensores)"
 ha_home4 "  Y            Z"
-
-// Enable Disable menu
-ed_disable "Desactivado"
-ed_enable  "Activado"
 
 // Test End Stops menu
 tes_test1 "Prueba sensores:"
@@ -166,11 +167,19 @@ p_paused2               "   Y+         Z+"
 p_paused3               "X- Rev X+  (Ade)"
 p_paused4               "   Y-         Z-"
 p_close                 "):"
-
+p_cancel1               "SD card error"
+p_cancel2               "Build cancelled"
+p_cancel3               "Press any button"
+p_cancel4               "to continue"
 // Pause @ ZPos menu
 pz_message1 "Altura de pausa:"
-pz_message4 "Arriba/Abajo  OK"
 pz_mm       "mm   "
+
+// Change Speed menu
+cs_message1 "Increase speed:"
+
+// Change Temp menu
+ct_message1 "Extruder temp:"
 
 // Advance ABP menu
 abp_msg1 "Avanzar ABP:"
@@ -198,13 +207,10 @@ c_reset  "     (reiniciar)"
 ho_message1x "Limite eje X:"
 ho_message1y "Limite eje Y:"
 ho_message1z "Limite eje Z:"
-ho_message4  "Arriba/Abajo  OK"
-ho_mm        "mm"
 
 // Buzzer Set Repeats menu
 bsr_message1 "Alarma sonora:"
 bsr_message2 "(0=Apagado)"
-bsr_message4 "Arriba/Abajo  OK"
 bsr_times    " veces "
 
 // Filament Used Reset menu
@@ -224,18 +230,16 @@ bs_item1 "Imprimir doble"
 bs_item2 "Modo impresion"
 bs_item3 "Aceleracion"
 bs_item4 "Extruder Hold"
-bs_item4 "Toolhead System"
-bs_item6 "Copias ABP (SD)"
+bs_item5 "Toolhead System"
+bs_item6 "SD Err Checking"
+bs_item7 "Copias ABP (SD)"
 
 // ABP Copies Set menu
 abp_message1 "Copias ABP (SD):"
-abp_message4 "Arriba/Abajo  OK"
 
 // Acceleration On Off menu
 aof_msg1 "Modo de impresion"
 aof_msg2 "a utilizar:"
-aof_off  "Normal"
-aof_on   "Acelerado"
 
 // Toolhead Offset System menu
 ts_msg1 "Toolhead offset"
@@ -254,7 +258,6 @@ ps_msg4 "Guardar perfil"
 
 // Profile Change Name menu
 pcn_message1 "Nombre perfil:"
-pcn_message4 "Arriba/Abajo  OK"
 pcn_blank    " "
 
 // Profile Display Settings menu
@@ -264,9 +267,6 @@ pds_zOffset  "ZOff: "
 pds_hbp      "Plat Temp:  "
 pds_tool0    "Extr Temp:  "
 pds_extruder "Extr MM/s:  "
-
-// Current Position menu
-cp_mm " mm"
 
 // Unable To Open File menu
 utof_msg1 "Error: El nombre"
@@ -292,20 +292,31 @@ as_message1MaxSpeedChangeY  "MaxSpeedChangeY:"
 as_message1MaxSpeedChangeZ  "MaxSpeedChangeZ:"
 as_message1MaxSpeedChangeA  "MaxSpeedChangeR:"
 as_message1MaxSpeedChangeB  "MaxSpeedChangeL:"
-as_message4                 "Arriba/Abajo  OK"
 as_blank                    "    "
 
 // End Stop Config menu
 esc_message1 "EndstopsPresent:"
-esc_message4 "Arriba/Abajo  OK"
 esc_blank    " "
 
 // Homing Feed Rates menu
 hfr_message1x "Velocidad eje X:"
 hfr_message1y "Velocidad eje Y:"
 hfr_message1z "Velocidad eje Z:"
-hfr_message4  "Arriba/Abajo  OK"
 hfr_mm        "mm/min "
+
+// SD card errors
+sderr_badcard       "SD card error"
+sderr_nofiles       "No files found"
+sderr_nocard        "No SD card"
+sderr_initfail      "Card init failed"
+sderr_partition     "Bad partition"
+sderr_filesys       "Is it FAT-16?"
+sderr_noroot        "No root folder"
+sderr_locked        "Read locked"
+sderr_fnf           "File not found"
+sderr_toobig        "Too big"
+sderr_crcerr        "CRC error"
+sderr_comms         "Comms failure"
 
 // Eeprom menu 1
 e_message_dump    "EEPROM -> SD"
@@ -316,7 +327,7 @@ e_message_erase   "Borrar EEPROM"
 eeprom_message_dump    "Guardando..."
 eeprom_message_restore "Restaurando..."
 eeprom_message_erase   "Borrando..."
-eeprom_message_error   "Error:"
+eeprom_message_error   "Error:
 
 eeprom_msg1  "Estas opciones"
 eeprom_msg2  "deben ser usadas"
@@ -333,8 +344,7 @@ eeprom_msg12 "Archivo existe!"
 eeprom_blank "                "
 
 // Steppers menu
-step_msg1 "Bloquear motores:"
-step_msg2 ""
+step_msg1 "Bloquear motores"
 
 // Extruder Fan menu
 ext_msg1 "Ventilador"
