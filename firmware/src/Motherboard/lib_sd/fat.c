@@ -250,7 +250,10 @@ struct fat_fs_struct* fat_open(struct partition_struct* partition)
        0
 #endif
       )
-        return 0;
+    {
+	    fat_errno = FAT_ERR_EINVAL;
+	    return 0;
+    }
 
 #if USE_DYNAMIC_MEMORY
     struct fat_fs_struct* fs = malloc(sizeof(*fs));
@@ -267,7 +270,10 @@ struct fat_fs_struct* fat_open(struct partition_struct* partition)
         ++fs;
     }
     if(i >= FAT_FS_COUNT)
+    {
+	fat_errno = FAT_ERR_TOOMANYOPENFILES;
         return 0;
+    }
 #endif
 
     memset(fs, 0, sizeof(*fs));
@@ -359,8 +365,11 @@ uint8_t fat_read_header(struct fat_fs_struct* fs)
     if(sector_count == 0)
     {
         if(sector_count_16 == 0)
+	{
             /* illegal volume size */
+	    fat_errno = FAT_ERR_BADSECTORSIZE;
             return 0;
+	}
         else
             sector_count = sector_count_16;
     }
@@ -368,12 +377,18 @@ uint8_t fat_read_header(struct fat_fs_struct* fs)
     if(sectors_per_fat != 0)
         sectors_per_fat32 = sectors_per_fat;
     else if(sectors_per_fat32 == 0)
+    {
         /* this is neither FAT16 nor FAT32 */
-        return 0;
+	fat_errno = FAT_ERR_UNKNOWNFILESYS;
+	return 0;
+    }
 #else
     if(sectors_per_fat == 0)
+    {
         /* this is not a FAT16 */
+	fat_errno = FAT_ERR_BADSECTORSPERFAT;
         return 0;
+    }
 #endif
 
     /* determine the type of FAT we have here */
@@ -387,8 +402,11 @@ uint8_t fat_read_header(struct fat_fs_struct* fs)
                                  - ((max_root_entries * 32 + bytes_per_sector - 1) / bytes_per_sector);
     uint32_t data_cluster_count = data_sector_count / sectors_per_cluster;
     if(data_cluster_count < 4085)
+    {
         /* this is a FAT12, not supported */
+        fat_errno = FAT_ERR_FAT12;
         return 0;
+    }
     else if(data_cluster_count < 65525)
         /* this is a FAT16 */
         partition->type = PARTITION_TYPE_FAT16;
@@ -456,7 +474,7 @@ cluster_t fat_get_next_cluster(const struct fat_fs_struct* fs, cluster_t cluster
 {
     if(!fs || cluster_num < 2)
     {
-	fat_errno = FAT_ERR_BAD;
+	fat_errno = FAT_ERR_EINVAL;
         return 0;
     }
 
