@@ -67,7 +67,11 @@ extern "C"
  * Set to 1 to support so-called SDHC memory cards, i.e. SD
  * cards with more than 2 gigabytes of memory.
  */
+#if defined(__AVR_ATmega2560__)
+#define SD_RAW_SDHC 1
+#else
 #define SD_RAW_SDHC 0
+#endif
 
 /**
  * @}

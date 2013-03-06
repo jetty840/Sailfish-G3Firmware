@@ -44,6 +44,7 @@ volatile bool mustReinit = true;
 static bool mustReinit = false;
 #endif
 
+uint8_t sdErrno;
 SdErrorCode sdAvailable = SD_ERR_NO_CARD_PRESENT;
 
 static struct partition_struct *partition = 0;
@@ -125,6 +126,7 @@ static SdErrorCode initCard() {
 			if ( openFilesys() ) {
 				if ( changeWorkingDir(0) == SD_SUCCESS ) {
 					mustReinit = false;
+					sdErrno = 0;
 					sdAvailable = SD_SUCCESS;
 					return SD_SUCCESS;
 				}
@@ -145,6 +147,7 @@ static SdErrorCode initCard() {
 	reset();
 
 	// reset() call initializes sdAvailable
+	sdErrno = fat_errno;
 	sdAvailable = sderr;
 
 	return sderr;

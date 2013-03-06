@@ -15,7 +15,6 @@
 #if !SD_RAW_SAVE_RAM
 #include "sd_crc.h"
 static bool sd_use_crc = false;
-static uint16_t sd_crc_soft_errors = 0;
 #endif
 
 uint8_t sd_errno;
@@ -212,7 +211,7 @@ uint8_t sd_raw_init(bool use_crc)
 
     /* initialization procedure */
     sd_raw_card_type = 0;
-    
+
     if(!sd_raw_available())
     {
 	sd_errno = SDR_ERR_NOCARD;
@@ -468,7 +467,7 @@ uint8_t sd_raw_send_command(uint8_t command, uint32_t arg)
 #if !SD_RAW_SAVE_RAM
     }
 #endif
-    
+
     /* receive response */
     for(uint8_t i = 0; i < 10; ++i)
     {
@@ -506,7 +505,7 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
         read_length = 512 - block_offset; /* read up to block border */
         if(read_length > length)
             read_length = length;
-        
+
 #if !SD_RAW_SAVE_RAM
         /* check if the requested data is cached */
         if(block_address != raw_block_address)
@@ -535,8 +534,10 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
 
             /* wait for data block (start byte 0xfe) */
             uint16_t tries = 0;
-            while(sd_raw_rec_byte() != 0xfe) {
-		if(tries >= 0x7FFF){
+            while(sd_raw_rec_byte() != 0xfe)
+	    {
+		if(tries >= 0x7FFF)
+		{
 		    unselect_card();
 		    sd_errno = SDR_ERR_COMMS;
 		    return 0;
@@ -571,7 +572,6 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
 		if ( crc != sd_crc16(raw_block, (uint16_t)512) ) {
 		    unselect_card();
 		    if ( ++attempts < 5 ) {
-			if ( attempts == 1 ) sd_crc_soft_errors++;
 			sd_raw_rec_byte(); // pause a little
 			goto read_block;
 		    }
@@ -669,7 +669,7 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
         /* determine byte count to read at once */
         block_offset = offset & 0x01ff;
         read_length = 512 - block_offset;
-        
+
         /* send single block request */
 #if SD_RAW_SDHC
         if(sd_raw_send_command(CMD_READ_SINGLE_BLOCK, (sd_raw_card_type & (1 << SD_RAW_SPEC_SDHC) ? offset / 512 : offset - block_offset)))
@@ -708,11 +708,11 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
             length -= interval;
 
         } while(read_length > 0 && length > 0);
-        
+
         /* read rest of data block */
         while(read_length-- > 0)
             sd_raw_rec_byte();
-        
+
         /* read crc16 */
         sd_raw_rec_byte();
         sd_raw_rec_byte();
@@ -723,7 +723,7 @@ uint8_t sd_raw_read_interval(offset_t offset, uint8_t* buffer, uintptr_t interva
         offset = offset - block_offset + 512;
 
     } while(!finished);
-    
+
     /* deaddress card */
     unselect_card();
 
@@ -768,7 +768,7 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
         write_length = 512 - block_offset; /* write up to block border */
         if(write_length > length)
             write_length = length;
-        
+
         /* Merge the data to write with the content of the block.
          * Use the cached block if available.
          */
@@ -830,8 +830,10 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
 
         /* wait while card is busy */
 	uint16_t tries = 0;
-        while(sd_raw_rec_byte() != 0xff) {
-	    if(tries >= 0x7FFF) {
+        while(sd_raw_rec_byte() != 0xff)
+	{
+	    if(tries >= 0x7FFF)
+	    {
 		unselect_card();
 		sd_errno = SDR_ERR_COMMS;
 		return 0;

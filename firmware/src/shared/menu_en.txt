@@ -20,6 +20,15 @@ splash2 " -------------- "
 splash3 "Thing 32084 4.1z"
 splash4 " Revision _____ "
 
+// Generic strings
+updnset_msg "Up/Dn/Ent to Set"
+eof_msg1    "Extruder Hold:"
+generic_off "Off"
+generic_on  "On"
+sdcrc_msg1  "Perform SD card"
+sdcrc_msg2  "error checking:"
+units_mm    "mm"
+
 // User view menu
 uv_msg   "X/Y Direction"
 uv_model "Model View"
@@ -56,7 +65,6 @@ etc_override "Override"
 // Mood Light Mode menu
 ml_mood1   "Mood: "
 ml_mood3_1 "(set RGB)"
-ml_msg4    "Up/Dn/Ent to Set"
 ml_blank   "          "
 ml_moodNotPresent1 "Mood Light not"
 ml_moodNotPresent2 "present!!"
@@ -67,7 +75,6 @@ ml_moodNotPresent4 "   thing:15347"
 mlsrgb_message1_red   "Red:"
 mlsrgb_message1_green "Green:"
 mlsrgb_message1_blue  "Blue:"
-mlsrgb_message4       "Up/Dn/Ent to Set"
 
 // Monitor menu
 mon_extruder_temp     "Tool   ---/---\\001"
@@ -79,7 +86,6 @@ mon_time_left_secs    "secs"
 mon_time_left_none    "   none"
 mon_zpos              "ZPos:           "
 mon_speed             "Acc:            "
-mon_zpos_mm           "mm"
 mon_filament          "Filament:0.00m  "
 mon_copies            "Copy:           "
 mon_of                " of "
@@ -93,11 +99,13 @@ v_version4 "FreeSram: "
 
 // Cancel Build menu
 cb_choose       "Please Choose:"
-cb_abort        "Abort Print   "
-cb_printAnother "Print Another "
-cb_pauseZ       "Pause at ZPos "
-cb_pause        "Pause         "
-cb_pauseHBPHeat "Pause, HBP on "
+cb_abort        "Abort Print"
+cb_printAnother "Print Another"
+cb_pauseZ       "Pause at ZPos"
+cb_speed        "Change Speed"
+cb_temp         "Change Temp"
+cb_pause        "Pause"
+cb_pauseHBPHeat "Pause, HBP on"
 cb_pauseNoHeat  "Pause, No Heat"
 cb_cont         "Continue Build"
 cb_back         "Return to Menu"
@@ -125,9 +133,6 @@ main_homingRates     "Homing Rates"
 main_versions        "Version"
 main_eeprom          "Eeprom"
 
-// Value Set screen
-vs_message4 "Up/Dn/Ent to Set"
-
 // Preheat menu
 ph_heat     "Heat "
 ph_cool     "Cool "
@@ -143,10 +148,6 @@ ha_home1 "Home Axis: "
 ha_home2 "  Y            Z"
 ha_home3 "X   X (endstops)"
 ha_home4 "  Y            Z"
-
-// Enable Disable menu
-ed_disable "Disable"
-ed_enable  "Enable"
 
 // Test End Stops menu
 tes_test1 "Test End Stops: "
@@ -167,11 +168,20 @@ p_paused2               "   Y+         Z+"
 p_paused3               "X- Rev X+  (Fwd)"
 p_paused4               "   Y-         Z-"
 p_close                 "):"
+p_cancel1               "SD card error"
+p_cancel2               "Build cancelled"
+p_cancel3               "Press any button"
+p_cancel4               "to continue"
 
 // Pause @ ZPos menu
 pz_message1 "Pause at ZPos:"
-pz_message4 "Up/Dn/Ent to Set"
 pz_mm       "mm   "
+
+// Change Speed menu
+cs_message1 "Increase speed:"
+
+// Change Temp menu
+ct_message1 "Extruder temp:"
 
 // Advance ABP menu
 abp_msg1 "Advance ABP:"
@@ -199,13 +209,10 @@ c_reset  "         (reset)"
 ho_message1x "X Offset:"
 ho_message1y "Y Offset:"
 ho_message1z "Z Offset:"
-ho_message4  "Up/Dn/Ent to Set"
-ho_mm        "mm"
 
 // Buzzer Set Repeats menu
 bsr_message1 "Repeat Buzzer:"
 bsr_message2 "(0=Buzzer Off)"
-bsr_message4 "Up/Dn/Ent to Set"
 bsr_times    " times "
 
 // Filament Used Reset menu
@@ -226,24 +233,15 @@ bs_item2 "Accel. On/Off"
 bs_item3 "Accel. Settings"
 bs_item4 "Extruder Hold"
 bs_item5 "Toolhead System"
-bs_item6 "ABP Copies (SD)"
-
-bs_item1 "Override Temp"
-bs_item2 "ABP Copies (SD)"
-bs_item3 "Ditto Print"
-bs_item4 "Extruder Hold"
-bs_item5 "Accel. On/Off"
-bs_item6 "Accel. Settings"
+bs_item6 "SD Err Checking"
+bs_item7 "ABP Copies (SD)"
 
 // ABP Copies Set menu
 abp_message1 "ABP Copies (SD):"
-abp_message4 "Up/Dn/Ent to Set"
 
 // Acceleration On Off menu
 aof_msg1 "Accelerated"
 aof_msg2 "Printing:"
-aof_off  "Off"
-aof_on   "On"
 
 // Toolhead Offset System menu
 ts_msg1 "Toolhead offset"
@@ -262,7 +260,6 @@ ps_msg4 "Save To Profile"
 
 // Profile Change Name menu
 pcn_message1 "Profile Name:"
-pcn_message4 "Up/Dn/Ent to Set"
 pcn_blank    " "
 
 // Profile Display Settings menu
@@ -272,9 +269,6 @@ pds_zOffset  "ZOff: "
 pds_hbp      "HBP Temp:   "
 pds_tool0    "Tool0 Temp: "
 pds_extruder "ExtrdrMM/s: "
-
-// Current Position menu
-cp_mm "mm"
 
 // Unable To Open File menu
 utof_msg1 "Failed to open"
@@ -300,20 +294,32 @@ as_message1MaxSpeedChangeY  "MaxSpeedChangeY:"
 as_message1MaxSpeedChangeZ  "MaxSpeedChangeZ:"
 as_message1MaxSpeedChangeA  "MaxSpeedChangeR:"
 as_message1MaxSpeedChangeB  "MaxSpeedChangeL:"
-as_message4                 "Up/Dn/Ent to Set"
 as_blank                    "    "
 
 // End Stop Config menu
 esc_message1 "EndstopsPresent:"
-esc_message4 "Up/Dn/Ent to Set"
 esc_blank    " "
 
 // Homing Feed Rates menu
 hfr_message1x "X Home Feedrate:"
 hfr_message1y "Y Home Feedrate:"
 hfr_message1z "Z Home Feedrate:"
-hfr_message4  "Up/Dn/Ent to Set"
 hfr_mm        "mm/min "
+
+// SD card errors
+sderr_badcard       "SD card error"
+sderr_nofiles       "No files found"
+sderr_nocard        "No SD card"
+sderr_initfail      "Card init failed"
+sderr_partition     "Bad partition"
+sderr_filesys       "Is it FAT-16?"
+sderr_noroot        "No root folder"
+sderr_locked        "Read locked"
+sderr_fnf           "File not found"
+sderr_toobig        "Too big"
+sderr_crcerr        "CRC error"
+sderr_comms         "Comms failure"
+
 
 // Eeprom menu 1
 e_message_dump    "EEPROM -> SD"
@@ -342,7 +348,6 @@ eeprom_blank "                "
 
 // Steppers menu
 step_msg1 "Stepper Motors:"
-step_msg2 ""
 
 // Extruder Fan menu
 ext_msg1 "Extruder Fan:"
