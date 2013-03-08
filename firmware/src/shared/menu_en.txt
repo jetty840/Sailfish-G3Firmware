@@ -17,7 +17,7 @@
 // Splash screen
 splash1 "  Sailfish FW   "
 splash2 " -------------- "
-splash3 "Thing 32084 4.1z"
+splash3 "Thing 32084 4.4 "
 splash4 " Revision _____ "
 
 // Generic strings

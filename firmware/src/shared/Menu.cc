@@ -162,7 +162,7 @@ static void digits3(char *buf, uint8_t val)
 void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar splash1[] = "  Sailfish FW   ";
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
-	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.3 ";
+	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.4 ";
 	//    static PROGMEM prog_uchar splash4[] = " Revision 00000 ";
 	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR;
 
