@@ -586,9 +586,9 @@ void ExtruderMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	uint8_t activeToolhead;
 
 	// Redraw tool info
+	steppers::getStepperPosition(&activeToolhead);
 	switch (updatePhase) {
 	case 0:
-	        steppers::getStepperPosition(&activeToolhead);
 		lcd.setRow(3);
 		if (extruderControl(activeToolhead, SLAVE_CMD_GET_TEMP, EXTDR_CMD_GET, responsePacket, 0)) {
 			uint16_t data = responsePacket.read16(1);
