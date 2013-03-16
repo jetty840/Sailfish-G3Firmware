@@ -76,6 +76,10 @@ namespace command {
 extern uint16_t altTemp[EXTRUDERS];
 #endif
 
+#ifdef PSTOP_SUPPORT
+extern uint8_t pstop_triggered;
+#endif
+
 /// Reset the entire command queue.  Clears out any remaining queued
 /// commands.
 void reset();

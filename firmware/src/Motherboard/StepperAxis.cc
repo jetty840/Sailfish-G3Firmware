@@ -34,8 +34,10 @@
 #ifndef SIMULATOR
 //Optimize this better, maybe load defaults from progmem, x_min/max could combine invert_endstop/invert_axis into 1
 //110 bytes
+StepperIOPort xMax = X_STEPPER_MAX;
+
 struct StepperAxisPorts stepperAxisPorts[STEPPER_COUNT] = {
-	{ X_STEPPER_STEP, X_STEPPER_DIR, X_STEPPER_ENABLE, X_STEPPER_MIN, X_STEPPER_MAX },
+	{ X_STEPPER_STEP, X_STEPPER_DIR, X_STEPPER_ENABLE, X_STEPPER_MIN, STEPPER_NULL },
 	{ Y_STEPPER_STEP, Y_STEPPER_DIR, Y_STEPPER_ENABLE, Y_STEPPER_MIN, Y_STEPPER_MAX },
 	{ Z_STEPPER_STEP, Z_STEPPER_DIR, Z_STEPPER_ENABLE, Z_STEPPER_MIN, Z_STEPPER_MAX },
 	{ A_STEPPER_STEP, A_STEPPER_DIR, A_STEPPER_ENABLE, STEPPER_NULL,  STEPPER_NULL	},
@@ -58,11 +60,29 @@ volatile uint8_t axesHardwareEnabled;		//Hardware axis enabled
 /// Initialize a stepper axis
 void stepperAxisInit(bool hard_reset) {
 	uint8_t axes_invert = 0, endstops_invert = 0;
+#ifdef PSTOP_SUPPORT
+	uint8_t pstop_enable = 0;
+#endif
 
 	if ( hard_reset ) {
 		//Load the defaults
 		axes_invert	= eeprom::getEeprom8(eeprom::AXIS_INVERSION, 0);
 		endstops_invert = eeprom::getEeprom8(eeprom::ENDSTOP_INVERSION, 0);
+#ifdef PSTOP_SUPPORT
+		pstop_enable    = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
+		if ( pstop_enable != 1 ) {
+			stepperAxisPorts[X_AXIS].maximum.port  = xMax.port;
+			stepperAxisPorts[X_AXIS].maximum.iport = xMax.iport;
+			stepperAxisPorts[X_AXIS].maximum.pin   = xMax.pin;
+			stepperAxisPorts[X_AXIS].maximum.ddr   = xMax.ddr;
+		}
+		else {
+			stepperAxisPorts[X_AXIS].maximum.port  = 0;
+			stepperAxisPorts[X_AXIS].maximum.iport = 0;
+			stepperAxisPorts[X_AXIS].maximum.pin   = 0;
+			stepperAxisPorts[X_AXIS].maximum.ddr   = 0;
+		}
+#endif
 	}
 
 	//Initialize the stepper pins
@@ -149,6 +169,10 @@ void stepperAxisInit(bool hard_reset) {
 	if ( hard_reset ) {
 		axesEnabled = 0;
 		axesHardwareEnabled = 0;
+#ifdef PSTOP_SUPPORT
+                if ( pstop_enable == 1 )
+			PSTOP_PORT.setDirection(false);
+#endif
 	}
 
 	for (uint8_t i = 0; i < EXTRUDERS; i ++ )

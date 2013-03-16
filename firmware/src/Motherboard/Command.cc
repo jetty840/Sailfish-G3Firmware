@@ -34,6 +34,8 @@
 #include "StepperAccel.hh"
 #include "Errors.hh"
 
+extern int8_t autoPause;  // from Menu.cc
+
 namespace command {
 
 #ifdef SMALL_4K_RAM
@@ -51,9 +53,16 @@ bool outstanding_tool_command = false;
 
 enum PauseState paused = PAUSE_STATE_NONE;
 #ifdef HAS_INTERFACE_BOARD
-static const prog_uchar *pauseErrorMessage = 0;
+static const prog_uchar *pauseErrorMessage;
+static bool sdCardError;
 #endif
 uint32_t sd_count = 0;
+
+#ifdef PSTOP_SUPPORT
+uint8_t pstop_triggered;
+static bool pstop_okay;
+uint8_t pstop_move_count;
+#endif
 
 uint16_t statusDivisor = 0;
 volatile uint32_t recentCommandClock = 0;
@@ -114,11 +123,17 @@ void pauseUnRetractClear(void) {
 }
 
 void pause(bool pause, uint8_t heaterControl) {
-	//We only store this on a pause, because an unpause needs to unpause based on the setting before
-	if ( pause )	pauseNoHeat = heaterControl;
-
-	if ( pause )	paused = (enum PauseState)PAUSE_STATE_ENTER_COMMAND;
-	else		paused = (enum PauseState)PAUSE_STATE_EXIT_COMMAND;
+	//We only store this on a pause, because an unpause needs to
+	// unpause based on the setting before
+	if ( pause ) {
+		paused = (enum PauseState)PAUSE_STATE_ENTER_COMMAND;
+		pauseNoHeat = heaterControl;
+	}
+	else
+		paused = (enum PauseState)PAUSE_STATE_EXIT_COMMAND;
+#ifdef PSTOP_SUPPORT
+	pstop_triggered = 0;
+#endif
 }
 
 // Returns the pausing intent
@@ -141,6 +156,7 @@ void pauseClearError() {
 	paused = PAUSE_STATE_NONE;
 #ifdef HAS_INTERFACE_BOARD
     pauseErrorMessage = 0;
+    sdCardError = false;
 #endif
 }
 
@@ -297,8 +313,14 @@ void reset() {
 	command_buffer.reset();
 	line_number = 0;
 	paused = PAUSE_STATE_NONE;
+#ifdef PSTOP_SUPPORT
+	pstop_triggered = 0;
+	pstop_move_count = 0;
+	pstop_okay = true;
+#endif
 #ifdef HAS_INTERFACE_BOARD
 	pauseErrorMessage = 0;
+	sdCardError = false;
 #endif
 	sd_count = 0;
 #ifdef HAS_FILAMENT_COUNTER
@@ -658,7 +680,9 @@ static void handleMovementCommand(const uint8_t &command) {
 #endif
 
 			line_number++;
-
+#ifdef PSTOP_SUPPORT
+			if ( !pstop_okay && ++pstop_move_count > 3 ) pstop_okay = true;
+#endif
 			steppers::setTarget(Point(x,y,z,a,b), dda);
 		}
 	}
@@ -709,7 +733,9 @@ static void handleMovementCommand(const uint8_t &command) {
 #endif
 
 			line_number++;
-			
+#ifdef PSTOP_SUPPORT
+			if ( !pstop_okay && ++pstop_move_count > 3 ) pstop_okay = true;
+#endif
 			steppers::setTargetNew(Point(x,y,z,a,b), us, relative);
 		}
 	}
@@ -761,8 +787,12 @@ static void handleMovementCommand(const uint8_t &command) {
 				}
 			}
 #endif
-
 			line_number++;
+#ifdef PSTOP_SUPPORT
+			// Positions must be known at this point; okay to do a pstop and
+			// its attendant platform clearing
+			pstop_okay = true;
+#endif
 			steppers::setTargetNewExt(Point(x,y,z,a,b), dda_rate,
 #ifdef HAS_INTERFACE_BOARD
 						  relative | steppers::alterSpeed,
@@ -944,7 +974,7 @@ void handlePauseState(void) {
 	//before entering the pause
 	if ( movesplanned() == 0 ) {
 #ifdef HAS_INTERFACE_BOARD
-	    paused = ( pauseErrorMessage && hasInterfaceBoard ) ? PAUSE_STATE_ERROR : PAUSE_STATE_PAUSED;
+	    paused = ( sdCardError && hasInterfaceBoard ) ? PAUSE_STATE_ERROR : PAUSE_STATE_PAUSED;
 #else
 	    paused = PAUSE_STATE_PAUSED;
 #endif
@@ -995,6 +1025,11 @@ void handlePauseState(void) {
 	    paused = PAUSE_STATE_NONE;
 #ifdef HAS_INTERFACE_BOARD
 	    pauseErrorMessage = 0;
+	    sdCardError = false;
+#endif
+#ifdef PSTOP_SUPPORT
+	    autoPause = 0;
+	    pstop_triggered = 0;
 #endif
 	}
 	break;
@@ -1029,7 +1064,7 @@ void runCommandSlice() {
 		// SD card file is finished.  Was it a normal finish or an error?
 		//  Check the pause state; otherwise, we can hit this code once
 		//  and start a pause with host::stopBuild() and then re-enter
-		//  this code again at which point host::stopBuild() will then
+		//  this code again at which point ho<st::stopBuild() will then
 		//  do an immediate cancel.  Alternatively, call finishPlayback()
 		//  so that sdcard::isPlaying() is then false.
 
@@ -1062,6 +1097,7 @@ void runCommandSlice() {
 
 #ifdef HAS_INTERFACE_BOARD
 		    // Establish an error message to display while cancelling the build
+		    sdCardError = true;
 		    if ( hasInterfaceBoard ) {
 			const static PROGMEM prog_uchar crc_err[]    = "SD CRC error";
 			const static PROGMEM prog_uchar nocard_err[] = "SD card removed";
@@ -1119,6 +1155,20 @@ void runCommandSlice() {
 			mode = READY;
 		}
 	}
+
+#ifdef PSTOP_SUPPORT
+	// We don't act on the PSTOP when we are homing or are paused
+	if ( pstop_triggered && pstop_okay && mode != HOMING && paused == PAUSE_STATE_NONE ) {
+		pstop_triggered = 0;
+		if ( !isPaused() )
+		{
+			const static PROGMEM prog_uchar pstop_msg[] = "P-Stop triggered";
+			pauseErrorMessage = pstop_msg;
+			host::pauseBuild(true);
+		}
+	}
+#endif
+
 	if (mode == MOVING) {
 		if (!steppers::isRunning()) { mode = READY; }
 	}

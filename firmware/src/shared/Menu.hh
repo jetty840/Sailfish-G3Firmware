@@ -236,8 +236,6 @@ private:
 	enum PauseState lastPauseState;
 
 public:
-	uint8_t autoPause;
-
 	void update(LiquidCrystal& lcd, bool forceRedraw);
 
 	void reset();
@@ -572,6 +570,9 @@ private:
 
 class TestEndStopsMode: public Screen {
 private:
+#ifdef PSTOP_SUPPORT
+	bool pstop;
+#endif
 
 public:
 	micros_t getUpdateRate() {return 50L * 1000L;}

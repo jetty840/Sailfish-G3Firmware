@@ -12,9 +12,6 @@
 #define EEPROM_DEFAULT_FILAMENT_LIFETIME		0
 #define EEPROM_DEFAULT_FILAMENT_TRIP			0
 
-
-
-
 //
 // Jetty Firmware Defaults
 //
@@ -104,3 +101,5 @@
 #define EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM           1
 
 #define EEPROM_DEFAULT_SD_USE_CRC                       0
+
+#define EEPROM_DEFAULT_PSTOP_ENABLE                     0
