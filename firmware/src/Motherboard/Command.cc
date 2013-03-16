@@ -59,9 +59,23 @@ static bool sdCardError;
 uint32_t sd_count = 0;
 
 #ifdef PSTOP_SUPPORT
-uint8_t pstop_triggered;
-static bool pstop_okay;
-uint8_t pstop_move_count;
+// When non-zero, a P-Stop has been requested
+uint8_t pstop_triggered = 0;
+
+// We don't want to execute a Pause until after the coordinate system
+// has been established by either recalling home offsets or a G92 X Y Z A B
+// command.  Some people use the G92 approach so that RepG will generate
+// an accelerated move command for the very first move.  This lets them
+// have a fast platform move along the Z axis.  Unfortunately, S3G's
+// G92-like command is botched and ALL coordinates are set.  That makes
+// it impossible to tell if the gcode actually intended to set all the
+// coordinates or if it was simply a G92 Z0.
+static bool pstop_okay = false;
+
+// One way to tell if it's okay to allow a pstop is to assume it's
+// okay after a few G1 commands.
+uint8_t pstop_move_count = 0;
+
 #endif
 
 uint16_t statusDivisor = 0;
@@ -316,7 +330,7 @@ void reset() {
 #ifdef PSTOP_SUPPORT
 	pstop_triggered = 0;
 	pstop_move_count = 0;
-	pstop_okay = true;
+	pstop_okay = false;
 #endif
 #ifdef HAS_INTERFACE_BOARD
 	pauseErrorMessage = 0;
@@ -681,7 +695,7 @@ static void handleMovementCommand(const uint8_t &command) {
 
 			line_number++;
 #ifdef PSTOP_SUPPORT
-			if ( !pstop_okay && ++pstop_move_count > 3 ) pstop_okay = true;
+			if ( !pstop_okay && ++pstop_move_count > 4 ) pstop_okay = true;
 #endif
 			steppers::setTarget(Point(x,y,z,a,b), dda);
 		}
@@ -734,7 +748,7 @@ static void handleMovementCommand(const uint8_t &command) {
 
 			line_number++;
 #ifdef PSTOP_SUPPORT
-			if ( !pstop_okay && ++pstop_move_count > 3 ) pstop_okay = true;
+			if ( !pstop_okay && ++pstop_move_count > 4 ) pstop_okay = true;
 #endif
 			steppers::setTargetNew(Point(x,y,z,a,b), us, relative);
 		}
@@ -791,7 +805,7 @@ static void handleMovementCommand(const uint8_t &command) {
 #ifdef PSTOP_SUPPORT
 			// Positions must be known at this point; okay to do a pstop and
 			// its attendant platform clearing
-			pstop_okay = true;
+			if ( !pstop_okay && ++pstop_move_count > 4 ) pstop_okay = true;
 #endif
 			steppers::setTargetNewExt(Point(x,y,z,a,b), dda_rate,
 #ifdef HAS_INTERFACE_BOARD
@@ -1424,6 +1438,10 @@ void runCommandSlice() {
 #else
 					mode = WAIT_ON_TOOL;
 #endif
+#ifdef PSTOP_SUPPORT
+					// Assume that by now coordinates are set
+					pstop_okay = true;
+#endif
 					pop8();
 					currentToolIndex = pop8();
 					pop16();	//uint16_t toolPingDelay
@@ -1441,6 +1459,10 @@ void runCommandSlice() {
 					mode = READY;
 #else
 					mode = WAIT_ON_PLATFORM;
+#endif
+#ifdef PSTOP_SUPPORT
+					// Assume that by now coordinates are set
+					pstop_okay = true;
 #endif
 					pop8();
 					pop8();	//uint8_t currentToolIndex
@@ -1493,7 +1515,6 @@ void runCommandSlice() {
 					lastFilamentPosition[0] = newPoint[3];
 					lastFilamentPosition[1] = newPoint[4];
 #endif
-
 					steppers::definePosition(newPoint, true);
 				}
 			}else if (command == HOST_CMD_SET_RGB_LED){
