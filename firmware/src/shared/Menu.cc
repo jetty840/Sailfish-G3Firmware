@@ -50,6 +50,7 @@
 #define LCD_TYPE_CHANGE_BUTTON_HOLD_TIME 10.0
 
 int16_t overrideExtrudeSeconds = 0;
+int8_t autoPause;
 
 Point homePosition;
 
@@ -77,7 +78,9 @@ static const PROGMEM prog_uchar ogct_msg1[] = "Override GCode";
 static const PROGMEM prog_uchar ogct_msg2[] = "Temperature:";
 static const PROGMEM prog_uchar sdcrc_msg1[] = "Perform SD card";
 static const PROGMEM prog_uchar sdcrc_msg2[] = "error checking:";
-
+#ifdef PSTOP_SUPPORT
+static const PROGMEM prog_uchar pstop_msg1[] = "P-Stop:";
+#endif
 
 //Macros to expand SVN revision macro into a str
 #define STR_EXPAND(x) #x	//Surround the supplied macro by double quotes
@@ -992,7 +995,7 @@ void MonitorMode::reset() {
 	lastBuildTimePhase = BUILD_TIME_PHASE_FIRST;
 	lastElapsedSeconds = 0.0;
 	pausePushLockout = false;
-	pauseMode.autoPause = 0;
+	autoPause = 0;
 	buildCompleteBuzzPlayed = false;
 	overrideForceRedraw = false;
 	copiesPrinted = 0;
@@ -1020,7 +1023,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( command::isPaused() ) {
 		if ( ! pausePushLockout ) {
 			pausePushLockout = true;
-			pauseMode.autoPause = 1;
+			autoPause = 1;
 			interface::pushScreen(&pauseMode);
 			return;
 		}
@@ -1177,7 +1180,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		int32_t tsecs;
 		Point position;
 		uint8_t precision;
-		float completedPercent;
+		uint8_t completedPercent;
 		float filamentUsed, lastFilamentUsed;
 
 		switch (buildTimePhase) {
@@ -1185,7 +1188,10 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_completed_percent));
 				lcd.setCursor(11,1);
-				completedPercent = (float)command::getBuildPercentage();
+				completedPercent = command::getBuildPercentage();
+				if ( completedPercent > 100 )
+					// displaying 101% confuses some people
+					completedPercent = 0;
 				digits3(buf, (uint8_t)completedPercent);
 				lcd.writeString(buf);
 				lcd.write('%');
@@ -1488,7 +1494,7 @@ void Menu::notifyButtonPressed(ButtonArray::ButtonName button) {
 CancelBuildMenu::CancelBuildMenu() :
 	pauseDisabled(false) {
 	itemCount = 7;
-	pauseMode.autoPause = 0;
+	autoPause = 0;
 	reset();
 	if (( steppers::isHoming() ) || (sdcard::getPercentPlayed() >= 100.0))	pauseDisabled = true;
 
@@ -1499,7 +1505,7 @@ CancelBuildMenu::CancelBuildMenu() :
 }
 
 void CancelBuildMenu::resetState() {
-        pauseMode.autoPause = 0;
+	autoPause = 0;
 	pauseDisabled = false;
 	if (( steppers::isHoming() ) || (sdcard::getPercentPlayed() >= 100.0))	pauseDisabled = true;
 
@@ -1634,7 +1640,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
 			command::pause(true, PAUSE_HEAT_ON);  // pause, all heaters left on
-			pauseMode.autoPause = 0;
+			autoPause = 0;
 			interface::pushScreen(&pauseMode);
 			return;
 		}
@@ -1654,7 +1660,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
 			command::pause(true, PAUSE_EXT_OFF);  // pause, HBP left on
-			pauseMode.autoPause = 0;
+			autoPause = 0;
 			interface::pushScreen(&pauseMode);
 			return;
 		}
@@ -1664,7 +1670,7 @@ void CancelBuildMenu::handleSelect(uint8_t index) {
 	if ( ! pauseDisabled ) {
 		if ( index == lind ) {
 			command::pause(true, PAUSE_EXT_OFF | PAUSE_HBP_OFF);  // pause no heat
-			pauseMode.autoPause = 0;
+			autoPause = 0;
 			interface::pushScreen(&pauseMode);
 		}
 		lind ++;
@@ -2376,22 +2382,32 @@ void SteppersMenu::setupTitle() {
 }
 
 void TestEndStopsMode::reset() {
+#ifdef PSTOP_SUPPORT
+	pstop = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
+#endif
 }
 
 void TestEndStopsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar tes_test1[] = "Test End Stops: ";
-	const static PROGMEM prog_uchar tes_test2[] = "XMin:N    XMax:N";
-	const static PROGMEM prog_uchar tes_test3[] = "YMin:N    YMax:N";
-	const static PROGMEM prog_uchar tes_test4[] = "ZMin:N    ZMax:N";
-	const static PROGMEM prog_uchar tes_strY[]  = "Y";
-	const static PROGMEM prog_uchar tes_strN[]  = "N";
+	const static PROGMEM prog_uchar tes_test1[]  = "Test End Stops: ";
+	const static PROGMEM prog_uchar tes_test2[]  = "XMin:N    XMax:N";
+#ifdef PSTOP_SUPPORT
+	const static PROGMEM prog_uchar tes_test2a[] = "XMin:N   PStop:N";
+#endif
+	const static PROGMEM prog_uchar tes_test3[]  = "YMin:N    YMax:N";
+	const static PROGMEM prog_uchar tes_test4[]  = "ZMin:N    ZMax:N";
+	const static PROGMEM prog_uchar tes_strY[]   = "Y";
+	const static PROGMEM prog_uchar tes_strN[]   = "N";
 
 	if (forceRedraw) {
 		lcd.clearHomeCursor();
 		lcd.writeFromPgmspace(LOCALIZE(tes_test1));
 
 		lcd.setRow(1);
+#ifdef PSTOP_SUPPORT
+		lcd.writeFromPgmspace(pstop ? LOCALIZE(tes_test2a) : LOCALIZE(tes_test2));
+#else
 		lcd.writeFromPgmspace(LOCALIZE(tes_test2));
+#endif
 
 		lcd.setRow(2);
 		lcd.writeFromPgmspace(LOCALIZE(tes_test3));
@@ -2404,7 +2420,12 @@ void TestEndStopsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( stepperAxisIsAtMinimum(0) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
 	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 	lcd.setCursor(15, 1);
+#ifdef PSTOP_SUPPORT
+	if ( (pstop && (PSTOP_PORT.getValue() == 0)) || (!pstop && stepperAxisIsAtMaximum(0)) )
+		lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+#else
 	if ( stepperAxisIsAtMaximum(0) ) lcd.writeFromPgmspace(LOCALIZE(tes_strY));
+#endif
 	else				 lcd.writeFromPgmspace(LOCALIZE(tes_strN));
 
 	lcd.setCursor(5, 2);
@@ -2457,32 +2478,28 @@ void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
     OutPacket responsePacket;
 
     lcd.homeCursor();
+    bool foo = false;
 
     switch ( pauseState ) {
     case PAUSE_STATE_ENTER_START_PIPELINE_DRAIN:
     case PAUSE_STATE_ENTER_WAIT_PIPELINE_DRAIN:
 	lcd.writeFromPgmspace(LOCALIZE(p_waitForCurrentCommand));
+	foo = true;
 	break;
     case PAUSE_STATE_ENTER_START_RETRACT_FILAMENT:
     case PAUSE_STATE_ENTER_WAIT_RETRACT_FILAMENT:
 	lcd.writeFromPgmspace(LOCALIZE(p_retractFilament));
+	foo = true;
 	break;
     case PAUSE_STATE_ENTER_START_CLEARING_PLATFORM:
     case PAUSE_STATE_ENTER_WAIT_CLEARING_PLATFORM:
 	lcd.writeFromPgmspace(LOCALIZE(p_clearingBuild));
-	{
-	    const prog_uchar *msg = command::pauseGetErrorMessage();
-	    if ( msg ) {
-		lcd.setRow(1);
-		lcd.writeFromPgmspace(msg);
-	    }
-	}
+	foo = true;
 	break;
     case PAUSE_STATE_PAUSED:
 	lcd.writeFromPgmspace(LOCALIZE(p_paused1));
 	lcd.writeFloat(stepperAxisStepsToMM(command::getPausedPosition()[Z_AXIS], Z_AXIS), 3);
 	lcd.writeFromPgmspace(LOCALIZE(p_close));
-
 	lcd.setRow(1);
 	lcd.writeFromPgmspace(LOCALIZE(p_paused2));
 	lcd.setRow(2);
@@ -2519,6 +2536,14 @@ void PauseMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	if ( autoPause == 1 ) interface::popScreen();
 	if ( autoPause == 2 ) interface::popScreen();
 	break;
+    }
+
+    if ( foo ) {
+	const prog_uchar *msg = command::pauseGetErrorMessage();
+	if ( msg ) {
+	    lcd.setRow(1);
+	    lcd.writeFromPgmspace(msg);
+	}
     }
 
     if ( lastDirectionButtonPressed ) {
@@ -3309,6 +3334,9 @@ BuildSettingsMenu::BuildSettingsMenu() {
 void BuildSettingsMenu::resetState() {
 	acceleration = 1 == (eeprom::getEeprom8(eeprom::ACCELERATION_ON, EEPROM_DEFAULT_ACCELERATION_ON) & 0x01);
 	itemCount = acceleration ? 8 : 7;
+#ifdef PSTOP_SUPPORT
+	itemCount++;
+#endif
 	itemIndex = 0;
 	firstItemIndex = 0;
 	genericOnOff_msg1 = 0;
@@ -3326,35 +3354,46 @@ void BuildSettingsMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar bs_item5[] = "Toolhead System";
 	const static PROGMEM prog_uchar bs_item6[] = "SD Err Checking";
 	const static PROGMEM prog_uchar bs_item7[] = "ABP Copies (SD)";
+	const static PROGMEM prog_uchar bs_item8[] = "Pause Stop";
 
 	if ( !acceleration && index > 2 ) ++index;
 
+	const prog_uchar *msg;
+
 	switch (index) {
+	default:
+		return;
 	case 0:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item0));
+		msg = LOCALIZE(bs_item0);
 		break;
 	case 1:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item1));
+		msg = LOCALIZE(bs_item1);
 		break;
 	case 2:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item2));
+		msg = LOCALIZE(bs_item2);
 		break;
 	case 3:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item3));
+		msg = LOCALIZE(bs_item3);
 		break;
 	case 4:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item4));
+		msg = LOCALIZE(bs_item4);
 		break;
 	case 5:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item5));
+		msg = LOCALIZE(bs_item5);
 		break;
 	case 6:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item6));
+		msg = LOCALIZE(bs_item6);
 		break;
 	case 7:
-		lcd.writeFromPgmspace(LOCALIZE(bs_item7));
+		msg = LOCALIZE(bs_item7);
 		break;
+#ifdef PSTOP_SUPPORT
+	case 8:
+		msg = LOCALIZE(bs_item8);
+		break;
+#endif
 	}
+	lcd.writeFromPgmspace(msg);
 }
 
 void BuildSettingsMenu::handleSelect(uint8_t index) {
@@ -3362,6 +3401,7 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 
 	if ( !acceleration && index > 2 ) ++index;
 
+	genericOnOff_msg2 = 0;
 	genericOnOff_msg3 = LOCALIZE(generic_off);
 	genericOnOff_msg4 = LOCALIZE(generic_on);
 
@@ -3372,15 +3412,12 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 	    genericOnOff_default = EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP;
 	    genericOnOff_msg1 = LOCALIZE(ogct_msg1);
 	    genericOnOff_msg2 = LOCALIZE(ogct_msg2);
-	    interface::pushScreen(&genericOnOffMenu);
 	    break;
 	case 1:
 	    //Ditto Print
 	    genericOnOff_offset  = eeprom::DITTO_PRINT_ENABLED;
 	    genericOnOff_default = EEPROM_DEFAULT_DITTO_PRINT_ENABLED;
 	    genericOnOff_msg1 = LOCALIZE(dp_msg1);
-	    genericOnOff_msg2 = 0;
-	    interface::pushScreen(&genericOnOffMenu);
 	    break;
 	case 2:
 	    //Acceleraton On/Off Menu
@@ -3388,18 +3425,15 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 	    genericOnOff_default = EEPROM_DEFAULT_ACCELERATION_ON;
 	    genericOnOff_msg1 = LOCALIZE(aof_msg1);
 	    genericOnOff_msg2 = LOCALIZE(aof_msg2);
-	    interface::pushScreen(&genericOnOffMenu);
 	    break;
 	case 3:
 	    interface::pushScreen(&acceleratedSettingsMode);
-	    break;
+	    return;
 	case 4:
 	    //Extruder Hold
 	    genericOnOff_offset  = eeprom::EXTRUDER_HOLD;
 	    genericOnOff_default = EEPROM_DEFAULT_EXTRUDER_HOLD;
 	    genericOnOff_msg1 = LOCALIZE(eof_msg1);
-	    genericOnOff_msg2 = 0;
-	    interface::pushScreen(&genericOnOffMenu);
 	    break;
 	case 5:
 	    //Toolhead System
@@ -3409,7 +3443,6 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 	    genericOnOff_msg2 = LOCALIZE(ts_msg2);
 	    genericOnOff_msg3 = LOCALIZE(ts_old);
 	    genericOnOff_msg4 = LOCALIZE(ts_new);
-	    interface::pushScreen(&genericOnOffMenu);
 	    break;
 	case 6:
 	    // SD card error checking
@@ -3417,13 +3450,21 @@ void BuildSettingsMenu::handleSelect(uint8_t index) {
 	    genericOnOff_default = EEPROM_DEFAULT_SD_USE_CRC;
 	    genericOnOff_msg1 = LOCALIZE(sdcrc_msg1);
 	    genericOnOff_msg2 = LOCALIZE(sdcrc_msg2);
-	    interface::pushScreen(&genericOnOffMenu);
 	    break;
 	case 7:
 	    //Change number of ABP copies
 	    interface::pushScreen(&abpCopiesSetScreen);
+	    return;
+#ifdef PSTOP_SUPPORT
+	case 8:
+	    // Enable|disable the P-Stop
+	    genericOnOff_offset  = eeprom::PSTOP_ENABLE;
+	    genericOnOff_default = EEPROM_DEFAULT_PSTOP_ENABLE;
+	    genericOnOff_msg1    = LOCALIZE(pstop_msg1);
 	    break;
+#endif
 	}
+	interface::pushScreen(&genericOnOffMenu);
 }
 
 void ABPCopiesSetScreen::reset() {
@@ -3551,7 +3592,7 @@ void GenericOnOffMenu::handleSelect(uint8_t index) {
 	    sdcard::mustReinit = true;
 	else
 #endif
-	    host::stopBuildNow();
+	    host::stopBuildNow();		
     }
 }
 

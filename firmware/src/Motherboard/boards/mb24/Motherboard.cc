@@ -18,6 +18,7 @@
 #include <stdint.h>
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include <avr/sfr_defs.h>
 #include <util/atomic.h>
 #include "Motherboard.hh"
 #include "Configuration.hh"
@@ -160,6 +161,14 @@ void Motherboard::initClocks(){
 	EICRA |=  ( 1 << ISC10 ); //     ISC11 = 0; ISC10 = 1
 	EIFR  |=  ( 1 << PD1 );   // Clear the INT1 flag
 	EIMSK |=  ( 1 << INT1 );  // Re-enable INT1
+#endif
+
+#ifdef PSTOP_SUPPORT
+	// We set a LOW pin change interrupt on the X min endstop
+	if ( 1 == eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0) ) {
+		PSTOP_MSK |= ( 1 << PSTOP_PCINT );
+		PCICR     |= ( 1 << PSTOP_PCIE );
+	}
 #endif
 
 }
@@ -488,6 +497,14 @@ ISR(TIMER4_COMPA_vect) {
 
 ISR(INT1_vect) {
 	sdcard::mustReinit = true;
+}
+
+#endif
+
+#ifdef PSTOP_SUPPORT
+
+ISR(PSTOP_VECT) {
+	if ( PSTOP_PORT.getValue() == 0 ) command::pstop_triggered = 1;
 }
 
 #endif
