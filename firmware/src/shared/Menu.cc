@@ -218,19 +218,23 @@ void UserViewMenu::drawItem(uint8_t index, LiquidCrystal& lcd) {
 	const static PROGMEM prog_uchar uv_model[]= "Model View";
 	const static PROGMEM prog_uchar uv_user[] = "User View";
 
+	const prog_uchar *msg;
+
 	switch (index) {
 	case 0:
-	        lcd.writeFromPgmspace(LOCALIZE(uv_msg));
+		msg = LOCALIZE(uv_msg);
 		break;
+	default:
 	case 1:
-		break;
+		return;
 	case 2:
-		lcd.writeFromPgmspace(LOCALIZE(uv_model));
+		msg = LOCALIZE(uv_model);
 		break;
 	case 3:
-		lcd.writeFromPgmspace(LOCALIZE(uv_user));
+		msg = LOCALIZE(uv_user);
 		break;
 	}
+	lcd.writeFromPgmspace(msg);
 }
 
 void UserViewMenu::handleSelect(uint8_t index) {
@@ -2383,7 +2387,8 @@ void SteppersMenu::setupTitle() {
 
 void TestEndStopsMode::reset() {
 #ifdef PSTOP_SUPPORT
-	pstop = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
+	pstop = eeprom::getEeprom8(eeprom::PSTOP_ENABLE,
+				   EEPROM_DEFAULT_PSTOP_ENABLE);
 #endif
 }
 

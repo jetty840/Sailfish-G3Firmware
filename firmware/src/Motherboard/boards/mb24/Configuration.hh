@@ -143,6 +143,10 @@
 
 #define HAS_INTERFACE_BOARD     1
 
+#ifndef SIMULATOR
+// Enable the P-Stop (pause stop) support
+#define PSTOP_SUPPORT
+#endif
 
 /// Pin mappings for the LCD connection.
 #define LCD_RS_PIN		Pin(PortC,4)
@@ -341,8 +345,5 @@
 
 // Maximum temperature which temps can be set to (bypassed by gcode)
 #define MAX_TEMP 280
-
-// Enable the P-Stop (pause stop) support
-#define PSTOP_SUPPORT
 
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_
