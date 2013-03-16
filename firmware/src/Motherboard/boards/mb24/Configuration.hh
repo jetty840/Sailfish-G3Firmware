@@ -105,6 +105,13 @@
 #define X_STEPPER_MIN           STEPPER_PORT(B,6)       //active high
 #define X_STEPPER_MAX           STEPPER_PORT(B,5)       //active high
 
+// P-Stop is X_STEPPER_MAX = PB5 = PCINT5
+#define PSTOP_PORT  Pin(PortB,5)
+#define PSTOP_MSK   PCMSK0
+#define PSTOP_PCINT PCINT5
+#define PSTOP_PCIE  PCIE0
+#define PSTOP_VECT  PCINT0_vect
+
 #define Y_STEPPER_STEP          STEPPER_PORT(A,3)       //active rising edge
 #define Y_STEPPER_DIR           STEPPER_PORT(A,2)       //forward on high
 #define Y_STEPPER_ENABLE        STEPPER_PORT(A,1)       //active low
@@ -333,6 +340,9 @@
 //#define BROKEN_SD
 
 // Maximum temperature which temps can be set to (bypassed by gcode)
-#define MAX_TEMP 270
+#define MAX_TEMP 280
+
+// Enable the P-Stop (pause stop) support
+#define PSTOP_SUPPORT
 
 #endif // BOARDS_RRMBV12_CONFIGURATION_HH_

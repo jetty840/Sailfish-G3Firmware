@@ -376,6 +376,11 @@ const static uint16_t TOOLHEAD_OFFSET_SYSTEM	 = 0x1EA;
 //$type:B
 const static uint16_t SD_USE_CRC	         = 0x1EB;
 
+//P-Stop support (1 byte)
+//$BEGIN_ENTRY
+//$type:B
+const static uint16_t PSTOP_ENABLE	         = 0x1EC;
+
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
 
