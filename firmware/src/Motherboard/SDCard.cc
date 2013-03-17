@@ -434,6 +434,7 @@ void playbackRestart() {
 	capturedBytes = 0L;
 	playedBytes = 0L;
 	playing = true;
+	has_more = true;
 
 	fetchNextByte();
 }
