@@ -72,6 +72,8 @@ enum PauseState {
 /// queue, for both SD and serial jobs.
 namespace command {
 
+extern uint8_t copiesToPrint, copiesPrinted;
+
 #ifdef HAS_INTERFACE_BOARD
 extern uint16_t altTemp[EXTRUDERS];
 #endif

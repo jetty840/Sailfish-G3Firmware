@@ -11,6 +11,8 @@
 #include "Command.hh"
 #include "StepperAccelPlanner.hh"
 
+extern uint8_t copiesPrinted;
+
 /// The screen class defines a standard interface for anything that should
 /// be displayed on the LCD.
 class Screen {
@@ -346,7 +348,6 @@ private:
 	bool buildCompleteBuzzPlayed;
 	int32_t buildDuration;
 	bool	overrideForceRedraw;
-	uint8_t	copiesPrinted;
 	bool	toggleHeating;
 	bool	flashingTool;
 	bool	flashingPlatform;
