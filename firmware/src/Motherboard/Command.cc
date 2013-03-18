@@ -297,6 +297,7 @@ static bool hasInterfaceBoard = false;
 #endif
 
 enum ModeState mode = READY;
+uint8_t copiesToPrint, copiesPrinted;
 
 Timeout delay_timeout;
 Timeout homing_timeout;
@@ -359,6 +360,9 @@ void reset() {
 #ifdef HAS_INTERFACE_BOARD
 	hasInterfaceBoard = Motherboard::getBoard().hasInterface();
 #endif
+
+	copiesToPrint = 0;
+	copiesPrinted = 0;
 
 	mode = READY;
 }
@@ -1560,6 +1564,11 @@ void runCommandSlice() {
 				}			
 			} else if (command == HOST_CMD_TOOL_COMMAND) {
 				if (command_buffer.getLength() >= 4) { // needs a payload
+
+					// Need to empty the pipeline before running the ABP
+					if ( command_buffer[2] == SLAVE_CMD_TOGGLE_ABP && !st_empty() )
+						return;
+
 					uint8_t payload_length = command_buffer[3];
 					if (command_buffer.getLength() >= (uint8_t)(4U+payload_length)) {
 						//Backup the value, in case processExtruderCommandPacket fails due to getLock failing

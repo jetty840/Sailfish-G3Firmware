@@ -559,10 +559,12 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 
     // set build state to ready
 void handleBuildStopNotification(uint8_t stopFlags) {
-	stopPrintTime();
-	last_print_line = command::getLineNumber();
-	buildState = BUILD_FINISHED_NORMALLY;
-	currentState = HOST_STATE_READY;
+	if ( command::copiesToPrint == 0 || command::copiesPrinted >= (command::copiesToPrint - 1)) { 
+		stopPrintTime();
+		last_print_line = command::getLineNumber();
+		buildState = BUILD_FINISHED_NORMALLY;
+		currentState = HOST_STATE_READY;
+	}
 }
 
 /// get current print stats if printing, or last print stats if not printing
@@ -756,6 +758,8 @@ sdcard::SdErrorCode startBuildFromSD(char *fname) {
 	steppers::reset();
 	steppers::abort();
 
+	// Must be done after command::reset();
+	command::copiesToPrint = eeprom::getEeprom8(eeprom::ABP_COPIES, EEPROM_DEFAULT_ABP_COPIES);
 	currentState = HOST_STATE_BUILDING_FROM_SD;
 
 	return e;
