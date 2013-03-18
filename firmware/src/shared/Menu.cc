@@ -1002,7 +1002,6 @@ void MonitorMode::reset() {
 	autoPause = 0;
 	buildCompleteBuzzPlayed = false;
 	overrideForceRedraw = false;
-	copiesPrinted = 0;
 	flashingTool = false;
 	flashingPlatform = false;
 }
@@ -1036,10 +1035,9 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	//Check for a build complete, and if we have more than one copy
 	//to print, setup another one
 	if ( host::isBuildComplete() ) {
-		uint8_t copiesToPrint = eeprom::getEeprom8(eeprom::ABP_COPIES, EEPROM_DEFAULT_ABP_COPIES);
-		if ( copiesToPrint > 1 ) {
-			if ( copiesPrinted < (copiesToPrint - 1)) {
-				copiesPrinted ++;
+		if ( command::copiesToPrint > 1 ) {
+			if ( command::copiesPrinted < (command::copiesToPrint - 1)) {
+				command::copiesPrinted ++;
 				overrideForceRedraw = true;
 				command::buildAnotherCopy();
 			}
@@ -1267,14 +1265,13 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				lcd.write('m');
 				break;
 			case BUILD_TIME_PHASE_COPIES_PRINTED:
-				{
-				uint8_t totalCopies = eeprom::getEeprom8(eeprom::ABP_COPIES, EEPROM_DEFAULT_ABP_COPIES);
-				lcd.setRow(1);
-				lcd.writeFromPgmspace(LOCALIZE(mon_copies));
-				lcd.setCursor(7,1);
-				lcd.writeFloat((float)(copiesPrinted + 1), 0);
-				lcd.writeFromPgmspace(LOCALIZE(mon_of));
-				lcd.writeFloat((float)totalCopies, 0);
+				if ( command::copiesToPrint ) {
+					lcd.setRow(1);
+					lcd.writeFromPgmspace(LOCALIZE(mon_copies));
+					lcd.setCursor(7,1);
+					lcd.writeFloat((float)(command::copiesPrinted + 1), 0);
+					lcd.writeFromPgmspace(LOCALIZE(mon_of));
+					lcd.writeFloat((float)command::copiesToPrint, 0);
 				}
 				break;
 			case BUILD_TIME_PHASE_LAST:
