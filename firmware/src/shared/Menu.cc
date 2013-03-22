@@ -353,8 +353,8 @@ bool MessageScreen::screenWaiting(void){
 
 void MessageScreen::addMessage(CircularBuffer& buf) {
 	char c = buf.pop();
-	while (c != '\0' && cursor < BUF_SIZE && buf.getLength() > 0) {
-		message[cursor++] = c;
+	while (c != '\0' && buf.getLength() > 0) {
+		if ( cursor < BUF_SIZE ) message[cursor++] = c;
 		c = buf.pop();
 	}
 	// ensure that message is always null-terminated

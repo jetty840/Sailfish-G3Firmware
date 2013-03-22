@@ -24,11 +24,12 @@ extern "C"
 #define FAT_ERR_CRC              SDR_ERR_CRC
 #define FAT_ERR_EINVAL           SDR_ERR_EINVAL
 #define FAT_ERR_BAD              10
-#define FAT_ERR_BADSECTORSIZE    11
+#define FAT_ERR_BADSECTORCOUNT   11
 #define FAT_ERR_BADSECTORSPERFAT 12
 #define FAT_ERR_FAT12            13
 #define FAT_ERR_UNKNOWNFILESYS   14
 #define FAT_ERR_TOOMANYOPENFILES 15
+#define FAT_ERR_FILESYSFULL      16
 
 extern uint8_t fat_errno;
 
