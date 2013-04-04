@@ -68,7 +68,6 @@
 	#warning "Release: DEBUG_SRAM_MONITOR enabled in Configuration.hh"
 #endif
 
-
 /// Instantiate static motherboard instance
 Motherboard Motherboard::motherboard;
 
@@ -92,6 +91,9 @@ Motherboard::Motherboard() :
             &monitorMode,
 	    moodLightController,
 	    &messageScreen)
+#ifdef PSTOP_SUPPORT
+	, pstop_enabled(0)
+#endif
 {
 }
 
@@ -163,14 +165,15 @@ void Motherboard::initClocks(){
 	EIMSK |=  ( 1 << INT1 );  // Re-enable INT1
 #endif
 
-#ifdef PSTOP_SUPPORT
+#if defined(PSTOP_SUPPORT) && defined(PSTOP_VECT)
 	// We set a LOW pin change interrupt on the X min endstop
-	if ( 1 == eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0) ) {
+	pstop_enabled = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
+	if ( pstop_enabled > 2 ) pstop_enabled = 0; // 0 == off; 1 == cold pause; 2 == hot pause
+	if ( pstop_enabled != 0 ) {
 		PSTOP_MSK |= ( 1 << PSTOP_PCINT );
 		PCICR     |= ( 1 << PSTOP_PCIE );
 	}
 #endif
-
 }
 
 
@@ -501,10 +504,10 @@ ISR(INT1_vect) {
 
 #endif
 
-#ifdef PSTOP_SUPPORT
+#if defined(PSTOP_SUPPORT) && defined(PSTOP_VECT)
 
 ISR(PSTOP_VECT) {
-	if ( PSTOP_PORT.getValue() == 0 ) command::pstop_triggered = 1;
+	if ( (Motherboard::getBoard().pstop_enabled != 0) && (PSTOP_PORT.getValue() == 0) ) command::pstop_triggered = 1;
 }
 
 #endif
