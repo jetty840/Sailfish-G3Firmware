@@ -90,7 +90,7 @@ void handleBuildStopNotification(uint8_t stopFlags);
 void getPrintTime(uint8_t &hours, uint8_t &minutes);
 
 /// alert host that build is paused / un paused
-void pauseBuild(bool pause);
+void pauseBuild(bool pause, uint8_t heaterControl);
 
 /// check if print time has elapsed and update hour counter
 void managePrintTime();

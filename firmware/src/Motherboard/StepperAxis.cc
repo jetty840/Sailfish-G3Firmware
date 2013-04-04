@@ -59,14 +59,13 @@ volatile int16_t e_steps[EXTRUDERS];
 volatile uint8_t axesEnabled;			//Planner axis enabled
 volatile uint8_t axesHardwareEnabled;		//Hardware axis enabled
 
-
+#ifdef PSTOP_SUPPORT
+static uint8_t pstop_enable = 0;
+#endif
 
 /// Initialize a stepper axis
 void stepperAxisInit(bool hard_reset) {
 	uint8_t axes_invert = 0, endstops_invert = 0;
-#ifdef PSTOP_SUPPORT
-	uint8_t pstop_enable = 0;
-#endif
 
 	if ( hard_reset ) {
 		//Load the defaults

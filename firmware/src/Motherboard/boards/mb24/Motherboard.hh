@@ -96,8 +96,10 @@ private:
         SplashScreen splashScreen;      ///< Displayed at startup
         MonitorMode monitorMode;        ///< Displayed during build
 
-
 public:
+#ifdef PSTOP_SUPPORT
+	uint8_t pstop_enabled;
+#endif
 	//2 types of stepper timers depending on if we're using accelerated or not
 	void setupFixedStepperTimer();
 	void setupAccelStepperTimer();

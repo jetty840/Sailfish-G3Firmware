@@ -467,7 +467,7 @@ inline void handlePause(const InPacket& from_host, OutPacket& to_host) {
 	//the operation yet, we ignore this request
 	if (!command::pauseIntermediateState()) {
 		/// this command also calls the host::pauseBuild() command
-		pauseBuild(!command::isPaused());
+		pauseBuild(!command::isPaused(), PAUSE_EXT_OFF | PAUSE_HBP_OFF);
 		doToolPause(to_host);
 	}
 
@@ -794,12 +794,12 @@ void stopBuild() {
 	if (( command::isPaused() ) || ( command::pauseIntermediateState() )) {
 	    stopBuildNow();
 	} else {
-	    command::pause(true, false);
+	    command::pause(true, 0);
 	}
 }
 
 /// update state variables if print is paused
-void pauseBuild(bool pause){
+void pauseBuild(bool pause, uint8_t heaterControl) {
 	
 	/// don't update time or state if we are already in the desired state
 	if (!(pause == command::isPaused())){
@@ -808,8 +808,8 @@ void pauseBuild(bool pause){
 		//the operation yet, we ignore this request
 		if (command::pauseIntermediateState())
 			return;
-		
-		command::pause(pause, false);
+
+		command::pause(pause, heaterControl);
 		if(pause){
 			buildState = BUILD_PAUSED;
 			print_time.pause(true);
