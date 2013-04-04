@@ -1149,7 +1149,7 @@ void runCommandSlice() {
         //If we've reached Pause @ ZPos, then pause
         if ((( pauseZPos ) && ( pauseAtZPosActivated ) && ( ! isPaused() ) && ( steppers::getPlannerPosition()[2]) >= pauseZPos )) {
 		pauseAtZPos(0);		//Clear the pause at zpos
-                host::pauseBuild(true);
+                host::pauseBuild(true, PAUSE_HEAT_ON);
 #ifdef HAS_BUZZER
 		Motherboard::getBoard().buzz(4, 3, eeprom::getEeprom8(eeprom::BUZZER_REPEATS, EEPROM_DEFAULT_BUZZER_REPEATS));
 #endif
@@ -1177,13 +1177,13 @@ void runCommandSlice() {
 #ifdef PSTOP_SUPPORT
 	// We don't act on the PSTOP when we are homing or are paused
 	if ( pstop_triggered && pstop_okay && mode != HOMING && paused == PAUSE_STATE_NONE ) {
-		pstop_triggered = 0;
 		if ( !isPaused() )
 		{
 			const static PROGMEM prog_uchar pstop_msg[] = "P-Stop triggered";
 			pauseErrorMessage = pstop_msg;
-			host::pauseBuild(true);
+			host::pauseBuild(true, PAUSE_EXT_OFF | PAUSE_HBP_OFF);
 		}
+		pstop_triggered = 0;
 	}
 #endif
 

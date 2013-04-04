@@ -497,6 +497,7 @@ uint8_t sd_raw_read(offset_t offset, uint8_t* buffer, uintptr_t length)
     offset_t block_address;
     uint16_t block_offset;
     uint16_t read_length;
+
     while(length > 0)
     {
         /* determine byte count to read at once */
@@ -777,13 +778,13 @@ uint8_t sd_raw_write(offset_t offset, const uint8_t* buffer, uintptr_t length)
 #if SD_RAW_WRITE_BUFFERING
             if(!sd_raw_sync())
 		// sd_raw_sync() calls us back...
-                return 0;
+		return 0;
 #endif
 
             if(block_offset || write_length < 512)
             {
                 if(!sd_raw_read(block_address, raw_block, sizeof(raw_block)))
-                    return 0;
+		    return 0;
             }
             raw_block_address = block_address;
         }
@@ -1010,6 +1011,7 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
     uint8_t csd_c_size_mult = 0;
 #if SD_RAW_SDHC
     uint16_t csd_c_size = 0;
+    uint8_t csd_structure = 0;
 #else
     uint32_t csd_c_size = 0;
 #endif
@@ -1023,7 +1025,13 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
     {
         uint8_t b = sd_raw_rec_byte();
 
-        if(i == 14)
+	if(i == 0)
+	{
+#if SD_RAW_SDHC
+	    csd_structure = b >> 6;
+#endif
+	}
+        else if(i == 14)
         {
             if(b & 0x40)
                 info->flag_copy = 1;
@@ -1036,7 +1044,7 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
         else
         {
 #if SD_RAW_SDHC
-            if(sd_raw_card_type & (1 << SD_RAW_SPEC_2))
+            if(csd_structure == 0x01)
             {
                 switch(i)
                 {
@@ -1054,7 +1062,7 @@ uint8_t sd_raw_get_info(struct sd_raw_info* info)
                     info->capacity = (offset_t) csd_c_size * 512 * 1024;
                 }
             }
-            else
+            else if(csd_structure == 0x00)
 #endif
             {
                 switch(i)
