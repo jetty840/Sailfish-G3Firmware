@@ -381,6 +381,11 @@ const static uint16_t SD_USE_CRC	         = 0x1EB;
 //$type:B
 const static uint16_t PSTOP_ENABLE	         = 0x1EC;
 
+//ENDSTOP_Z_MIN (1 byte)
+//$BEGIN_ENTRY
+//$type:B
+const static uint16_t ENDSTOP_Z_MIN              = 0x1ED;
+
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
 
