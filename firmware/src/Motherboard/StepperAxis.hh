@@ -141,6 +141,9 @@ extern volatile bool    axis_homing[STEPPER_COUNT];
 extern volatile uint8_t axesEnabled;			//Planner axis enabled
 extern volatile uint8_t axesHardwareEnabled;		//Hardware axis enabled
 
+#ifdef CUPCAKE_3G5D_COMBINED_ENDSTOPS
+extern volatile bool    z_min_endstop;
+#endif
 
 /// Set the direction of the next step
 FORCE_INLINE void stepperAxisSetDirection(uint8_t axis, bool forward) {
@@ -206,11 +209,35 @@ FORCE_INLINE bool stepperAxisStepWithEndstopCheck(uint8_t axis, bool direction) 
 	//we shouldn't be checking it when direction is positive otherwise we can't move
 	//away from the homing endstop after triggering it
 #ifdef CUPCAKE_3G5D_COMBINED_ENDSTOPS
-	if ( (direction) ||
+	if ( z_min_endstop ) {
+		// All endstops are MIN endstops
+		if ( direction ||
+		     (!direction && !stepperAxisIsAtMinimum(axis)) ) {
+			stepperAxisStep(axis, true);
+			return true;
+		}
+		else {
+			axis_homing[axis] = false;
+			return false;
+		}
+	}
+	else
+	{
+		//    Z endstop is MAX endstop
+		// X, Y endstops are MIN endstops
+		if ( ((axis == Z_AXIS) && (!direction || ( direction && !stepperAxisIsAtMaximum(axis)))) ||
+		     ((axis != Z_AXIS) && ( direction || (!direction && !stepperAxisIsAtMinimum(axis)))) ) {
+			stepperAxisStep(axis, true);
+			return true;
+		}
+		else {
+			axis_homing[axis] = false;
+			return false;
+		}
+	}
 #else
-	if (( (direction)   && (! stepperAxisIsAtMaximum(axis))) ||
-#endif
-	    ( (! direction) && (! stepperAxisIsAtMinimum(axis)))) {
+	if ( ( direction && !stepperAxisIsAtMaximum(axis)) ||
+	     (!direction && !stepperAxisIsAtMinimum(axis)) ) {
 		stepperAxisStep(axis, true);
 		return true;
 	}
@@ -218,6 +245,7 @@ FORCE_INLINE bool stepperAxisStepWithEndstopCheck(uint8_t axis, bool direction) 
 		axis_homing[axis] = false;
 		return false;
 	}
+#endif
 }
 
 /// DDA

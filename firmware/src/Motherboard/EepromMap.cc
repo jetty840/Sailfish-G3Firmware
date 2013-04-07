@@ -165,6 +165,10 @@ void setDefaults(bool retainCounters) {
     putEepromInt64(eeprom::FILAMENT_LIFETIME_B,			EEPROM_DEFAULT_FILAMENT_LIFETIME);
     putEepromInt64(eeprom::FILAMENT_TRIP_A,			EEPROM_DEFAULT_FILAMENT_TRIP);
     putEepromInt64(eeprom::FILAMENT_TRIP_B,			EEPROM_DEFAULT_FILAMENT_TRIP);
+
+#ifdef CUPCAKE_3G5D_COMBINED_ENDSTOPS
+    eeprom_write_byte((uint8_t*)eeprom::ENDSTOP_Z_MIN, 0);
+#endif
 }
 
 void storeToolheadToleranceDefaults(){
