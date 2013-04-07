@@ -51,6 +51,10 @@ struct StepperAxisPorts stepperAxisPorts[STEPPER_COUNT] = {
 };
 #endif
 
+#ifdef CUPCAKE_3G5D_COMBINED_ENDSTOPS
+volatile bool z_min_endstop = true;
+#endif
+
 struct StepperAxis stepperAxis[STEPPER_COUNT];
 
 volatile int32_t dda_position[STEPPER_COUNT];
@@ -71,6 +75,9 @@ void stepperAxisInit(bool hard_reset) {
 		//Load the defaults
 		axes_invert	= eeprom::getEeprom8(eeprom::AXIS_INVERSION, 0);
 		endstops_invert = eeprom::getEeprom8(eeprom::ENDSTOP_INVERSION, 0);
+#ifdef CUPCAKE_3G5D_COMBINED_ENDSTOPS
+                z_min_endstop   = eeprom::getEeprom8(eeprom::ENDSTOP_Z_MIN, 0) == 1;
+#endif
 #ifdef PSTOP_SUPPORT
 		pstop_enable    = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
 		if ( pstop_enable != 1 ) {
