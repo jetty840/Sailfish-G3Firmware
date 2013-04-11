@@ -2703,6 +2703,17 @@ void ChangeTempScreen::notifyButtonPressed(ButtonArray::ButtonName button) {
 	    if ( data != 0 )
 		extruderControl(activeToolhead, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)altTemp);
 	}
+#ifdef DITTO_PRINT
+	if ( command::dittoPrinting ) {
+	    uint8_t otherToolhead = activeToolhead ? 0 : 1;
+	    command::altTemp[otherToolhead] = altTemp;
+	    if ( extruderControl(otherToolhead, SLAVE_CMD_GET_SP, EXTDR_CMD_GET, responsePacket, 0) ) {
+		uint16_t data = responsePacket.read16(1);
+		if ( data != 0 )
+		    extruderControl(otherToolhead, SLAVE_CMD_SET_TEMP, EXTDR_CMD_SET, responsePacket, (uint16_t)altTemp);
+	    }
+	}
+#endif
     }
         // FALL THROUGH
     case ButtonArray::CANCEL:

@@ -74,6 +74,10 @@ namespace command {
 
 extern uint8_t copiesToPrint, copiesPrinted;
 
+#ifdef DITTO_PRINT
+extern bool dittoPrinting;
+#endif
+
 #ifdef HAS_INTERFACE_BOARD
 extern uint16_t altTemp[EXTRUDERS];
 #endif
