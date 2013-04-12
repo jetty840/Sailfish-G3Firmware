@@ -84,6 +84,7 @@ extern uint16_t altTemp[EXTRUDERS];
 
 #ifdef PSTOP_SUPPORT
 extern uint8_t pstop_triggered;
+extern bool pstop_okay;
 #endif
 
 /// Reset the entire command queue.  Clears out any remaining queued
