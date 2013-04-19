@@ -1703,6 +1703,19 @@ void runCommandSlice() {
 					pop32(); // reserved;
 					pop8(); // reserved;
 				}
+#ifdef PAUSEATZPOS
+			} else if ( command == HOST_CMD_PAUSE_AT_ZPOS ) {
+				if (command_buffer.getLength() >= 5){
+					pop8(); // remove the command code
+					line_number++;
+					int32_t zPosInt32 = pop32();
+					float *zPos = (float *)&zPosInt32;
+
+					//Exclude negative zpos's and nearly zero zpos's
+					if ( *zPos < 0.001 )	*zPos = 0.0;
+					pauseAtZPos(stepperAxisMMToSteps(*zPos, Z_AXIS));
+				}
+#endif
 			} else {
 			}
 		}
