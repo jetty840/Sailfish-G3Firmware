@@ -112,9 +112,9 @@ void reset(bool hard_reset) {
 
 #ifdef HAS_ESTOP
 		const uint8_t estop_conf = eeprom::getEeprom8(eeprom::ESTOP_CONFIGURATION, EEPROM_DEFAULT_ESTOP_CONFIGURATION);
-		if (estop_conf == eeprom::ESTOP_CONF_ACTIVE_HIGH) {
+		if (estop_conf == ESTOP_CONF_ACTIVE_HIGH) {
 			ESTOP_ENABLE_RISING_INT;
-		} else if (estop_conf == eeprom::ESTOP_CONF_ACTIVE_LOW) {
+		} else if (estop_conf == ESTOP_CONF_ACTIVE_LOW) {
 			ESTOP_ENABLE_FALLING_INT;
 		}
 #endif

@@ -6,7 +6,7 @@
 
 #define EEPROM_DEFAULT_MACHINE_NAME			0			// name is null
 
-#define EEPROM_DEFAULT_ESTOP_CONFIGURATION		eeprom::ESTOP_CONF_NONE
+#define EEPROM_DEFAULT_ESTOP_CONFIGURATION		ESTOP_CONF_NONE
 
 // Not strictly MBI defaults, but we but them here as we never want these values to be overwritten
 #define EEPROM_DEFAULT_FILAMENT_LIFETIME		0
