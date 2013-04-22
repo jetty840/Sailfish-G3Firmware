@@ -21,18 +21,24 @@
 
 #include <stdint.h>
 
+enum {
+	ESTOP_CONF_NONE = 0x0,
+	ESTOP_CONF_ACTIVE_HIGH = 0x1,
+	ESTOP_CONF_ACTIVE_LOW = 0x2
+};
+
 namespace eeprom {
 
 const static uint16_t EEPROM_SIZE				= 0x0200;
 
 /// Version, low byte: 1 byte
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $ignore:True
 const static uint16_t VERSION_LOW				= 0x0000;
 
 /// Version, high byte: 1 byte
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $ignore:True
 const static uint16_t VERSION_HIGH				= 0x0001;
 
 /// Axis inversion flags: 1 byte.
@@ -66,12 +72,6 @@ const static uint16_t AXIS_HOME_POSITIONS		= 0x0060;
 //$BEGIN_ENTRY
 //$type:B
 const static uint16_t ESTOP_CONFIGURATION = 0x0074;
-
-enum {
-	ESTOP_CONF_NONE = 0x0,
-	ESTOP_CONF_ACTIVE_HIGH = 0x1,
-	ESTOP_CONF_ACTIVE_LOW = 0x2
-};
 
 //$BEGIN_ENTRY
 //$type:B
@@ -122,27 +122,27 @@ const static uint16_t BUZZER_REPEATS		= 0x008A;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:q $floating_point:True $exponent:-10
+//$type:d  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_X		= 0x008B;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:q $floating_point:True $exponent:-10
+//$type:d  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_Y		= 0x0093;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:q $floating_point:True $exponent:-10
+//$type:d  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_Z		= 0x009B;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:q $floating_point:True $exponent:-10
+//$type:d  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_A		= 0x00A3;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:q $floating_point:True $exponent:-10
+//$type:d  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_B		= 0x00AB;
 
 //int64_t (8 bytes) The filament used in steps
@@ -159,7 +159,7 @@ const static uint16_t FILAMENT_TRIP_A		= 0x00BB;
 const static uint16_t ABP_COPIES		= 0x00C3;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $ignore:True
 const static uint16_t UNUSED1			= 0x00C4;
 
 //Override the temperature set in the gcode file at the start of the build
@@ -225,29 +225,29 @@ const static uint16_t ACCEL_MAX_EXTRUDER_RETRACT= 0x014F;
 
 //uint32_t (4 bytes)
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:mm/s * 10 $ignore:True
 const static uint16_t UNUSED2	= 0x0153;
 
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:mm/s * 10 $ignore:True
 const static uint16_t UNUSED3			= 0x0157;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:mm/s * 10 $ignore:True
 const static uint16_t UNUSED4			= 0x015B;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-5
+//$type:f  $unit:factor * 100000
 const static uint16_t ACCEL_ADVANCE_K2		= 0x015F;
 //$BEGIN_ENTRY
-//$type:I
+//$type:f $ignore:True
 const static uint16_t UNUSED5			= 0x0163;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-5
+//$type:f  $unit:factor * 100000
 const static uint16_t ACCEL_ADVANCE_K		= 0x0167;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-2
+//$type:f  $unit:mm/s * 100 $ignore:True
 const static uint16_t UNUSED6			= 0x016B;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-4
+//$type:f  $unit:mm/s * 10000 $ignore:True
 const static uint16_t UNUSED7			= 0x016F;
 
 //uint8_t (1 byte)
@@ -279,51 +279,51 @@ const static uint16_t HOMING_FEED_RATE_Y	= 0x0179;
 const static uint16_t HOMING_FEED_RATE_Z	= 0x017D;
 
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $ignore:True
 const static uint16_t UNUSED8			= 0x0181;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:steps * 10
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_A	= 0x0185;
 //$BEGIN_ENTRY
 //$type:B
 const static uint16_t ACCEL_SLOWDOWN_FLAG	= 0x0189;
 //$BEGIN_ENTRY
-//$type:BBB
+//$type:BBB $ignore:True
 const static uint16_t UNUSED9			= 0x018A;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $ignore:True
 const static uint16_t UNUSED10			= 0x018D;
 
 //uint8_t (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $ignore:True
 const static uint16_t UNUSED11			= 0x0191;
 
 //uint32_t (4 bytes)
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_X= 0x0192;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_Y= 0x0196;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_Z= 0x019A;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f $unit:mm/s * 10 
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_A= 0x019E;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_B= 0x01A2;
 //$BEGIN_ENTRY
 //$type:I
 const static uint16_t ACCEL_MAX_ACCELERATION_B= 0x01A6;
 //$BEGIN_ENTRY
-//$type:I $floating_point:True $exponent:-1
+//$type:f  $unit:steps * 10
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_B= 0x01AA;
-// Tool count : 2 bytes
+// Tool count : 1 bytes
 //$BEGIN_ENTRY
-//$type:BB
+//$type:B
 const static uint16_t TOOL_COUNT	      = 0x01AE;
 // This indicates how far out of tolerance the toolhead0 toolhead1 distance is
 // in steps.  3 x int32_t bits = 12 bytes
@@ -358,7 +358,7 @@ const static uint16_t FILAMENT_TRIP_B		= 0x01DD;
 
 //Hardware vendor id (in this case, Sailfish vendor id) - (4 bytes)
 //$BEGIN_ENTRY
-//$type:BBBB
+//$type:BBBB 
 const static uint16_t VID_PID_INFO		 = 0x1E5;
 
 //Extruder hold (1 byte)
@@ -369,17 +369,17 @@ const static uint16_t EXTRUDER_HOLD		 = 0x1E9;
 //Toolhead offset system (1 byte)
 //$BEGIN_ENTRY
 //$type:B
-const static uint16_t TOOLHEAD_OFFSET_SYSTEM	 = 0x1EA;
-
+const static uint16_t TOOLHEAD_OFFSET_SYSTEM     = 0x1EA;
+ 
 //Use SD card CRC checks (1 byte)
 //$BEGIN_ENTRY
 //$type:B
-const static uint16_t SD_USE_CRC	         = 0x1EB;
-
+const static uint16_t SD_USE_CRC             = 0x1EB;
+ 
 //P-Stop support (1 byte)
 //$BEGIN_ENTRY
 //$type:B
-const static uint16_t PSTOP_ENABLE	         = 0x1EC;
+const static uint16_t PSTOP_ENABLE           = 0x1EC;
 
 //ENDSTOP_Z_MIN (1 byte)
 //$BEGIN_ENTRY
