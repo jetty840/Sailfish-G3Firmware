@@ -58,14 +58,14 @@ const static uint16_t AXIS_INVERSION			= 0x0002;
 //$type:B
 const static uint16_t ENDSTOP_INVERSION			= 0x0003;
 
-/// Name of this machine: 32 bytes
+/// Name of this machine: 16 bytes
 //$BEGIN_ENTRY
-//$type:s $length:32
+//$type:s $length:16
 const static uint16_t MACHINE_NAME				= 0x0020;
 
 /// Default locations for the axis: 5 x 32 bit = 20 bytes
 //$BEGIN_ENTRY
-//$type:iiiii
+//$type:IIIII
 const static uint16_t AXIS_HOME_POSITIONS		= 0x0060;
 
 // Estop configuration byte: 1 byte.
@@ -86,15 +86,15 @@ const static uint16_t TOOL1_TEMP      		= 0x0081;
 const static uint16_t PLATFORM_TEMP   		= 0x0082;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $ignore:True
 const static uint16_t EXTRUDE_DURATION		= 0x0083;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B 
 const static uint16_t EXTRUDE_MMS     		= 0x0084;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $ignore:True
 const static uint16_t MOOD_LIGHT_SCRIPT		= 0x0085;
 
 //$BEGIN_ENTRY
@@ -122,27 +122,27 @@ const static uint16_t BUZZER_REPEATS		= 0x008A;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:d  $unit:steps * 10000000000
+//$type:q  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_X		= 0x008B;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:d  $unit:steps * 10000000000
+//$type:q  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_Y		= 0x0093;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:d  $unit:steps * 10000000000
+//$type:q  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_Z		= 0x009B;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:d  $unit:steps * 10000000000
+//$type:q  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_A		= 0x00A3;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
 //$BEGIN_ENTRY
-//$type:d  $unit:steps * 10000000000
+//$type:q  $unit:steps * 10000000000
 const static uint16_t STEPS_PER_MM_B		= 0x00AB;
 
 //int64_t (8 bytes) The filament used in steps
@@ -235,13 +235,13 @@ const static uint16_t UNUSED3			= 0x0157;
 //$type:f  $unit:mm/s * 10 $ignore:True
 const static uint16_t UNUSED4			= 0x015B;
 //$BEGIN_ENTRY
-//$type:f  $unit:factor * 100000
+//$type:I  $unit:factor * 100000
 const static uint16_t ACCEL_ADVANCE_K2		= 0x015F;
 //$BEGIN_ENTRY
 //$type:f $ignore:True
 const static uint16_t UNUSED5			= 0x0163;
 //$BEGIN_ENTRY
-//$type:f  $unit:factor * 100000
+//$type:I  $unit:factor * 100000
 const static uint16_t ACCEL_ADVANCE_K		= 0x0167;
 //$BEGIN_ENTRY
 //$type:f  $unit:mm/s * 100 $ignore:True
@@ -282,7 +282,7 @@ const static uint16_t HOMING_FEED_RATE_Z	= 0x017D;
 //$type:I $ignore:True
 const static uint16_t UNUSED8			= 0x0181;
 //$BEGIN_ENTRY
-//$type:f  $unit:steps * 10
+//$type:I  $unit:steps * 10
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_A	= 0x0185;
 //$BEGIN_ENTRY
 //$type:B
