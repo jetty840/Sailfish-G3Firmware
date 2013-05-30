@@ -11,6 +11,10 @@
 # To default to stepper rather than DC drive, add "stepper=true".
 # To default to PWM heater rather than relays, add "relays=false".
 #
+# ATmega 328: mcu=atmega328
+#
+# MAX 31855: max31855=true
+#
 # To upload the firmware, specify the "upload" target.  By default, this will use
 # /dev/ttyUSB0 as the serial connection.
 # $ scons upload
@@ -22,10 +26,13 @@
 import os
 import re
 from os.path import dirname
+
 # Parameters
 platform = ARGUMENTS.get('platform','ecv22')
 stepper = ARGUMENTS.get('stepper','false')
 extstepper = ARGUMENTS.get('extstepper','false')
+max31855 = ARGUMENTS.get('max31855','false')
+
 f_cpu='16000000L'
 
 if platform == 'ec36':
@@ -35,7 +42,6 @@ default_baud = '19200'
 mcu='atmega168'
 has_queue = 0
 has_psu = 0
-
 
 def parse_version(v):
     if not v:
@@ -63,7 +69,7 @@ if (platform == 'ecv22'):
 	relays_default = 'true'
 elif (platform == 'ecv34'):
 	default_baud = '19200'
-	mcu='atmega168'
+	mcu=ARGUMENTS.get('mcu','atmega168')
 	has_queue = 0
 	has_psu = 0
 	relays_default = 'false'
@@ -76,6 +82,10 @@ else:
 relays = ARGUMENTS.get('relays',relays_default)
 
 target_name = "EC-"+platform+"-v"+str(version//100)+"."+str(version%100)
+
+# append _328 to the target name if building for a ATmega 328
+if (mcu == 'atmega328'):
+   target_name += '_328'
 
 upload_port = ARGUMENTS.get('port','/dev/ttyUSB1')
 upload_baud = ARGUMENTS.get('baud',default_baud)
@@ -99,6 +109,9 @@ flags=[
 
 if (os.environ.has_key('BUILD_NAME')):
    flags.append('-DBUILD_NAME=' + os.environ['BUILD_NAME'])
+
+if (max31855 == 'true'):
+   flags.append('-DMAX31855')
 
 if (stepper == 'true'):
    flags.append('-DDEFAULT_STEPPER=1')

@@ -24,7 +24,7 @@
 /// @param[in] reading Thermistor voltage reading, in ADC counts
 /// @param[in] table_idx Index of the thermocouple lookup table
 /// @return Temperature reading, in degrees Celcius
-int16_t thermistorToCelsius(int16_t reading, int8_t table_idx);
+float thermistorToCelsius(int16_t reading, int8_t table_idx);
 
 /// Initialize the thermocouple lookup tables. This needs to be called at boot, before calling
 /// #thermistorToCelcius()

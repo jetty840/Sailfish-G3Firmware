@@ -15,10 +15,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>
  */
 
-
-
 #ifndef INTERFACE_HH_
 #define INTERFACE_HH_
+
+#include "Configuration.hh"
+
+#ifdef HAS_INTERFACE_BOARD
 
 #include "Menu.hh"
 #include "InterfaceBoard.hh"
@@ -70,4 +72,5 @@ micros_t getUpdateRate();
 MoodLightController moodLightController();
 }
 
+#endif
 #endif

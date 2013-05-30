@@ -92,7 +92,7 @@ inline Entry getEntry(int8_t entryIdx, int8_t which) {
 	return rv;
 }
 
-int16_t thermistorToCelsius(int16_t reading, int8_t table_idx) {
+float thermistorToCelsius(int16_t reading, int8_t table_idx) {
   int8_t bottom = 0;
   int8_t top = NUMTEMPS-1;
   int8_t mid = (bottom+top)/2;
@@ -117,17 +117,17 @@ int16_t thermistorToCelsius(int16_t reading, int8_t table_idx) {
 #pragma GCC diagnostic pop
   if (bottom == 0 && reading < eb.adc) {
 	  // out of scale; safety mode
-	  return 255;
+	  return 255.0;
   }
   if (top == NUMTEMPS-1 && reading > et.adc) {
 	  // out of scale; safety mode
-	  return 255;
+	  return 255.0;
   }
 
-  int16_t celsius  = eb.value +
-		  ((reading - eb.adc) * (et.value - eb.value)) / (et.adc - eb.adc);
-  if (celsius > 255)
-	  celsius = 255;
+  float celsius  = (float)eb.value +
+      (float)((reading - eb.adc) * (et.value - eb.value)) / (float)(et.adc - eb.adc);
+  if (celsius > 255.0)
+	  celsius = 255.0;
   return celsius;
 }
 

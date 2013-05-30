@@ -63,6 +63,7 @@ void Heater::reset() {
 	// TODO: Reset sensor, element here?
 
 	current_temperature = 0;
+	bypassing_PID = false;
 
 	fail_state = false;
 	fail_count = 0;
@@ -161,7 +162,7 @@ void Heater::manage_temperature()
 	if (next_pid_timeout.hasElapsed()) {
 		next_pid_timeout.start(UPDATE_INTERVAL_MICROS);
 
-		int delta = pid.getTarget() - current_temperature;
+		int delta = (int)(0.5 + (float)pid.getTarget() - current_temperature);
 
 		if( bypassing_PID && (delta < PID_BYPASS_DELTA) ) {
 			bypassing_PID = false;
@@ -176,16 +177,18 @@ void Heater::manage_temperature()
 			set_output(255);
 		}
 		else {
-			int mv = pid.calculate(current_temperature);
+		    int mv = 0;
+		    if ( pid.getTarget() != 0 ) {
+			mv = pid.calculate(current_temperature);
 			// offset value to compensate for heat bleed-off.
 			// There are probably more elegant ways to do this,
 			// but this works pretty well.
 			mv += HEATER_OFFSET_ADJUSTMENT;
 			// clamp value
-			if (mv < 0) { mv = 0; }
-			if (mv >255) { mv = 255; }
-			if (pid.getTarget() == 0) { mv = 0; }
-			set_output(mv);
+			if (mv < 0) mv = 0;
+			else if (mv > 255) mv = 255;
+		    }
+		    set_output(mv);
 		}
 	}
 }

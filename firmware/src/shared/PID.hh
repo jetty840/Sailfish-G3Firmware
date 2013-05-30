@@ -39,11 +39,11 @@ private:
 
     /// Data for approximating d (smoothing to handle discrete nature of sampling).
     /// See PID.cc for a description of why we do this.
-    int16_t delta_history[DELTA_SAMPLES];
+    float delta_history[DELTA_SAMPLES];
     float delta_summation;      ///< ?
     uint8_t delta_idx;          ///< Current index in the delta history buffer
-    int prev_error;             ///< Previous input for calculating next delta
-    int error_acc;              ///< Accumulated error, for calculating integral
+    float prev_error;             ///< Previous input for calculating next delta
+    float error_acc;              ///< Accumulated error, for calculating integral
 
     int sp;                     ///< Process set point
     int last_output;            ///< Last output of the PID controller
@@ -81,19 +81,19 @@ public:
     /// Calculate the next cycle of the PID loop.
     /// \param[in] pv Process value (measured value from the sensor)
     /// \return output value (used to control the output)
-    int calculate(int pv);
+    int calculate(const float pv);
 
     /// Get the current value of the error term
     /// \return Error term
-    int getErrorTerm();
+    int getErrorTerm() { return (int)error_acc; }
 
     /// Get the current value of the delta term
     /// \return Delta term
-    int getDeltaTerm();
+    int getDeltaTerm() { return (int)delta_summation; }
 
     /// Get the last process output value
     /// \return Last process output value
-    int getLastOutput();
+    int getLastOutput() { return (int)last_output; }
 };
 
 #endif /* PID_HH_ */

@@ -1,12 +1,11 @@
 #include "InterfaceBoard.hh"
-#include "Configuration.hh"
+
+#if defined HAS_INTERFACE_BOARD
+
 #include "LiquidCrystal.hh"
 #include "Host.hh"
 #include "Motherboard.hh"
         
-
-#if defined HAS_INTERFACE_BOARD
-
 InterfaceBoard::InterfaceBoard(ButtonArray& buttons_in,
                                LiquidCrystal& lcd_in,
                                const Pin& foo_pin_in,
