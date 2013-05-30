@@ -20,6 +20,9 @@
 #define INTERFACE_BOARD_HH_
 
 #include "Configuration.hh"
+
+#if defined HAS_INTERFACE_BOARD
+
 #include "Pin.hh"
 #include "ButtonArray.hh"
 #include "Menu.hh"
@@ -133,4 +136,5 @@ public:
 	void hideMessageScreen(void);
 };
 
+#endif
 #endif

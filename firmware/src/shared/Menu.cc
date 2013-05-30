@@ -8,11 +8,11 @@
 // ABPCopiesSetScreen
 
 #include "Configuration.hh"
-#include "Menu.hh"
 
 // TODO: Kill this, should be hanlded by build system.
 #ifdef HAS_INTERFACE_BOARD
 
+#include "Menu.hh"
 #include "StepperAccel.hh"
 #include "Steppers.hh"
 #include "Commands.hh"

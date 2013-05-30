@@ -125,4 +125,6 @@ void setDefaults();
 
 } // namespace eeprom
 
+#define verifyAndFixVidPid()
+
 #endif // EEPROM_MAP_HH_
