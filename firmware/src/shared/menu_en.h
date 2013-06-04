@@ -145,10 +145,6 @@ const static PROGMEM prog_uchar ha_home2_en[] = "  Y            Z";
 const static PROGMEM prog_uchar ha_home3_en[] = "X   X (endstops)";
 const static PROGMEM prog_uchar ha_home4_en[] = "  Y            Z";
 
-// Enable Disable menu
-const static PROGMEM prog_uchar ed_disable_en[] = "Disable";
-const static PROGMEM prog_uchar ed_enable_en[] = "Enable";
-
 // Test End Stops menu
 const static PROGMEM prog_uchar tes_test1_en[] = "Test End Stops: ";
 const static PROGMEM prog_uchar tes_test2_en[] = "XMin:N    XMax:N";
@@ -331,7 +327,6 @@ const static PROGMEM prog_uchar eeprom_blank_en[] = "                ";
 
 // Steppers menu
 const static PROGMEM prog_uchar step_msg1_en[] = "Stepper Motors:";
-const static PROGMEM prog_uchar step_msg2_en[] = "";
 
 // Extruder Fan menu
 const static PROGMEM prog_uchar ext_msg1_en[] = "Extruder Fan:";

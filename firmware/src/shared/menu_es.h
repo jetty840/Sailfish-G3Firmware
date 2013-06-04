@@ -143,10 +143,6 @@ const static PROGMEM prog_uchar ha_home2_es[] = "  Y            Z";
 const static PROGMEM prog_uchar ha_home3_es[] = "X   X (sensores)";
 const static PROGMEM prog_uchar ha_home4_es[] = "  Y            Z";
 
-// Enable Disable menu
-const static PROGMEM prog_uchar ed_disable_es[] = "Desactivado";
-const static PROGMEM prog_uchar ed_enable_es[] = "Activado";
-
 // Test End Stops menu
 const static PROGMEM prog_uchar tes_test1_es[] = "Prueba sensores:";
 const static PROGMEM prog_uchar tes_test2_es[] = "XMin:0    XMax:0";
@@ -327,8 +323,7 @@ const static PROGMEM prog_uchar eeprom_msg12_es[] = "Archivo existe!";
 const static PROGMEM prog_uchar eeprom_blank_es[] = "                ";
 
 // Steppers menu
-const static PROGMEM prog_uchar step_msg1_es[] = "Bloquear motores:";
-const static PROGMEM prog_uchar step_msg2_es[] = "";
+const static PROGMEM prog_uchar step_msg1_es[] = "Bloquear motores";
 
 // Extruder Fan menu
 const static PROGMEM prog_uchar ext_msg1_es[] = "Ventilador";
