@@ -15,7 +15,7 @@
 // Menu.cc strings
 
 // Splash screen
-splash1 "  Sailfish FW   "
+splash1 "    Sailfish    "
 splash2 " -------------- "
 splash3 "Thing 32084 4.4 "
 splash4 " Revision _____ "
@@ -27,6 +27,7 @@ generic_off "Apagado"
 generic_on  "On"
 sdcrc_msg1  "Perform SD card"
 sdcrc_msg2  "error checking:"
+pstop_msg1  "P-Stop:"
 units_mm    "mm"
 
 // User view menu
@@ -149,12 +150,13 @@ ha_home3 "X   X (sensores)"
 ha_home4 "  Y            Z"
 
 // Test End Stops menu
-tes_test1 "Prueba sensores:"
-tes_test2 "XMin:0    XMax:0"
-tes_test3 "YMin:0    YMax:0"
-tes_test4 "ZMin:0    ZMax:0"
-tes_strY  "1"
-tes_strN  "0"
+tes_test1  "Prueba sensores:"
+tes_test2  "XMin:0    XMax:0"
+tes_test2a "XMin:0   PStop:0"
+tes_test3  "YMin:0    YMax:0"
+tes_test4  "ZMin:0    ZMax:0"
+tes_strY   "1"
+tes_strN   "0"
 
 // Pause menu
 p_waitForCurrentCommand "Pausando...     "
@@ -233,6 +235,7 @@ bs_item4 "Extruder Hold"
 bs_item5 "Toolhead System"
 bs_item6 "SD Err Checking"
 bs_item7 "Copias ABP (SD)"
+bs_item8 "Pause Stop"
 
 // ABP Copies Set menu
 abp_message1 "Copias ABP (SD):"
