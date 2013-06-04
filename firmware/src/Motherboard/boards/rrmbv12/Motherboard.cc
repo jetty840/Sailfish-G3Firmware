@@ -231,7 +231,7 @@ ISR(STEPPER_TIMERn_COMPA_vect) {
 }
 
 #ifndef BROKEN_SD
-ISR(PCINT11_vect) {
+ISR(PCINT1_vect) {
 	sdcard::mustReinit = true;
 }
 #endif
