@@ -57,18 +57,18 @@ void Thermocouple::init() {
 #ifndef MAX31855
 
 Thermocouple::SensorState Thermocouple::update() {
-	cs_pin.setValue(false);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winline"
+	cs_pin.setValue(false);
 	nop();
 #pragma GCC diagnostic pop
 
 	uint16_t raw  = 0;
 	for (int8_t i = 15; i >= 0; i--)
 	{
-		sck_pin.setValue(false);
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Winline"
+		sck_pin.setValue(false);
 		nop();
 #pragma GCC diagnostic ignored "-Winline"
 
