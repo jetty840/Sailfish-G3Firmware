@@ -873,16 +873,16 @@ bool processExtruderCommandPacket(bool deleteAfterUse, int8_t overrideToolIndex)
 
 #ifdef HAS_FILAMENT_COUNTER
 		if (( commandCode == SLAVE_CMD_SET_TEMP ) && ( ! sdcard::isPlaying()) ) {
-			uint16_t *temp = (uint16_t *)&command_buffer[4];
-			if ( *temp == 0 ) addFilamentUsed();
+			uint16_t temp = (uint16_t)command_buffer[4] + (uint16_t)( command_buffer[5] << 8 );
+			if ( temp == 0 ) addFilamentUsed();
 		}
 #endif
 
 #ifdef EEPROM_DEFAULT_OVERRIDE_GCODE_TEMP
 		//Override the gcode temperature if set for an extruder or platform
 		if (( commandCode == SLAVE_CMD_SET_TEMP ) || ( commandCode == SLAVE_CMD_SET_PLATFORM_TEMP )) {
-			uint16_t *temp = (uint16_t *)&command_buffer[4];
-			if ( (*temp != 0) && (
+			uint16_t temp = (uint16_t)command_buffer[4] + (uint16_t)( command_buffer[5] << 8 );
+			if ( (temp != 0) && (
 #ifdef HAS_INTERFACE_BOARD
 				 (altTemp[toolIndex] != 0) ||
 #endif
@@ -905,7 +905,7 @@ bool processExtruderCommandPacket(bool deleteAfterUse, int8_t overrideToolIndex)
 				    break;
 				}
 				if (overrideTemp > MAX_TEMP) overrideTemp = MAX_TEMP;
-				*temp = overrideTemp;
+				temp = overrideTemp;
 			}
 		}
 #endif
