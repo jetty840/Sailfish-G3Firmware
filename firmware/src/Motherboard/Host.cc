@@ -140,8 +140,8 @@ void runHostSlice() {
 	}
 	if (in.hasError()) {
 		// Reset packet quickly and start handling the next packet.
-		
-	/*	out.reset();
+		packet_in_timeout.abort();
+		out.reset();
 			
 		// Report error code.
 		switch (in.getErrorCode()){
@@ -155,13 +155,14 @@ void runHostSlice() {
 				out.append8(RC_PACKET_LENGTH);
 				break;
 			default:
+				//PacketError::NOISE_BYTE and PacketError::APPEND_BUFFER_OVERFLOW
 				out.append8(RC_PACKET_ERROR);
 				break;
 		}
-		*/  	
+
 		in.reset();
-		//UART::getHostUART().beginSend();
-		//Motherboard::getBoard().indicateError(ERR_HOST_PACKET_MISC);
+		UART::getHostUART().beginSend();
+		Motherboard::getBoard().indicateError(ERR_HOST_PACKET_MISC);
 		
 	}
 	if (in.isFinished()) {
