@@ -6,3 +6,6 @@ html
 *.o
 *.svn
 *.DS_store
+firmware/build.sh
+firmware/checksize.sh
+firmware/svnversion.awk
