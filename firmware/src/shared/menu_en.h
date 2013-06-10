@@ -18,7 +18,7 @@
 // Splash screen
 const static PROGMEM prog_uchar splash1_en[] = "  Sailfish FW   ";
 const static PROGMEM prog_uchar splash2_en[] = " -------------- ";
-const static PROGMEM prog_uchar splash3_en[] = "Thing 32084 4.1z";
+const static PROGMEM prog_uchar splash3_en[] = "Thing 32084 4.5 ";
 const static PROGMEM prog_uchar splash4_en[] = " Revision _____ ";
 
 // User view menu
