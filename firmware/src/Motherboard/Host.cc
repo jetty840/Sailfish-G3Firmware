@@ -567,6 +567,7 @@ void handleBuildStopNotification(uint8_t stopFlags) {
 	if ( command::copiesToPrint == 0 || command::copiesPrinted >= (command::copiesToPrint - 1)) { 
 		stopPrintTime();
 		last_print_line = command::getLineNumber();
+		command::pauseHeaters(PAUSE_EXT_OFF | PAUSE_HBP_OFF);
 		buildState = BUILD_FINISHED_NORMALLY;
 		currentState = HOST_STATE_READY;
 	}

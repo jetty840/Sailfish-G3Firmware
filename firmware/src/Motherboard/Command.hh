@@ -189,6 +189,8 @@ const static uint32_t MAX_LINE_COUNT = 1000000000;
 const prog_uchar *pauseGetErrorMessage();
 
 void pauseClearError();
+
+void pauseHeaters(uint8_t which);
 }
 
 #endif // COMMAND_HH_
