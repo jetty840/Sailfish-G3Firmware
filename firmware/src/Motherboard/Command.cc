@@ -905,7 +905,8 @@ bool processExtruderCommandPacket(bool deleteAfterUse, int8_t overrideToolIndex)
 				    break;
 				}
 				if (overrideTemp > MAX_TEMP) overrideTemp = MAX_TEMP;
-				temp = overrideTemp;
+				command_buffer[4] = (uint8_t)(0xff & overrideTemp);
+				command_buffer[5] = (uint8_t)(0xff & (overrideTemp >> 8));
 			}
 		}
 #endif
