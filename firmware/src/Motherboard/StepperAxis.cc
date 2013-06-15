@@ -180,8 +180,11 @@ void stepperAxisInit(bool hard_reset) {
 		axesEnabled = 0;
 		axesHardwareEnabled = 0;
 #ifdef PSTOP_SUPPORT
-                if ( pstop_enable == 1 )
+		// PSTOP port is input and ensure pull up resistor is deactivated
+                if ( pstop_enable == 1 ) {
 			PSTOP_PORT.setDirection(false);
+			PSTOP_PORT.setValue(false);
+		}
 #endif
 	}
 
