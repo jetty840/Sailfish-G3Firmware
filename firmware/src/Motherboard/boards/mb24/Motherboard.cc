@@ -165,14 +165,16 @@ void Motherboard::initClocks(){
 	EIMSK |=  ( 1 << INT1 );  // Re-enable INT1
 #endif
 
-#if defined(PSTOP_SUPPORT) && defined(PSTOP_VECT)
+#if defined(PSTOP_SUPPORT)
 	// We set a LOW pin change interrupt on the X min endstop
 	pstop_enabled = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
+#if defined(PSTOP_VECT)
 	if ( pstop_enabled > 2 ) pstop_enabled = 0; // 0 == off; 1 == cold pause; 2 == hot pause
 	if ( pstop_enabled != 0 ) {
 		PSTOP_MSK |= ( 1 << PSTOP_PCINT );
 		PCICR     |= ( 1 << PSTOP_PCIE );
 	}
+#endif
 #endif
 }
 
