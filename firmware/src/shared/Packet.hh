@@ -123,8 +123,10 @@ public:
 	//process a byte for our packet.
 	void processByte(uint8_t b);
 
-	bool isFinished() const {
-		return state == PS_LAST || state == PS_LAST_INCORRECT_CRC;
+	int8_t isFinished() const {
+		if ( state == PS_LAST ) return 1;
+		else if (state == PS_LAST_INCORRECT_CRC ) return -1;
+		else return 0;
 	}
 
 	bool isStarted() const {
