@@ -169,8 +169,7 @@ void Motherboard::initClocks(){
 	// We set a LOW pin change interrupt on the X min endstop
 	pstop_enabled = eeprom::getEeprom8(eeprom::PSTOP_ENABLE, 0);
 #if defined(PSTOP_VECT)
-	if ( pstop_enabled > 2 ) pstop_enabled = 0; // 0 == off; 1 == cold pause; 2 == hot pause
-	if ( pstop_enabled != 0 ) {
+	if ( pstop_enabled == 1 ) {
 		PSTOP_MSK |= ( 1 << PSTOP_PCINT );
 		PCICR     |= ( 1 << PSTOP_PCIE );
 	}
@@ -509,7 +508,7 @@ ISR(INT1_vect) {
 #if defined(PSTOP_SUPPORT) && defined(PSTOP_VECT)
 
 ISR(PSTOP_VECT) {
-	if ( (Motherboard::getBoard().pstop_enabled != 0) && (PSTOP_PORT.getValue() == 0) ) command::pstop_triggered = 1;
+	if ( (Motherboard::getBoard().pstop_enabled == 1) && (PSTOP_PORT.getValue() == 0) ) command::pstop_triggered = 1;
 }
 
 #endif

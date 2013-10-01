@@ -165,7 +165,7 @@ void runHostSlice() {
 		Motherboard::getBoard().indicateError(ERR_HOST_PACKET_MISC);
 		
 	}
-	if (in.isFinished()) {
+	else if (in.isFinished() == 1) {
 		packet_in_timeout.abort();
 		out.reset();
 		if(cancelBuild){

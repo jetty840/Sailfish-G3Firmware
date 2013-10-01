@@ -175,7 +175,7 @@ bool reset() {
 	while (!isTransactionDone()) {
 		runToolSlice(); // This will most likely time out if there's multiple toolheads.
 	}
-	return UART::getSlaveUART().in.isFinished();
+	return UART::getSlaveUART().in.isFinished() != 0;
 }
 
 

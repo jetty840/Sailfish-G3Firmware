@@ -274,7 +274,7 @@ void runHostSlice() {
 		in.reset();
 		uart.reset();
 	}
-	if (in.isFinished()) {
+	else if (in.isFinished() == 1) {
                 out.reset();
 		const uint8_t target = in.read8(0);
 		packet_in_timeout.abort();
