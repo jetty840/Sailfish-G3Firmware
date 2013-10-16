@@ -1890,8 +1890,9 @@ void SDMenu::resetState() {
 }
 
 // Count the number of files on the SD card
+static uint8_t fileCount;
 uint8_t SDMenu::countFiles() {
-	uint8_t count = 0;
+        fileCount = 0;
 
 	// First, reset the directory index
 	if ( sdcard::directoryReset() != sdcard::SD_SUCCESS )
@@ -1905,15 +1906,15 @@ uint8_t SDMenu::countFiles() {
 		bool isdir;
 		sdcard::directoryNextEntry(fnbuf,sizeof(fnbuf),&isdir);
 		if ( fnbuf[0] == 0 )
-			return count;
+			return fileCount;
 		// Count .. and anyfile which doesn't begin with .
 		else if ( (fnbuf[0] != '.') ||
 			  ( isdir && fnbuf[1] == '.' && fnbuf[2] == 0) )
-			count++;
+			fileCount++;
 	} while (true);
 
 	// Never reached
-	return count;
+	return fileCount;
 }
 
 bool SDMenu::getFilename(uint8_t index, char buffer[], uint8_t buffer_size, bool *isdir) {
@@ -1925,6 +1926,13 @@ bool SDMenu::getFilename(uint8_t index, char buffer[], uint8_t buffer_size, bool
                 return false;
 
 	bool my_isdir;
+
+#ifdef REVERSE_SD_FILES
+	// Reverse order the files in hopes of listing the newer files first
+	// HOWEVER, with wrap around on the LCD menu, this isn't too useful
+	index = (fileCount - 1) - index;
+#endif
+
 	for(uint8_t i = 0; i < index+1; i++) {
 		do {
 			sdcard::directoryNextEntry(buffer, buffer_size, &my_isdir);
