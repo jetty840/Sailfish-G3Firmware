@@ -421,6 +421,18 @@ void retractFilament(bool retract) {
 #endif
 
 	steppers::setTarget(targetPosition, dda_interval);
+
+	if (retract)
+	     return;
+
+	// Restore A and B position prior to pause.  Important for
+	// when using absolute extruder positions in gcode
+	Point currentPosition = steppers::getPlannerPosition();
+	currentPosition[3] = pausedPosition[3];
+#if EXTRUDERS > 1
+	currentPosition[4] = pausedPosition[4];
+#endif
+	steppers::definePosition(currentPosition, false);
 }
 
 // Moves the Z platform to the bottom
@@ -439,20 +451,28 @@ void platformAccess(bool clearPlatform) {
 			return;
 	}
 
-        targetPosition = pausedPosition;
+        Point tmpPosition = pausedPosition;
+	Point currentPosition = steppers::getPlannerPosition();
 
 	//Position to clear the build area
 #ifdef BUILD_CLEAR_X
-        targetPosition[0] = BUILD_CLEAR_X;
+        tmpPosition[0] = BUILD_CLEAR_X;
 #endif
 
 #ifdef BUILD_CLEAR_Y
-        targetPosition[1] = BUILD_CLEAR_Y;
+        tmpPosition[1] = BUILD_CLEAR_Y;
 #endif
 
 #ifdef BUILD_CLEAR_Z
-        targetPosition[2] = BUILD_CLEAR_Z;
+        tmpPosition[2] = BUILD_CLEAR_Z;
 #endif
+	// So as to not undo any retraction done prior
+	tmpPosition[3] = currentPosition[3];
+#if EXTRUDERS > 1
+	tmpPosition[4] = currentPosition[4];
+#endif
+	// Subtract out the offsets
+	targetPosition = steppers::removeOffsets(tmpPosition);
 
    } else {
         targetPosition = pausedPosition;

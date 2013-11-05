@@ -606,6 +606,13 @@ const Point getPlannerPosition() {
 	return p;
 }
 
+Point removeOffsets(const Point &position) {
+    Point p = position;
+    for ( uint8_t i = 0; i < STEPPER_COUNT; i++ )
+	p[i] -= (*tool_offsets)[i];
+
+    return p;
+}
 
 /// Get current position
 
