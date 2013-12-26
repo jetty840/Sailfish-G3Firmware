@@ -45,7 +45,7 @@ const static uint16_t VERSION_HIGH				= 0x0001;
 /// Axis N (where X=0, Y=1, etc.) is inverted if the Nth bit is set.
 /// Bit 7 is used for HoldZ OFF: 1 = off, 0 = on
 //$BEGIN_ENTRY
-//$type:B
+//$type:B  $constraints:a $axis_expand:True  $tooltip:A Bitfield representing the XYZAB axes, with X as bit 0. If an axis is moving in the wrong direction, toggle the bit for that axis
 const static uint16_t AXIS_INVERSION			= 0x0002;
 
 /// Endstop inversion flags: 1 byte.
@@ -55,17 +55,17 @@ const static uint16_t AXIS_INVERSION			= 0x0002;
 /// that endstops are not present.
 /// Ordinary endstops (H21LOB et. al.) are inverted.
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:a $axis_expand:True
 const static uint16_t ENDSTOP_INVERSION			= 0x0003;
 
 /// Name of this machine: 16 bytes
 //$BEGIN_ENTRY
-//$type:s $length:16
+//$type:s  $length:16 $constraints:a
 const static uint16_t MACHINE_NAME				= 0x0020;
 
 /// Default locations for the axis: 5 x 32 bit = 20 bytes
 //$BEGIN_ENTRY
-//$type:IIIII
+//$type:IIIII $constraints:a $unit:steps
 const static uint16_t AXIS_HOME_POSITIONS		= 0x0060;
 
 // Estop configuration byte: 1 byte.
@@ -74,15 +74,15 @@ const static uint16_t AXIS_HOME_POSITIONS		= 0x0060;
 const static uint16_t ESTOP_CONFIGURATION = 0x0074;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:m,0,255 $unit:C
 const static uint16_t TOOL0_TEMP      		= 0x0080;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:m,0,255 $unit:C
 const static uint16_t TOOL1_TEMP      		= 0x0081;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:m,0,140 $unit:C
 const static uint16_t PLATFORM_TEMP   		= 0x0082;
 
 //$BEGIN_ENTRY
@@ -90,7 +90,7 @@ const static uint16_t PLATFORM_TEMP   		= 0x0082;
 const static uint16_t EXTRUDE_DURATION		= 0x0083;
 
 //$BEGIN_ENTRY
-//$type:B 
+//$type:B $constraints:a $unit:mm/sec
 const static uint16_t EXTRUDE_MMS     		= 0x0084;
 
 //$BEGIN_ENTRY
@@ -112,12 +112,12 @@ const static uint16_t MOOD_LIGHT_CUSTOM_BLUE	= 0x0088;
 //Bit 1 is Model mode or user view mode (user view mode = bit set)
 //Bit 2-4 are the jog mode distance 0 = short, 1 = long, 2 = cont
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $tooltip:Bit mask in which bit 0 indicates model mode (0) or user view mode (1); bits 1 through 2 indicate the jog distance (0=short, 1=long, 2=continuous)
 const static uint16_t JOG_MODE_SETTINGS		= 0x0089;
 
 //0 = No system buzzing, >=1 = number of repeats to buzz for
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $tooltip:A value of 0 indicates no system buzzing; any non-zero value is the number of buzzer repeats
 const static uint16_t BUZZER_REPEATS		= 0x008A;
 
 //Steps per mm, each one is 8 bytes long and are stored as int64_t
@@ -147,15 +147,15 @@ const static uint16_t STEPS_PER_MM_B		= 0x00AB;
 
 //int64_t (8 bytes) The filament used in steps
 //$BEGIN_ENTRY
-//$type:q
+//$type:q $ignore:True
 const static uint16_t FILAMENT_LIFETIME_A	= 0x00B3;
 //$BEGIN_ENTRY
-//$type:q
+//$type:q $ignore:True
 const static uint16_t FILAMENT_TRIP_A		= 0x00BB;
 
 //Number of ABP copies (1-254) when building from SDCard (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $tooltip:Set to 0 for no ABP copies; otherwise, set to the number of copies to produce with the ABP.  You must be printing from SD card and have an Automated Build Plate (ABP) to use this option.
 const static uint16_t ABP_COPIES		= 0x00C3;
 
 //$BEGIN_ENTRY
@@ -165,7 +165,7 @@ const static uint16_t UNUSED1			= 0x00C4;
 //Override the temperature set in the gcode file at the start of the build
 //0 = Disable, 1 = Enabled
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to override non-zero gcode temperature settings with the pre-heat temperature settings.  Uncheck or set to zero to honor temperature settings in the gcode.
 const static uint16_t OVERRIDE_GCODE_TEMP	= 0x00C5;
 
 //Profiles
@@ -176,51 +176,53 @@ const static uint16_t OVERRIDE_GCODE_TEMP	= 0x00C5;
 						 PROFILE_HOME_OFFSETS_SIZE + \
 						 4 )		//24 (0x18)    4=Bytes (Hbp, tool0, tool1, extruder)
 
-//4 Profiles = 0x00C6 + PROFILE_NEXT_OFFSET * 4 
+//4 Profiles = 0x00C6 + PROFILE_NEXT_OFFSET * 4
+//$BEGIN_ENTRY
+//$type:B $ignore:True
 const static uint16_t PROFILE_BASE		= 0x00C6;
 
 //1 = Acceleration On, 0 = Acceleration Off
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to use acceleration.  Uncheck or set to 0 for no acceleration.  Note that you must turn acceleration on to print safely at speeds over 50mm/s.
 const static uint16_t ACCELERATION_ON		= 0x0126;
 
 //uint32_t (4 bytes)
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t ACCEL_MAX_FEEDRATE_X	= 0x0127;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t ACCEL_MAX_FEEDRATE_Y	= 0x012B;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t ACCEL_MAX_FEEDRATE_Z	= 0x012F;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t ACCEL_MAX_FEEDRATE_A	= 0x0133;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t ACCEL_MAX_FEEDRATE_B	= 0x0137;
 
 //uint32_t (4 bytes)
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_ACCELERATION_X	= 0x013B;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_ACCELERATION_Y	= 0x013F;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_ACCELERATION_Z	= 0x0143;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_ACCELERATION_A	= 0x0147;
 
 //uint32_t (4 bytes)
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_EXTRUDER_NORM	= 0x014B;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_EXTRUDER_RETRACT= 0x014F;
 
 //uint32_t (4 bytes)
@@ -235,13 +237,13 @@ const static uint16_t UNUSED3			= 0x0157;
 //$type:f  $unit:mm/s * 10 $ignore:True
 const static uint16_t UNUSED4			= 0x015B;
 //$BEGIN_ENTRY
-//$type:I  $unit:factor * 100000
+//$type:I  $constraints:a $unit:factor * 100000
 const static uint16_t ACCEL_ADVANCE_K2		= 0x015F;
 //$BEGIN_ENTRY
 //$type:f $ignore:True
 const static uint16_t UNUSED5			= 0x0163;
 //$BEGIN_ENTRY
-//$type:I  $unit:factor * 100000
+//$type:I  $constraints:a $unit:factor * 100000
 const static uint16_t ACCEL_ADVANCE_K		= 0x0167;
 //$BEGIN_ENTRY
 //$type:f  $unit:mm/s * 100 $ignore:True
@@ -252,7 +254,7 @@ const static uint16_t UNUSED7			= 0x016F;
 
 //uint8_t (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $tooltip:Set to 0 for a 16x4 LCD dispaly; set to 50 for a 20x4 display; set to 51 for a 24x4 display.
 const static uint16_t LCD_TYPE			= 0x0173;
 
 //uint8_t (1 byte)
@@ -264,28 +266,28 @@ const static uint16_t LCD_TYPE			= 0x0173;
 //16 = Z Min
 //32 = Z Max
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $tooltip:Bit mask indicating which endstops are used: bit 0=Xmin, 1=Xmax, 2=Ymin, 3=Ymax, 4=Zmin, 5=Zmax.
 const static uint16_t ENDSTOPS_USED		= 0x0174;
 
 //uint32_t (4 bytes) Homing feed rate in mm/min
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t HOMING_FEED_RATE_X	= 0x0175;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t HOMING_FEED_RATE_Y	= 0x0179;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/sec
 const static uint16_t HOMING_FEED_RATE_Z	= 0x017D;
 
 //$BEGIN_ENTRY
 //$type:I $ignore:True
 const static uint16_t UNUSED8			= 0x0181;
 //$BEGIN_ENTRY
-//$type:I  $unit:steps * 10
+//$type:I $constraints:a $unit:steps * 10
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_A	= 0x0185;
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to enable automatic print slowdown when the queue of planned segments is running low.  Uncheck or set to 0 to disable automatic slowdown.
 const static uint16_t ACCEL_SLOWDOWN_FLAG	= 0x0189;
 //$BEGIN_ENTRY
 //$type:BBB $ignore:True
@@ -301,25 +303,25 @@ const static uint16_t UNUSED11			= 0x0191;
 
 //uint32_t (4 bytes)
 //$BEGIN_ENTRY
-//$type:f $unit:mm/s * 10
+//$type:f $constraints:a $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_X= 0x0192;
 //$BEGIN_ENTRY
-//$type:f  $unit:mm/s * 10
+//$type:f  $constraints:a $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_Y= 0x0196;
 //$BEGIN_ENTRY
-//$type:f  $unit:mm/s * 10
+//$type:f $constraints:a $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_Z= 0x019A;
 //$BEGIN_ENTRY
-//$type:f $unit:mm/s * 10 
+//$type:f $constraints:a $unit:mm/s * 10 
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_A= 0x019E;
 //$BEGIN_ENTRY
-//$type:f  $unit:mm/s * 10
+//$type:f $constraints:a $unit:mm/s * 10
 const static uint16_t ACCEL_MAX_SPEED_CHANGE_B= 0x01A2;
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_ACCELERATION_B= 0x01A6;
 //$BEGIN_ENTRY
-//$type:f  $unit:steps * 10
+//$type:f $constraints:a $unit:steps * 10
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_B= 0x01AA;
 // Tool count : 1 bytes
 //$BEGIN_ENTRY
@@ -328,62 +330,62 @@ const static uint16_t TOOL_COUNT	      = 0x01AE;
 // This indicates how far out of tolerance the toolhead0 toolhead1 distance is
 // in steps.  3 x int32_t bits = 12 bytes
 //$BEGIN_ENTRY
-//$type:I
+//$type:ii $constraints:a $unit:steps
 const static uint16_t TOOLHEAD_OFFSET_SETTINGS = 0x01B0;
 // axis lengths XYZAB 5*uint32_t = 20 bytes
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $ignore:True
 const static uint16_t AXIS_LENGTHS	       = 0x01BC;
 
 #ifdef STORE_RAM_USAGE_TO_EEPROM
 //4 bytes
 //$BEGIN_ENTRY
-//$type:I
+//$type:I $ignore:True
 const static uint16_t RAM_USAGE_DEBUG = 0x01D0;
 #endif
 
 //int64_t (8 bytes) The filament used in steps
 //$BEGIN_ENTRY
-//$type:q
+//$type:q $ignore:True
 const static uint16_t FILAMENT_LIFETIME_B	= 0x01D4;
 
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to enable ditto printing. Uncheck or set to zero to disable ditto printing.
 const static uint16_t DITTO_PRINT_ENABLED	= 0x01DC;
 
 //int64_t (8 bytes) The filament trip counter
 //$BEGIN_ENTRY
-//$type:q
+//$type:q $ignore:True
 const static uint16_t FILAMENT_TRIP_B		= 0x01DD;
 
 //Hardware vendor id (in this case, Sailfish vendor id) - (4 bytes)
 //$BEGIN_ENTRY
-//$type:BBBB 
+//$type:BBBB $ignore:True
 const static uint16_t VID_PID_INFO		 = 0x1E5;
 
 //Extruder hold (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to enable the Extruder Hold feature.  Uncheck or set to 0 to disable.
 const static uint16_t EXTRUDER_HOLD		 = 0x1E9;
 
 //Toolhead offset system (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check to use the NEW dualstrusion system. Uncheck to use the old (RepG 39 and earlier) dualstrusion system.  The bot should be power cycled after changing this field.
 const static uint16_t TOOLHEAD_OFFSET_SYSTEM     = 0x1EA;
  
 //Use SD card CRC checks (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to enable SD card error checkin.  Uncheck or set to 0 to disable.
 const static uint16_t SD_USE_CRC             = 0x1EB;
  
 //P-Stop support (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to enable the optional Pause Stop hardware.  Set to zero or uncheck to disable.  The bot should be power cycled after changing this field.
 const static uint16_t PSTOP_ENABLE           = 0x1EC;
 
 //ENDSTOP_Z_MIN (1 byte)
 //$BEGIN_ENTRY
-//$type:B
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to to indicate that the Z endstop is a minimum endstop.  Uncheck or set to 0 to indicate that the Z endstop is a maximum endstop.
 const static uint16_t ENDSTOP_Z_MIN              = 0x1ED;
 
 /// Reset Jetty Firmware defaults only

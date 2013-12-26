@@ -273,7 +273,7 @@ void loadToleranceOffsets() {
 		// ~4 mm expressed in units of steps
 		int32_t fourMM = ((int32_t)stepperAxisStepsPerMM(0)) << 2;
 
-		// The X Toolhead offset in units of stepps
+		// The X Toolhead offset in units of steps
 		int32_t xToolheadOffset = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 0, 0));
 		int32_t yToolheadOffset = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 4, 0));
 
