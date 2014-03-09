@@ -59,6 +59,11 @@ static ssize_t display(void *ctx_, unsigned char *str, size_t len)
      return(0);
 }
 
+#if defined(__arm__)
+#define GETOPTS_END (char)-1
+#else
+#define GETOPTS_END -1
+#endif
 
 #if defined(SAILTIME)
 #define PROGNAME "sailtime"
@@ -129,7 +134,7 @@ int main(int argc, const char *argv[])
      simulator_dump_speeds = false;
      simulator_show_alt_feed_rate = false;
 
-     while ((c = getopt(argc, (char **)argv, GETOPTS)) != -1)
+     while ((c = getopt(argc, (char **)argv, GETOPTS)) != GETOPTS_END)
      {
 	  switch(c)
 	  {
