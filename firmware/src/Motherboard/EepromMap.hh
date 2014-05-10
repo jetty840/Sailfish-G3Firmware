@@ -388,6 +388,12 @@ const static uint16_t PSTOP_ENABLE           = 0x1EC;
 //$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to to indicate that the Z endstop is a minimum endstop.  Uncheck or set to 0 to indicate that the Z endstop is a maximum endstop.
 const static uint16_t ENDSTOP_Z_MIN              = 0x1ED;
 
+//EXTRUDER_DEPRIME_ON_TRAVEL (1 byte)
+//$BEGIN_ENTRY
+//$type:B $constraints:l,0,1 $tooltip:When set, the firmware will deprime the extruder on detected travel moves as well as on pauses, planned or otherwise.  When not set, the firmware will only deprime the extruder on pauses, planned or otherwise.  Unplanned pauses occur when the acceleration planner falls behind and the printer waits briefly for another segment to print.
+const static uint16_t EXTRUDER_DEPRIME_ON_TRAVEL        = 0x1EE;
+
+
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
 
