@@ -81,6 +81,7 @@
 
 #define EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_A		8		// Steps
 #define EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_B		8		// Steps
+#define EEPROM_DEFAULT_DEPRIME_ON_TRAVEL                1               // Okay to use deprime on travel
 
 #define EEPROM_DEFAULT_ACCEL_SLOWDOWN_FLAG		1
 

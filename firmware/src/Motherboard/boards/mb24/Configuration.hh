@@ -243,15 +243,6 @@
 
 #define JKN_ADVANCE
 
-// Firmware deprime by default happens when the A or B axis is disabled in disableMotor
-// in RepG, which sends a disable axis command to the firmware.
-// In this situation, the following define should be commented out.
-// If disabling the A/B axis is not being used during a travel move, then the following
-// must be uncommented so that depriming happens when A steps = 0 and B steps = 0, otherwise
-// deprime will not happen at the end of a travel move and at the beginning of the next extruded
-// move.
-//#define DEPRIME_ON_NO_EXTRUSION
-
 //Minimum time in seconds that a movement needs to take if the planning pipeline command buffer is
 //emptied. Increase this number if you see blobs while printing high speed & high detail. It will
 //slowdown on the detailed stuff.
