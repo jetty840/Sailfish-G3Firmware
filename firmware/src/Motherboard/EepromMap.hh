@@ -284,7 +284,7 @@ const static uint16_t HOMING_FEED_RATE_Z	= 0x017D;
 //$type:I $ignore:True
 const static uint16_t UNUSED8			= 0x0181;
 //$BEGIN_ENTRY
-//$type:I $constraints:a $unit:steps * 10
+//$type:I $constraints:a $unit:steps
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_A	= 0x0185;
 //$BEGIN_ENTRY
 //$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to enable automatic print slowdown when the queue of planned segments is running low.  Uncheck or set to 0 to disable automatic slowdown.
@@ -321,7 +321,7 @@ const static uint16_t ACCEL_MAX_SPEED_CHANGE_B= 0x01A2;
 //$type:I $constraints:a $unit:mm/s²
 const static uint16_t ACCEL_MAX_ACCELERATION_B= 0x01A6;
 //$BEGIN_ENTRY
-//$type:f $constraints:a $unit:steps * 10
+//$type:f $constraints:a $unit:steps
 const static uint16_t ACCEL_EXTRUDER_DEPRIME_B= 0x01AA;
 // Tool count : 1 bytes
 //$BEGIN_ENTRY
