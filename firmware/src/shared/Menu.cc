@@ -1248,9 +1248,9 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 				lcd.setRow(1);
 				lcd.writeFromPgmspace(LOCALIZE(mon_filament));
 				lcd.setCursor(9,1);
-				lastFilamentUsed = stepperAxisStepsToMM(command::getLastFilamentLength(0) + command::getLastFilamentLength(1), A_AXIS);
-				if ( lastFilamentUsed != 0.0 )	filamentUsed = lastFilamentUsed;
-				else				filamentUsed = stepperAxisStepsToMM((command::getFilamentLength(0) + command::getFilamentLength(1)), A_AXIS);
+				filamentUsed =
+				     stepperAxisStepsToMM(command::getLastFilamentLength(0) + command::getLastFilamentLength(1), A_AXIS) +
+				     stepperAxisStepsToMM((command::getFilamentLength(0) + command::getFilamentLength(1)), A_AXIS);
 				filamentUsed /= 1000.0;	//convert to meters
 				if	( filamentUsed < 0.1 )	{
 					 filamentUsed *= 1000.0;	//Back to mm's
