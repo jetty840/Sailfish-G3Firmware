@@ -217,7 +217,7 @@ int32_t getPauseAtZPos() {
 
 int32_t estimatedTimeLeftInSeconds(void) {
 	//Safety guard against insufficient information, we return 0 if this is the case
-	if (( buildPercentage == 101 ) | ( buildPercentage == 0 ) || ( buildPercentage == startingBuildTimePercentage ) ||
+	if (( buildPercentage == 101 ) || ( buildPercentage == 0 ) || ( buildPercentage == startingBuildTimePercentage ) ||
 	    ( startingBuildTimeSeconds == 0.0 ) || (startingBuildTimePercentage == 0 ) || (elapsedSecondsSinceBuildStart == 0.0))
 		return 0;
 
