@@ -1182,7 +1182,7 @@ void MonitorMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		Point position;
 		uint8_t precision;
 		uint8_t completedPercent;
-		float filamentUsed, lastFilamentUsed;
+		float filamentUsed;
 
 		switch (buildTimePhase) {
 			case BUILD_TIME_PHASE_COMPLETED_PERCENT:
