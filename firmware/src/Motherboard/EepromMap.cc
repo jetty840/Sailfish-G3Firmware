@@ -136,6 +136,8 @@ void setJettyFirmwareDefaults() {
     eeprom_write_byte((uint8_t*)eeprom::EXTRUDER_HOLD,			EEPROM_DEFAULT_EXTRUDER_HOLD);
     eeprom_write_byte((uint8_t*)eeprom::TOOLHEAD_OFFSET_SYSTEM,		EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM);
 
+    eeprom_write_byte((uint8_t*)eeprom::CLEAR_FOR_ESTOP, 0);
+
     verifyAndFixVidPid();
 }
 

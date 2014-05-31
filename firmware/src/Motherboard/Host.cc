@@ -100,14 +100,14 @@ void runHostSlice() {
 
         InPacket& in = UART::getHostUART().in;
         OutPacket& out = UART::getHostUART().out;
-	if (out.isSending() && 
+	if (out.isSending() &&
 	    (( ! do_host_reset) || (do_host_reset && (! do_host_reset_timeout.hasElapsed())))) {
 		return;
 	}
 
 	// soft reset the machine unless waiting to notify repG that a cancel has occured
 	if (do_host_reset && (!cancelBuild || cancel_timeout.hasElapsed())){
-		
+
 		if((buildState == BUILD_RUNNING) || (buildState == BUILD_PAUSED)){
 			stopBuild();
 		}
@@ -115,7 +115,7 @@ void runHostSlice() {
 
 		// reset local board
 		reset(hard_reset);
-		
+
         // hard_reset can be called, but is not called by any
         // a hard reset calls the start up sound and resets heater errors
 		hard_reset = false;
@@ -142,7 +142,7 @@ void runHostSlice() {
 		// Reset packet quickly and start handling the next packet.
 		packet_in_timeout.abort();
 		out.reset();
-			
+
 		// Report error code.
 		switch (in.getErrorCode()){
 			case PacketError::PACKET_TIMEOUT:
@@ -163,7 +163,7 @@ void runHostSlice() {
 		in.reset();
 		UART::getHostUART().beginSend();
 		Motherboard::getBoard().indicateError(ERR_HOST_PACKET_MISC);
-		
+
 	}
 	else if (in.isFinished() == 1) {
 		packet_in_timeout.abort();
@@ -265,7 +265,7 @@ inline void handleGetAdvancedVersion(const InPacket& from_host, OutPacket& to_ho
 
 	// we're not doing anything with the host version at the moment
 	from_host.read16(1);	//uint16_t host_version
-	
+
 	to_host.append8(RC_OK);
 	to_host.append16(firmware_version);
 	to_host.append16(internal_version);
@@ -536,7 +536,7 @@ inline void handleExtendedStop(const InPacket& from_host, OutPacket& to_host) {
 
     //set build name and build state
 void handleBuildStartNotification(CircularBuffer& buf) {
-	
+
 	uint8_t idx = 0;
 	switch (currentState){
 		case HOST_STATE_BUILDING_FROM_SD:
@@ -550,7 +550,7 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 			currentState = HOST_STATE_BUILDING;
 		case HOST_STATE_BUILDING:
 			do {
-				buildName[idx++] = buf.pop();		
+				buildName[idx++] = buf.pop();
                         } while ((buildName[idx-1] != '\0') && (idx < sizeof(buildName)));
 			break;
 		default:
@@ -564,7 +564,7 @@ void handleBuildStartNotification(CircularBuffer& buf) {
 
     // set build state to ready
 void handleBuildStopNotification(uint8_t stopFlags) {
-	if ( command::copiesToPrint == 0 || command::copiesPrinted >= (command::copiesToPrint - 1)) { 
+	if ( command::copiesToPrint == 0 || command::copiesPrinted >= (command::copiesToPrint - 1)) {
 		stopPrintTime();
 		last_print_line = command::getLineNumber();
 		command::pauseHeaters(PAUSE_EXT_OFF | PAUSE_HBP_OFF);
@@ -576,12 +576,12 @@ void handleBuildStopNotification(uint8_t stopFlags) {
 /// get current print stats if printing, or last print stats if not printing
 inline void handleGetBuildStats(OutPacket& to_host) {
         to_host.append8(RC_OK);
- 
+
 		uint8_t hours;
 		uint8_t minutes;
-		
+
 		getPrintTime(hours, minutes);
-		
+
         to_host.append8(buildState);
         to_host.append8(hours);
         to_host.append8(minutes);
@@ -623,9 +623,10 @@ bool processQueryPacket(const InPacket& from_host, OutPacket& to_host) {
 #ifdef HAS_FILAMENT_COUNTER
 				command::addFilamentUsed();
 #endif
-				if (currentState == HOST_STATE_BUILDING
-						|| currentState == HOST_STATE_BUILDING_FROM_SD) {
-					Motherboard::getBoard().indicateError(ERR_RESET_DURING_BUILD);
+				if (currentState == HOST_STATE_BUILDING ||
+				    currentState == HOST_STATE_BUILDING_FROM_SD) {
+				     if (1 == eeprom::getEeprom8(eeprom::CLEAR_FOR_ESTOP, 0)) stopBuild();
+				     Motherboard::getBoard().indicateError(ERR_RESET_DURING_BUILD);
 				}
 
 				do_host_reset = true; // indicate reset after response has been sent
@@ -759,7 +760,7 @@ sdcard::SdErrorCode startBuildFromSD(char *fname) {
 		// TODO: report error
 		return e;
 	}
-	
+
 	command::reset();
 	steppers::reset();
 	steppers::abort();
@@ -773,9 +774,9 @@ sdcard::SdErrorCode startBuildFromSD(char *fname) {
 
 // Stop the current build, if any
 void stopBuildNow() {
-    // if building from repG, try to send a cancel msg to repG before reseting 
+    // if building from repG, try to send a cancel msg to repG before reseting
 	if(currentState == HOST_STATE_BUILDING)
-	{	
+	{
 		currentState = HOST_STATE_CANCEL_BUILD;
 		cancel_timeout.start(1000000); //look for commands from repG for one second before resetting
 		cancelBuild = true;
@@ -806,7 +807,7 @@ void stopBuild() {
 
 /// update state variables if print is paused
 void pauseBuild(bool pause, uint8_t heaterControl) {
-	
+
 	/// don't update time or state if we are already in the desired state
 	if (!(pause == command::isPaused())){
 
@@ -832,7 +833,7 @@ void startPrintTime(){
 }
 
 void stopPrintTime(){
-	
+
 	getPrintTime(last_print_hours, last_print_minutes);
 	print_time = Timeout();
 	print_time_hours = 0;
@@ -840,7 +841,7 @@ void stopPrintTime(){
 
 void managePrintTime(){
 
-	/// print time is precise to the host loop frequency 
+	/// print time is precise to the host loop frequency
 	if (print_time.hasElapsed()){
 		print_time.start(ONE_HOUR);
 		print_time_hours++;
@@ -849,7 +850,7 @@ void managePrintTime(){
 
 /// returns time hours and minutes since the start of the print
 void getPrintTime(uint8_t& hours, uint8_t& minutes){
-	
+
 	hours = print_time_hours;
 	minutes = print_time.getCurrentElapsed() / 60000000;
 	return;

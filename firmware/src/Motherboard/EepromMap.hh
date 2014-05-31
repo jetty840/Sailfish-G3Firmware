@@ -393,6 +393,10 @@ const static uint16_t ENDSTOP_Z_MIN              = 0x1ED;
 //$type:B $constraints:l,0,1 $tooltip:When set, the firmware will deprime the extruder on detected travel moves as well as on pauses, planned or otherwise.  When not set, the firmware will only deprime the extruder on pauses, planned or otherwise.  Unplanned pauses occur when the acceleration planner falls behind and the printer waits briefly for another segment to print.
 const static uint16_t EXTRUDER_DEPRIME_ON_TRAVEL        = 0x1EE;
 
+//Stop clears build platform (1 byte)
+//$BEGIN_ENTRY
+//$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to instruct the printer to clear the build away from the extruder before stopping.  Uncheck or set to zero to immediately stop the printer (e.g., perform an Emergency Stop).
+const static uint16_t CLEAR_FOR_ESTOP          = 0x01EF;
 
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
