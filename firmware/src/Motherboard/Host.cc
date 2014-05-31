@@ -620,19 +620,27 @@ bool processQueryPacket(const InPacket& from_host, OutPacket& to_host) {
 			case HOST_CMD_CLEAR_BUFFER: // equivalent at current time
 			case HOST_CMD_ABORT: // equivalent at current time
 			case HOST_CMD_RESET:
+			{
+			        bool resetMe = true;
 #ifdef HAS_FILAMENT_COUNTER
 				command::addFilamentUsed();
 #endif
 				if (currentState == HOST_STATE_BUILDING ||
 				    currentState == HOST_STATE_BUILDING_FROM_SD) {
-				     if (1 == eeprom::getEeprom8(eeprom::CLEAR_FOR_ESTOP, 0)) stopBuild();
+				     if (1 == eeprom::getEeprom8(eeprom::CLEAR_FOR_ESTOP, 0)) {
+					  buildState = BUILD_CANCELED;
+					  resetMe = false;
+					  stopBuild();
+				     }
 				     Motherboard::getBoard().indicateError(ERR_RESET_DURING_BUILD);
 				}
-
-				do_host_reset = true; // indicate reset after response has been sent
-				do_host_reset_timeout.start(200000);	//Protection against the firmware sending to a down host
+				if ( resetMe ) {
+				     do_host_reset = true; // indicate reset after response has been sent
+				     do_host_reset_timeout.start(200000);	//Protection against the firmware sending to a down host
+				}
 				to_host.append8(RC_OK);
 				return true;
+			}
 			case HOST_CMD_GET_BUFFER_SIZE:
 				handleGetBufferSize(from_host,to_host);
 				return true;
