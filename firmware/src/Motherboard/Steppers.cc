@@ -426,7 +426,7 @@ void reset() {
 #endif
 
 	//Number of steps when priming or deprime the extruder
-	extruder_deprime_travel      = 0 != (eeprom::getEeprom8(eeprom::EXTRUDER_DEPRIME_ON_TRAVEL, EEPROM_DEFAULT_DEPRIME_ON_TRAVEL));
+	extruder_deprime_travel      = 1 == (eeprom::getEeprom8(eeprom::EXTRUDER_DEPRIME_ON_TRAVEL, EEPROM_DEFAULT_DEPRIME_ON_TRAVEL));
 	extruder_deprime_steps[0]    = (int16_t)eeprom::getEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_A, EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_A);
 	#if EXTRUDERS > 1
 	extruder_deprime_steps[1]    = (int16_t)eeprom::getEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_B, EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_B);
