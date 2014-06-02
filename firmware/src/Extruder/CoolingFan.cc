@@ -54,15 +54,14 @@ void CoolingFan::disable() {
 }
 
 void CoolingFan::manageCoolingFan() {
-	// TODO: only change the state if necessary
-	if (enabled) {
-		if (heater.get_current_temperature() > setPoint) {
-			setFanRunning(true);
-		}
-		else {
-			setFanRunning(false);
-		}
-	}
+     // TODO: only change the state if necessary
+     if (enabled) {
+	  int temp = heater.get_current_temperature();
+	  if (temp >= setPoint)
+	       setFanRunning(true);
+	  else if (temp < (setPoint - 1))
+	       setFanRunning(false);
+     }
 }
 
 void CoolingFan::setFanRunning(bool state)
