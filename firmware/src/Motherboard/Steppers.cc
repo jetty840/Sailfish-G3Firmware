@@ -277,6 +277,7 @@ void loadToleranceOffsets() {
 		int32_t xToolheadOffset = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 0, 0));
 		int32_t yToolheadOffset = (int32_t)(eeprom::getEepromUInt32(eeprom::TOOLHEAD_OFFSET_SETTINGS + 4, 0));
 
+#ifdef TOOLHEAD_OFFSET_SYSTEM
 		// See which toolhead offset system is used
 		uint8_t toolhead_system =
 			eeprom::getEeprom8(eeprom::TOOLHEAD_OFFSET_SYSTEM, EEPROM_DEFAULT_TOOLHEAD_OFFSET_SYSTEM);
@@ -310,6 +311,7 @@ void loadToleranceOffsets() {
 			}
 		}
 		else {
+#endif
 
 			// NEW SYSTEM: stored offset is the actual offset (33 or 35 mm)
 			
@@ -333,7 +335,9 @@ void loadToleranceOffsets() {
 				tolerance_offset_T1[0] = xToolheadOffset;
 				tolerance_offset_T1[1] = yToolheadOffset;
 			}
+#ifdef TOOLHEAD_OFFSET_SYSTEM
 		}
+#endif
 	}
 #endif
 }
@@ -405,6 +409,7 @@ void reset() {
 
 	//Set default acceleration for "Normal Moves (acceleration)" and "filament only moves (retraction)" in mm/sec^2
 
+#ifdef OLD_ACCEL_LIMITS
 	// X,Y,Z,A,B max acceleration in mm/s^2 for printing moves
 	p_acceleration = (uint32_t)eeprom::getEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_NORM, EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_NORM);
 	if (p_acceleration > 10000)
@@ -423,6 +428,7 @@ void reset() {
 
 #ifdef DEBUG_SLOW_MOTION
 	p_retract_acceleration	= (uint32_t)20;
+#endif
 #endif
 
 	//Number of steps when priming or deprime the extruder
@@ -690,12 +696,15 @@ void setTarget(const Point& target, int32_t dda_interval) {
 	//Also calculate the step deltas (planner_steps[i]) at the same time.
 	int32_t max_delta = 0;
 	planner_master_steps_index = 0;
+	planner_axes = 0;
 	for (int i = 0; i < STEPPER_COUNT; i++) {
 		planner_steps[i] = labs(planner_target[i] - planner_position[i]);
-
-		if ( planner_steps[i] > max_delta) {
-			planner_master_steps_index = i;
-			max_delta = planner_steps[i];
+		if ( planner_steps[i] ) {
+		     planner_axes |= 1 << i;
+		     if ( planner_steps[i] > max_delta) {
+			  planner_master_steps_index = i;
+			  max_delta = planner_steps[i];
+		     }
 		}
 	}
 	planner_master_steps = (uint32_t)max_delta;
@@ -739,12 +748,15 @@ void setTargetNew(const Point& target, int32_t us, uint8_t relative) {
         //Also calculate the step deltas (planner_steps[i]) at the same time.
         int32_t max_delta = 0;
 	planner_master_steps_index = 0;
+	planner_axes = 0;
         for (int i = 0; i < STEPPER_COUNT; i++) {
                 planner_steps[i] = labs(planner_target[i] - planner_position[i]);
-
-                if ( planner_steps[i] > max_delta) {
-			planner_master_steps_index = i;
-                        max_delta = planner_steps[i];
+		if ( planner_steps[i] ) {
+		     planner_axes |= 1 << i;
+		     if ( planner_steps[i] > max_delta) {
+			  planner_master_steps_index = i;
+			  max_delta = planner_steps[i];
+		     }
 		}
         }
         planner_master_steps = (uint32_t)max_delta;
@@ -793,6 +805,7 @@ void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, fl
         //Also calculate the step deltas (planner_steps[i]) at the same time.
         int32_t max_delta = 0;
         planner_master_steps_index = 0;
+	planner_axes = 0;
         for (int i = 0; i < STEPPER_COUNT; i++) {
                 planner_steps[i] = planner_target[i] - planner_position[i];
 		int32_t abs_planner_steps = labs(planner_steps[i]);
@@ -804,9 +817,12 @@ void setTargetNewExt(const Point& target, int32_t dda_rate, uint8_t relative, fl
 		     delta_mm[i] = FTOFP((float)planner_steps[i] * FPTOF(axis_steps_per_unit_inverse[i]));
                 planner_steps[i] = abs_planner_steps;
 
-                if ( planner_steps[i] > max_delta) {
-			planner_master_steps_index = i;
-                        max_delta = planner_steps[i];
+		if ( planner_steps[i] ) {
+		     planner_axes |= 1 << i;
+		     if ( planner_steps[i] > max_delta) {
+			  planner_master_steps_index = i;
+			  max_delta = planner_steps[i];
+		     }
 		}
         }
         planner_master_steps = (uint32_t)max_delta;

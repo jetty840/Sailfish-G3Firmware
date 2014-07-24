@@ -96,9 +96,12 @@
 #endif
 
 
-uint32_t	max_acceleration_units_per_sq_second[STEPPER_COUNT];	// Use M201 to override by software
+#ifdef OLD_ACCEL_LIMITS
 uint32_t	p_acceleration;						// Normal acceleration mm/s^2  THIS IS THE DEFAULT ACCELERATION for all moves. M204 SXXXX
 uint32_t	p_retract_acceleration;					//  mm/s^2   filament pull-pack and push-forward  while standing still in the other axis M204 TXXXX
+#endif
+
+uint32_t	max_acceleration_units_per_sq_second[STEPPER_COUNT];	// Use M201 to override by software
 FPTYPE		smallest_max_speed_change;
 FPTYPE		max_speed_change[STEPPER_COUNT];			//The speed between junctions in the planner, reduces blobbing
 FPTYPE		minimumPlannerSpeed;
@@ -115,6 +118,7 @@ FPTYPE		delta_mm[STEPPER_COUNT];
 FPTYPE		planner_distance;
 uint32_t	planner_master_steps;
 uint8_t		planner_master_steps_index;
+uint8_t         planner_axes;
 int32_t		planner_steps[STEPPER_COUNT];
 FPTYPE		vmax_junction;
 uint32_t	axis_accel_step_cutoff[STEPPER_COUNT];
@@ -1129,12 +1133,11 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 	#endif
 
 	bool extruder_only_move = false;
-	if ( block->steps[X_AXIS] == 0  &&  block->steps[Y_AXIS] == 0  &&  block->steps[Z_AXIS] == 0  &&  (block->steps[A_AXIS] != 0 
-		#if EXTRUDERS > 1
-			|| block->steps[B_AXIS] != 0
-		#endif
-		) )
-		extruder_only_move = true;
+	if ( 0 == (planner_axes & ((1 << X_AXIS) | (1 << Y_AXIS) | (1 << Z_AXIS))) )
+	     // Note: if there are no A or B axis steps either, then we wouldn't
+	     // be here.  The code which calls plan_buffer_line() returns if there
+	     // are no steps to be taken along any axis.
+	     extruder_only_move = true;
 
 	#ifdef SIMULATOR
 		// Save the original feed rate prior to modification by limits
@@ -1143,47 +1146,47 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
   
 	// Compute direction bits for this block 
 	block->direction_bits = 0;
-	if (planner_target[X_AXIS] < planner_position[X_AXIS]) { block->direction_bits |= (1<<X_AXIS); }
-	if (planner_target[Y_AXIS] < planner_position[Y_AXIS]) { block->direction_bits |= (1<<Y_AXIS); }
-	if (planner_target[Z_AXIS] < planner_position[Z_AXIS]) { block->direction_bits |= (1<<Z_AXIS); }
-	if (planner_target[A_AXIS] < planner_position[A_AXIS]) { block->direction_bits |= (1<<A_AXIS); }
+	if ( planner_target[X_AXIS] < planner_position[X_AXIS] ) { block->direction_bits |= (1<<X_AXIS); }
+	if ( planner_target[Y_AXIS] < planner_position[Y_AXIS] ) { block->direction_bits |= (1<<Y_AXIS); }
+	if ( planner_target[Z_AXIS] < planner_position[Z_AXIS] ) { block->direction_bits |= (1<<Z_AXIS); }
+	if ( planner_target[A_AXIS] < planner_position[A_AXIS] ) { block->direction_bits |= (1<<A_AXIS); }
 	#if EXTRUDERS > 1
-	if (planner_target[B_AXIS] < planner_position[B_AXIS]) { block->direction_bits |= (1<<B_AXIS); }
+	if ( planner_target[B_AXIS] < planner_position[B_AXIS] ) { block->direction_bits |= (1<<B_AXIS); }
 	#endif
   
 	//Set block->active_extruder based on either the extruder that has steps,
 	//or if 2 extruders have steps, use the current tool index that was passed to this function
 	//as extruder.
-	if 	(( block->steps[A_AXIS] != 0 )
-		#if EXTRUDERS > 1
-			&& ( block->steps[B_AXIS] != 0 )
-		#endif
-		)
-		block->active_extruder = extruder;
-	else if ( block->steps[A_AXIS] != 0 )
-		block->active_extruder = A_AXIS - A_AXIS;	//0
-	#if EXTRUDERS > 1
-	else if ( block->steps[B_AXIS] != 0 )
-		block->active_extruder = B_AXIS - A_AXIS;	//1
-	#endif
-	else	block->active_extruder = extruder;
+#if EXTRUDERS > 1
+	if ( ((1 << A_AXIS) | (1 << B_AXIS)) ==
+	     ( planner_axes & ((1 << A_AXIS) | (1 << B_AXIS))) )
+	     block->active_extruder = extruder;
+	else if ( planner_axes & (1 << A_AXIS) )
+	     block->active_extruder = A_AXIS - A_AXIS;	//0
+	else if ( planner_axes & (1 << B_AXIS) )
+	     block->active_extruder = B_AXIS - A_AXIS;	//1
+	else 
+	     block->active_extruder = extruder;
+#else
+	block->active_extruder = extruder;
+#endif
 
 	#ifndef SIMULATOR
 		//enable active axes
-		if(block->steps[X_AXIS] != 0) stepperAxisSetEnabled(X_AXIS, true);
-		if(block->steps[Y_AXIS] != 0) stepperAxisSetEnabled(Y_AXIS, true);
-		if(block->steps[Z_AXIS] != 0) stepperAxisSetEnabled(Z_AXIS, true);
-		if(block->steps[A_AXIS] != 0) stepperAxisSetEnabled(A_AXIS, true);
+	        if ( planner_axes & (1 << X_AXIS) ) stepperAxisSetEnabled(X_AXIS, true);
+		if ( planner_axes & (1 << Y_AXIS) ) stepperAxisSetEnabled(Y_AXIS, true);
+		if ( planner_axes & (1 << Z_AXIS) ) stepperAxisSetEnabled(Z_AXIS, true);
+		if ( planner_axes & (1 << A_AXIS) ) stepperAxisSetEnabled(A_AXIS, true);
 		#if EXTRUDERS > 1
-		if(block->steps[B_AXIS] != 0) stepperAxisSetEnabled(B_AXIS, true);
+		if ( planner_axes & (1 << B_AXIS) ) stepperAxisSetEnabled(B_AXIS, true);
 		#endif
 
 		// Note the current enabled axes
 		block->axesEnabled = axesEnabled;
 
 		//Hold Z
-		if ( acceleration_zhold )		block->axesEnabled |= _BV(Z_AXIS);
-		else if ( block->steps[Z_AXIS] == 0 )	block->axesEnabled &= ~(_BV(Z_AXIS));
+		if ( acceleration_zhold ) block->axesEnabled |= _BV(Z_AXIS);
+		else if ( 0 == (planner_axes & (1 << Z_AXIS)) ) block->axesEnabled &= ~(_BV(Z_AXIS));
 	#endif
 
 	int moves_queued = movesplanned();
@@ -1361,35 +1364,36 @@ void plan_buffer_line(FPTYPE feed_rate, const uint32_t &dda_rate, const uint8_t 
 		// at the necessary frequency.
 		steps_per_mm = FTOFP(FPTOF(inverse_millimeters) * (float)block->step_event_count);
 
-	if ( extruder_only_move ) {
-		//Assumptions made, due to the high value of acceleration_st / p_retract acceleration, dropped
-		//ceil and floating point multiply   
-		block->acceleration_st = p_retract_acceleration * (uint32_t)FPTOI(steps_per_mm); // convert to: acceleration steps/sec^2
-	} else {
-		//Assumptions made, due to the high value of acceleration_st / p_retract acceleration, dropped
-		//ceil and floating point multiply
-		block->acceleration_st = p_acceleration * (uint32_t)FPTOI(steps_per_mm); // convert to: acceleration steps/sec^2
+	// Limit acceleration per axis
+	// Start with the max axial acceleration for an axis
+	// with block->step_event_count since we're going to require
+	// acceleration_st <= max_acceleration[master-axis] anyway
+	block->acceleration_st = axis_steps_per_sqr_second[planner_master_steps_index];
 
-		// Limit acceleration per axis
-		//   Note, we've previously limited step_event_count to 0xffff = 65,536 steps
-		//   However, the product of the step count and the max per axis acceleration in steps/s^2 can
-		//   overflow a uint32_t for moves with a lot of steps....  So, to prevent overflows, we escape
-		//   to 64bits when step_event_count > 0xffffffff / axis_steps_per_sqr_second[i]
+	// Now skip this axis in our checks
+	uint8_t axes = planner_axes & ~(1 << planner_master_steps_index);
 
-		for (uint8_t i = 0; i < STEPPER_COUNT; i++) {
-			if (block->steps[i] != 0) {
-				if (block->step_event_count <= axis_accel_step_cutoff[i]) {
-					// We're below the cutoff: do the comparisons in 32 bits
-					if ((block->acceleration_st * (uint32_t)block->steps[i]) > (axis_steps_per_sqr_second[i] * block->step_event_count))
-						block->acceleration_st = axis_steps_per_sqr_second[i];
-				} else {
-					// Above the cutoffs: do the comparisons in 64 bits
-					if (((uint64_t)block->acceleration_st * (uint64_t)block->steps[i]) >
-					    ((uint64_t)axis_steps_per_sqr_second[i] * (uint64_t)block->step_event_count))
-						block->acceleration_st = axis_steps_per_sqr_second[i];
-				}
-			}
-		}
+	//Assumptions made, due to the high value of acceleration_st / p_retract acceleration, dropped
+	//ceil and floating point multiply
+
+	//   Note, we've previously limited step_event_count to 0xffff = 65,536 steps
+	//   However, the product of the step count and the max per axis acceleration in steps/s^2 can
+	//   overflow a uint32_t for moves with a lot of steps....  So, to prevent overflows, we escape
+	//   to 64bits when step_event_count > 0xffffffff / axis_steps_per_sqr_second[i]
+
+	for (uint8_t i = 0; i < STEPPER_COUNT; i++) {
+	     if ( axes & (1 << i) ) {
+		  if (block->step_event_count <= axis_accel_step_cutoff[i]) {
+		       // We're below the cutoff: do the comparisons in 32 bits
+		       if ((block->acceleration_st * (uint32_t)block->steps[i]) > (axis_steps_per_sqr_second[i] * block->step_event_count))
+			    block->acceleration_st = axis_steps_per_sqr_second[i];
+		  } else {
+		       // Above the cutoffs: do the comparisons in 64 bits
+		       if (((uint64_t)block->acceleration_st * (uint64_t)block->steps[i]) >
+			   ((uint64_t)axis_steps_per_sqr_second[i] * (uint64_t)block->step_event_count))
+			    block->acceleration_st = axis_steps_per_sqr_second[i];
+		  }
+	     }
 	}
 
 	// Acceleration limit to prevent overflow is 

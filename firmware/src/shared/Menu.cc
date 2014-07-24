@@ -163,10 +163,10 @@ static void digits3(char *buf, uint8_t val)
 
 
 void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
-	const static PROGMEM prog_uchar splash1[] = "    Sailfish    ";
+        const static PROGMEM prog_uchar splash1[] = "  Sailfish v" VERSION_STR " ";
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
-	const static PROGMEM prog_uchar splash3[] = "Thing 32084 4.7 ";
-	const static PROGMEM prog_uchar splash4[] = " Revision " SVN_VERSION_STR;
+	const static PROGMEM prog_uchar splash3[] = "   Thing 32084  ";
+	const static PROGMEM prog_uchar splash4[] = " r" SVN_VERSION_STR " " DATE_STR " ";
 
 	if (forceRedraw) {
 		lcd.homeCursor();
@@ -2018,8 +2018,12 @@ void SDMenu::update(LiquidCrystal& lcd, bool forceRedraw) {
 }
 
 void SDMenu::notifyButtonPressed(ButtonArray::ButtonName button) {
-	updatePhase = 0;
-	Menu::notifyButtonPressed(button);
+     if ( button == ButtonArray::XMINUS && folderStackIndex >= 0 )
+	  SDMenu::handleSelect(0);
+     else {
+	  updatePhase = 0;
+	  Menu::notifyButtonPressed(button);
+     }
 }
 
 void SDMenu::handleSelect(uint8_t index) {
@@ -4065,18 +4069,18 @@ void AcceleratedSettingsMode::reset() {
         values[2]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_Z, EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_Z);
         values[3]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_A, EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_A);
 	values[4]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_B, EEPROM_DEFAULT_ACCEL_MAX_ACCELERATION_B);
-        values[5]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_NORM, EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_NORM);
-        values[6]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_RETRACT, EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_RETRACT);
-	values[7]	= eeprom::getEepromUInt32(eeprom::ACCEL_ADVANCE_K, EEPROM_DEFAULT_ACCEL_ADVANCE_K);
-	values[8]	= eeprom::getEepromUInt32(eeprom::ACCEL_ADVANCE_K2, EEPROM_DEFAULT_ACCEL_ADVANCE_K2);
-	values[9]	= eeprom::getEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_A, EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_A);
-	values[10]	= eeprom::getEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_B, EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_B);
-        values[11]	= (uint32_t)(eeprom::getEeprom8(eeprom::ACCEL_SLOWDOWN_FLAG, EEPROM_DEFAULT_ACCEL_SLOWDOWN_FLAG)) ? 1 : 0;
-	values[12]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_X, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_X);
-	values[13]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Y, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Y);
-	values[14]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Z, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Z);
-	values[15]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_A, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_A);
-	values[16]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_B);
+        // values[5]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_NORM, EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_NORM);
+        // values[6]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_RETRACT, EEPROM_DEFAULT_ACCEL_MAX_EXTRUDER_RETRACT);
+	values[5]	= eeprom::getEepromUInt32(eeprom::ACCEL_ADVANCE_K, EEPROM_DEFAULT_ACCEL_ADVANCE_K);
+	values[6]	= eeprom::getEepromUInt32(eeprom::ACCEL_ADVANCE_K2, EEPROM_DEFAULT_ACCEL_ADVANCE_K2);
+	values[7]	= eeprom::getEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_A, EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_A);
+	values[8]	= eeprom::getEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_B, EEPROM_DEFAULT_ACCEL_EXTRUDER_DEPRIME_B);
+        values[9]	= (uint32_t)(eeprom::getEeprom8(eeprom::ACCEL_SLOWDOWN_FLAG, EEPROM_DEFAULT_ACCEL_SLOWDOWN_FLAG)) ? 1 : 0;
+	values[10]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_X, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_X);
+	values[11]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Y, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Y);
+	values[12]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Z, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_Z);
+	values[13]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_A, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_A);
+	values[14]	= eeprom::getEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B, EEPROM_DEFAULT_ACCEL_MAX_SPEED_CHANGE_B);
 
 	sei();
 
@@ -4090,8 +4094,8 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 	const static PROGMEM prog_uchar as_message1zMaxAccelRate[] 	= "Z Max Accel:";
 	const static PROGMEM prog_uchar as_message1aMaxAccelRate[] 	= "Right Max Accel:";
 	const static PROGMEM prog_uchar as_message1bMaxAccelRate[] 	= "Left Max Accel:";
-	const static PROGMEM prog_uchar as_message1ExtruderNorm[]  	= "Max Accel:";
-	const static PROGMEM prog_uchar as_message1ExtruderRetract[]	= "Max Accel Extdr:";
+	// const static PROGMEM prog_uchar as_message1ExtruderNorm[]  	= "Max Accel:";
+	// const static PROGMEM prog_uchar as_message1ExtruderRetract[]	= "Max Accel Extdr:";
 	const static PROGMEM prog_uchar as_message1AdvanceK[]		= "JKN Advance K:";
 	const static PROGMEM prog_uchar as_message1AdvanceK2[]		= "JKN Advance K2:";
 	const static PROGMEM prog_uchar as_message1ExtruderDeprimeA[]	= "Extdr.DeprimeR:";
@@ -4125,12 +4129,12 @@ void AcceleratedSettingsMode::update(LiquidCrystal& lcd, bool forceRedraw) {
 		case AS_MAX_ACCELERATION_B:
 		    msg = LOCALIZE(as_message1bMaxAccelRate);
 		    break;
-		case AS_MAX_EXTRUDER_NORM:
-		    msg = LOCALIZE(as_message1ExtruderNorm);
-		    break;
-		case AS_MAX_EXTRUDER_RETRACT:
-		    msg = LOCALIZE(as_message1ExtruderRetract);
-		    break;
+//		case AS_MAX_EXTRUDER_NORM:
+//		    msg = LOCALIZE(as_message1ExtruderNorm);
+//		    break;
+//		case AS_MAX_EXTRUDER_RETRACT:
+//		    msg = LOCALIZE(as_message1ExtruderRetract);
+//		    break;
 		case AS_ADVANCE_K:
 		    msg = LOCALIZE(as_message1AdvanceK);
 		    break;
@@ -4209,18 +4213,18 @@ void AcceleratedSettingsMode::notifyButtonPressed(ButtonArray::ButtonName button
         	eeprom::putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_Z,	 values[2]);
         	eeprom::putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_A,	 values[3]);
         	eeprom::putEepromUInt32(eeprom::ACCEL_MAX_ACCELERATION_B,	 values[4]);
-        	eeprom::putEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_NORM,	 values[5]);
-        	eeprom::putEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_RETRACT,	 values[6]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_ADVANCE_K,		 values[7]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_ADVANCE_K2,		 values[8]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_A,	 values[9]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_B,	 values[10]);
-		eeprom_write_byte((uint8_t*)eeprom::ACCEL_SLOWDOWN_FLAG,(uint8_t)values[11]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_X,	 values[12]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Y,	 values[13]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Z,	 values[14]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_A,	 values[15]);
-		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B,	 values[16]);
+        	// eeprom::putEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_NORM,	 values[5]);
+        	// eeprom::putEepromUInt32(eeprom::ACCEL_MAX_EXTRUDER_RETRACT,	 values[6]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_ADVANCE_K,		 values[5]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_ADVANCE_K2,		 values[6]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_A,	 values[7]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_EXTRUDER_DEPRIME_B,	 values[8]);
+		eeprom_write_byte((uint8_t*)eeprom::ACCEL_SLOWDOWN_FLAG,(uint8_t)values[9]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_X,	 values[10]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Y,	 values[11]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_Z,	 values[12]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_A,	 values[13]);
+		eeprom::putEepromUInt32(eeprom::ACCEL_MAX_SPEED_CHANGE_B,	 values[14]);
 		sei();
 
 		host::stopBuildNow();
