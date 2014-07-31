@@ -445,21 +445,28 @@ inline void LiquidCrystal::write(uint8_t value) {
 
 void LiquidCrystal::writeInt(uint16_t value, uint8_t digits) {
 
-	uint16_t currentDigit;
+	uint16_t currentDigit = 1
 	uint16_t nextDigit;
+	bool nonzero_seen = false;
 
-	switch (digits) {
-	case 1:		currentDigit = 10;		break;
-	case 2:		currentDigit = 100;		break;
-	case 3:		currentDigit = 1000;	break;
-	case 4:		currentDigit = 10000;	break;
-	default: 	return;
-	}
+	if ( digits > 5 )
+	     digits = 5;
 
-	for (uint8_t i = 0; i < digits; i++) {
-		nextDigit = currentDigit/10;
-		write((value%currentDigit)/nextDigit+'0');
-		currentDigit = nextDigit;
+	for (uint8_t i = digits; i; i--)
+	     currentDigit *= 10;
+
+	for (uint8_t i = digits; i; i--) {
+	     nextDigit = currentDigit / 10;
+	     char c;
+	     int8_t d = (value % currentDigit) / nextDigit;
+	     if ( nonzero_seen || d != 0 || i == 1) {
+		  c = d + '0';
+		  nonzero_seen = true;
+	     }
+	     else
+		  c = ' ';
+	     write(c);
+	     currentDigit = nextDigit;
 	}
 }
 
