@@ -445,7 +445,7 @@ inline void LiquidCrystal::write(uint8_t value) {
 
 void LiquidCrystal::writeInt(uint16_t value, uint8_t digits) {
 
-	uint16_t currentDigit = 1
+        uint16_t currentDigit = 1;
 	uint16_t nextDigit;
 	bool nonzero_seen = false;
 
