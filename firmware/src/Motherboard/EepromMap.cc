@@ -138,6 +138,12 @@ void setJettyFirmwareDefaults() {
 
     eeprom_write_byte((uint8_t*)eeprom::CLEAR_FOR_ESTOP, 0);
 
+    {
+	 int32_t dummy = ALEVEL_MAX_ZDELTA_DEFAULT;
+	 eeprom_write_block(&dummy, (uint8_t*)eeprom::ALEVEL_MAX_ZDELTA, sizeof(int32_t));
+    }
+    eeprom_write_byte((uint8_t*)eeprom::ALEVEL_MAX_ZPROBE_HITS, ALEVEL_MAX_ZPROBE_HITS_DEFAULT);
+
     verifyAndFixVidPid();
 }
 

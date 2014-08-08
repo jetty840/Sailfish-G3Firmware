@@ -21,6 +21,18 @@
 
 #include <stdint.h>
 
+#define ALEVEL_MAX_ZDELTA_DEFAULT 100 // 100 steps = 0.5 mm
+
+typedef struct {
+     uint8_t  flags;      // == 1 if valid
+     int32_t  max_zdelta; // Max allowed difference between P1z, P2z and P3z
+     int32_t  p1[3];      // Probed point 1, units of steps
+     int32_t  p2[3];      // Probed point 2, units of steps
+     int32_t  p3[3];      // Probed point 3, units of steps
+} auto_level_t;
+
+#define ALEVEL_MAX_ZPROBE_HITS_DEFAULT  20
+
 enum {
 	ESTOP_CONF_NONE = 0x0,
 	ESTOP_CONF_ACTIVE_HIGH = 0x1,
@@ -397,6 +409,36 @@ const static uint16_t EXTRUDER_DEPRIME_ON_TRAVEL        = 0x1EE;
 //$BEGIN_ENTRY
 //$type:B $constraints:l,0,1 $tooltip:Check or set to 1 to instruct the printer to clear the build away from the extruder before stopping.  Uncheck or set to zero to immediately stop the printer (e.g., perform an Emergency Stop).
 const static uint16_t CLEAR_FOR_ESTOP          = 0x01EF;
+
+//Auto level max Z probe hits (0 = unlimited)
+//$BEGIN_ENTRY
+//$type:b $constraints:l,0,200 $tooltip:Trigger a pause if the auto-leveling probe registers too many hits during a print. Set to the value 0 to allow an unlimited number of hits without pausing; otherwise, set to a value in the range 1 to 200.
+const static uint16_t ALEVEL_MAX_ZPROBE_HITS   = 0x01F0;
+
+//Auto level reserved byte
+//$BEGIN_ENTRY
+//$type:B $ignore:True
+const static uint16_t ALEVEL_FLAGS             = 0x01F1;
+
+//Auto level max Z difference between probed points
+//$BEGIN_ENTRY
+//$type:i $unit:steps  $tooltip:The maximum vertical difference between any two probed leveling points may not exceed this value.  Default value is 50 steps (0.5 mm).
+const static uint16_t ALEVEL_MAX_ZDELTA        = 0x01F2;
+
+//Auto level probing point P1 = (X1, Y1, Z1)
+//$BEGIN_ENTRY
+//$type:iii $ignore:True $unit:steps
+const static uint16_t ALEVEL_P1                = 0x01F6;
+
+//Auto level probing point P2 = (X2, Y2, Z2)
+//$BEGIN_ENTRY
+//$type:iii $ignore:True $unit:steps
+const static uint16_t ALEVEL_P2                = 0x0202;
+
+//Auto level probing point P3 = (X3, Y3, Z3)
+//$BEGIN_ENTRY
+//$type:iii $ignore:True $unit:steps
+const static uint16_t ALEVEL_P3                = 0x020E;
 
 /// Reset Jetty Firmware defaults only
 void setJettyFirmwareDefaults();
