@@ -166,7 +166,7 @@ void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
         const static PROGMEM prog_uchar splash1[] = "  Sailfish v" VERSION_STR " ";
 	const static PROGMEM prog_uchar splash2[] = " -------------- ";
 	const static PROGMEM prog_uchar splash3[] = "   Thing 32084  ";
-	const static PROGMEM prog_uchar splash4[] = " r" SVN_VERSION_STR " " DATE_STR " ";
+	const static PROGMEM prog_uchar splash4[] = " r" SVN_VERSION_STR " " DATE_STR;
 
 	if (forceRedraw) {
 		lcd.homeCursor();
