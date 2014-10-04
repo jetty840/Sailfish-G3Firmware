@@ -164,7 +164,11 @@ static void digits3(char *buf, uint8_t val)
 
 void SplashScreen::update(LiquidCrystal& lcd, bool forceRedraw) {
         const static PROGMEM prog_uchar splash1[] = "  Sailfish v" VERSION_STR " ";
-	const static PROGMEM prog_uchar splash2[] = " -------------- ";
+#if defined(__AVR_ATmega2560__)
+        const static PROGMEM prog_uchar splash2[] = "- ATmega 2560 - ";
+#else
+        const static PROGMEM prog_uchar splash2[] = "- ATmega 1280 - ";
+#endif
 	const static PROGMEM prog_uchar splash3[] = "   Thing 32084  ";
 	const static PROGMEM prog_uchar splash4[] = " r" SVN_VERSION_STR " " DATE_STR;
 
