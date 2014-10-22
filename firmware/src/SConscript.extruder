@@ -95,9 +95,28 @@ srcs = Glob('*.cc') + Glob('Extruder/*.cc') + Glob('Extruder/boards/%s/*.cc' % p
 
 include_paths = ['shared', 'Extruder', 'Extruder/boards/%s' % platform, '.']
 
+# __PROG_TYPES_COMPAT__
+#   gcc 4.6.3 and later disallows the PROGEM attribute on data types.  For the
+#   time being, we're using __PROG_TYPES_COMPAT__ for backwards compatibilty
+
+# __DELAY_BACKWARD_COMPATIBLE__
+#   The current avrlibc 1.8.0 of July 2012 has a bug whereby it incorrectly
+#   determines whether __builtin_avr_delay_cycles() is available.  The
+#   configure script makes a small stub program complete with a prototype
+#   for __builtin_avr_delay_cycles().  It then compiles it *without*
+#   linking (-S) and then concludes that __builtin_avr_delay_cycles() is
+#   available.  Unfortunately, that test is woefully insufficient and
+#   proves nothing.  But owing to that test, the configure script
+#   decides that __builtin_avr_delay_cycles() is present and sets
+#   __HAVE_DELAY_CYCLES to 1 in avr/builtins.h (template=builtins.h.in).
+#   That in turn makes avr/util/delay.h try to use the non-existent
+#   __builtin_avr_delay_cycles() routine.  To work around that problem,
+#   it is necessary to set __DELAY_BACKWARD_COMPATIBLE__.
 flags=[
 	'-DF_CPU='+str(f_cpu),
 	'-DVERSION='+str(version),
+	'-D__PROG_TYPES_COMPAT__',
+	'-D__DELAY_BACKWARD_COMPATIBLE__',
 	'-mmcu='+mcu,
 	'-g',
 	'-Os',

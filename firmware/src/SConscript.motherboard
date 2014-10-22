@@ -37,6 +37,7 @@
 
 import os
 import re
+import time
 from os.path import dirname
 
 # Parameters
@@ -57,8 +58,8 @@ fived = ARGUMENTS.get('fived','false')
 f_cpu='16000000L'
 
 # Get the svn version number and use the last part
-svn_version = os.popen('svnversion ../..').read()[:-1]
-svn_version = svn_version.split(':')[-1]
+svn_version = os.popen('git log --pretty=oneline -n1 --abbrev-commit').read()[:-1]
+svn_version = svn_version.split(' ')[0]
 
 # -DLOCALE=locale-name
 locale_def = ''
@@ -157,6 +158,8 @@ flags=[
 	'-DVERSION='+str(version),
 	'-DSVN_VERSION='+str(svn_version),
 	'-DSVN_VERSION_STR=\'"'+str(svn_version).zfill(5)+'"\'',
+  '-DDATE_STR=\'"'+time.strftime("%x")+'"\'',
+	'-DVERSION_STR=\'"'+str(svn_version).zfill(5)+'"\'',
 	'-D__PROG_TYPES_COMPAT__',
 	'-D__DELAY_BACKWARD_COMPATIBLE__',
 	locale_def,
