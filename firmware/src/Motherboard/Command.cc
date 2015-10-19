@@ -1279,7 +1279,8 @@ void runCommandSlice() {
 			    (command != HOST_CMD_FIND_AXES_MINIMUM) && 
 			    (command != HOST_CMD_FIND_AXES_MAXIMUM) &&
 			    (command != HOST_CMD_TOOL_COMMAND) &&
-			    (command != HOST_CMD_PAUSE_FOR_BUTTON ) ) {
+			    (command != HOST_CMD_PAUSE_FOR_BUTTON) &&
+				(command != HOST_CMS_SET_BUILD_PERCENT)) {
        	                         if ( ! st_empty() )     return;
        	                 }
 
